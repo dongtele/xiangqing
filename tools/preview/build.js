@@ -97,6 +97,48 @@ const SCENES = [
     step: 1,
   },
   {
+    id: '62',
+    name: '商家订单详情',
+    note: '09 点订单卡片进入：菜品明细、备注、顾客信息、接单并打印',
+    page: 'pages/merchant/order-detail/index',
+    query: { id: 'm_1024' },
+    seed: 'merchant',
+    dark: false,
+    step: 3,
+  },
+  {
+    id: '62b',
+    name: '商家订单详情 · 备餐中',
+    note: '接单后同一页面的状态：底部操作变为补打小票 / 出餐完成',
+    page: 'pages/merchant/order-detail/index',
+    query: { id: 'm_1023' },
+    seed: 'merchant',
+    dark: false,
+    step: 3,
+  },
+  {
+    id: '51',
+    name: '小票打印',
+    note: '62 右上「打印」进入：设备状态、打印设置、后厨联 / 顾客联预览与补打',
+    page: 'pages/merchant/print/index',
+    query: { orderId: 'm_1024' },
+    seed: 'merchant',
+    dark: false,
+    step: 3,
+  },
+  {
+    id: '51b',
+    name: '小票打印 · 顾客联',
+    note: '同一页切到「顾客联」：小票带金额与页脚，联数按设置一次性补打',
+    page: 'pages/merchant/print/index',
+    query: { orderId: 'm_1024' },
+    seed: 'merchant',
+    dark: false,
+    step: 3,
+    after: (inst) => inst.onSwitchTab({ currentTarget: { dataset: { key: 'customer' } } }),
+    settle: 500,
+  },
+  {
     id: '02',
     name: '商品详情',
     note: '01 →「选规格」进入：份量 / 辣度 / 加料，实时算价',
@@ -329,7 +371,10 @@ async function renderScene(scene, keyframes) {
   await wait(700);
   if (typeof inst.onReady === 'function') inst.onReady();
   await wait(200);
-  if (scene.after) scene.after(inst);
+  if (scene.after) {
+    scene.after(inst);
+    await wait(scene.settle || 0);
+  }
 
   const json = readJson(`${pageBase}.json`);
   const usedComponents = new Map();
@@ -457,19 +502,20 @@ async function main() {
 
   const step1 = results.filter((r) => r.scene.step === 1);
   const step2 = results.filter((r) => r.scene.step === 2);
+  const step3 = results.filter((r) => r.scene.step === 3);
 
   const html = `<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>美味坊小程序 · 第 1–2 步实现预览</title>
+<title>美味坊小程序 · 第 1–3 步实现预览</title>
 <style>${BASE_CSS}\n${kf}\n${css}</style>
 </head>
 <body>
 <div class="pv-head">
   <span class="pv-kicker">WEIWEIFANG · MINIPROGRAM PREVIEW</span>
-  <h1>美味坊点餐小程序 · 第 1–2 步实现效果</h1>
+  <h1>美味坊点餐小程序 · 第 1–3 步实现效果</h1>
   <p>下面每一屏都由<strong>工程里真实的 WXML + WXSS + TypeScript 逻辑</strong>渲染：先编译 <code>miniprogram/**/*.ts</code>，用替身运行时跑一遍页面的 <code>onLoad / onShow</code>（含 mock 接口请求、购物车 store、服务端试算），再拿页面最终的 <code>data</code> 渲染真实模板。所以这里看到的价格、状态、倒计时都是代码算出来的，不是另画一遍的静态图。</p>
   <p>预览环境与真机的差异仅在于：<code>rpx</code> 按 375px 折算成 px、<code>position:fixed</code> 改为相对画框定位、<code>env(safe-area-inset-bottom)</code> 取 iPhone X 的 34px。顶部状态栏与胶囊按钮、底部小白条是画框装饰，真机由微信绘制。</p>
 </div>
@@ -490,6 +536,15 @@ async function main() {
     <span class="pv-sub">下单闭环已打通</span>
   </div>
   <div class="pv-grid">${step2.map(frameDeco).join('')}</div>
+</div>
+
+<div class="pv-section">
+  <div class="pv-section__title">
+    <span class="pv-tag">第 3 步</span>
+    <h2>商家履约链路：08 → 09 → 62 → 51</h2>
+    <span class="pv-sub">接单出餐已打通</span>
+  </div>
+  <div class="pv-grid">${step3.map(frameDeco).join('')}</div>
 </div>
 
 <div class="pv-foot">由 tools/preview/build.js 生成 · ${new Date().toISOString().slice(0, 10)}</div>

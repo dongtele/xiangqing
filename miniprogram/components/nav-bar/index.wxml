@@ -2,7 +2,7 @@
   class="nav {{fixed ? 'nav--fixed' : ''}} {{theme === 'dark' ? 'nav--dark' : ''}}"
   style="background:{{bg}}"
 >
-  <view style="height:{{statusBarHeight}}px" />
+  <view style="height:{{topSpacer}}px" />
   <view class="nav__row" style="height:{{navBarHeight}}px">
     <view
       wx:if="{{showBack}}"

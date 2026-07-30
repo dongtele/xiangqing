@@ -13,6 +13,8 @@
     "pages/customer/order-detail/index",
     "pages/merchant/dashboard/index",
     "pages/merchant/orders/index",
+    "pages/merchant/order-detail/index",
+    "pages/merchant/print/index",
     "pages/merchant/goods/index",
     "pages/merchant/shop/index"
   ],

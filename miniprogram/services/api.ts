@@ -12,6 +12,9 @@ import type {
   MerchantOrder,
   MerchantOrderTab,
   Order,
+  PrintSettings,
+  ReceiptPreview,
+  ReceiptType,
   Shop,
   UserProfile,
 } from '../models/index';
@@ -67,7 +70,12 @@ export const getMerchantOrders = (
 ): Promise<{ list: MerchantOrder[]; counts: Record<MerchantOrderTab, number> }> =>
   request('/merchant/orders', { tab });
 
-export const acceptOrder = (id: string): Promise<{ ok: boolean }> =>
+export const getMerchantOrder = (
+  id: string
+): Promise<{ order: MerchantOrder; countdownText: string } | null> =>
+  request('/merchant/order/detail', { id });
+
+export const acceptOrder = (id: string): Promise<{ ok: boolean; autoPrinted: boolean }> =>
   request('/merchant/order/accept', { id }, { method: 'POST' });
 
 export const rejectOrder = (id: string): Promise<{ ok: boolean }> =>
@@ -83,6 +91,28 @@ export const getMerchantGoods = (
 
 export const setGoodsOnSale = (id: string, onSale: boolean): Promise<{ ok: boolean }> =>
   request('/merchant/goods/onsale', { id, onSale }, { method: 'POST' });
+
+/* ---------------- 商家端 · 小票打印 ---------------- */
+
+export const getPrintSettings = (): Promise<PrintSettings> =>
+  request<PrintSettings>('/merchant/print/settings');
+
+export const updatePrintSettings = (patch: Partial<PrintSettings>): Promise<PrintSettings> =>
+  request<PrintSettings>('/merchant/print/settings/update', patch as Record<string, unknown>, {
+    method: 'POST',
+  });
+
+export const getReceipt = (orderId: string, type: ReceiptType): Promise<ReceiptPreview | null> =>
+  request('/merchant/print/receipt', { orderId, type });
+
+/** 补打 / 测试打印；type 省略时按「打印联数」设置一次性送打 */
+export const printReceipt = (
+  orderId: string,
+  type?: ReceiptType
+): Promise<{ ok: boolean; message?: string }> =>
+  request('/merchant/print', { orderId, type }, { method: 'POST', silent: true });
+
+/* ---------------- 商家端 · 店铺设置 ---------------- */
 
 export const getShopSettings = (): Promise<Shop> => request<Shop>('/merchant/shop');
 

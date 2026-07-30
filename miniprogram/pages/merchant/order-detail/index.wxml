@@ -1,0 +1,86 @@
+<view class="mod">
+  <nav-bar title="订单 {{order.seq}}" right="打印" bindrighttap="onPrintSetting" />
+
+  <scroll-view class="mod__body" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 状态 -->
+    <view class="card">
+      <view class="row--between">
+        <text class="mod__status mod__status--{{order.status}}">{{order.statusText}}</text>
+        <text class="mod__meta">{{statusMeta}}</text>
+      </view>
+      <view class="mod__tags">
+        <text class="mod__tag mod__tag--channel">{{order.channel}}</text>
+        <text class="mod__tag mod__tag--expect">{{order.expectText}}</text>
+        <text class="mod__tag mod__tag--seq">{{order.customerSeqText}}</text>
+      </view>
+    </view>
+
+    <!-- 菜品明细 -->
+    <view class="card">
+      <block wx:for="{{lines}}" wx:key="name">
+        <view wx:if="{{index > 0}}" class="hairline" />
+        <view class="mod__line">
+          <image class="mod__line-img" src="{{item.image}}" mode="aspectFill" lazy-load />
+          <view class="flex1 col mod__line-info">
+            <text class="mod__line-name">{{item.name}}</text>
+            <text class="mod__line-spec">{{item.specText || '—'}}</text>
+          </view>
+          <text class="mod__line-qty">×{{item.qty}}</text>
+          <text class="mod__line-amount">￥{{item.amountText}}</text>
+        </view>
+      </block>
+
+      <view class="hairline" />
+
+      <view wx:if="{{order.remark}}" class="mod__remark">备注：{{order.remark}}</view>
+
+      <view class="row--between">
+        <text class="cell__label">顾客实付</text>
+        <text class="cell__value">￥{{totalText}}</text>
+      </view>
+    </view>
+
+    <!-- 顾客信息 -->
+    <view class="card">
+      <view class="row--between">
+        <text class="cell__label">{{order.channel === '自提' ? '取餐人' : '收货人'}}</text>
+        <view class="cell__value">
+          <text>{{order.customerName}} {{order.customerPhone}}</text>
+          <text class="mod__call tap" catchtap="onCall">拨号</text>
+        </view>
+      </view>
+      <view class="hairline" />
+      <block wx:if="{{order.channel === '自提'}}">
+        <view class="row--between">
+          <text class="cell__label">取餐码</text>
+          <text class="mod__code">{{order.pickupCode}}</text>
+        </view>
+      </block>
+      <block wx:else>
+        <view class="row--between">
+          <text class="cell__label">地址</text>
+          <text class="cell__value mod__addr">{{order.addressText}}</text>
+        </view>
+        <view class="hairline" />
+        <view class="row--between">
+          <text class="cell__label">距离</text>
+          <text class="cell__value">{{order.distanceEtaText}}</text>
+        </view>
+      </block>
+    </view>
+
+    <view class="mod__foot" />
+  </scroll-view>
+
+  <!-- 底部操作 -->
+  <view class="mod__bar">
+    <view
+      wx:for="{{actions}}"
+      wx:key="key"
+      class="mod__btn {{item.primary ? 'mod__btn--primary' : 'mod__btn--ghost'}} tap"
+      style="flex:{{item.weight}}"
+      data-key="{{item.key}}"
+      bindtap="onAction"
+    >{{item.text}}</view>
+  </view>
+</view>

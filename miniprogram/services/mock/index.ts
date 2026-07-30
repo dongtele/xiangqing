@@ -11,6 +11,9 @@ import type {
   MerchantOrder,
   MerchantOrderTab,
   Order,
+  PrintSettings,
+  ReceiptPreview,
+  ReceiptType,
   Shop,
 } from '../../models/index';
 
@@ -20,8 +23,11 @@ const state = {
   orders: db.orders.map((o) => ({ ...o })),
   merchantOrders: db.merchantOrders.map((o) => ({ ...o })),
   merchantGoods: db.merchantGoods.map((g) => ({ ...g })),
+  printSettings: { ...db.printSettings },
   payAttempts: {} as Record<string, number>,
   orderSeq: 1025,
+  /** 打印任务流水，仅用于演示「已发送到打印机」 */
+  printJobs: [] as { orderId: string; type: ReceiptType; at: number }[],
 };
 
 function delay<T>(payload: T): Promise<T> {
@@ -142,6 +148,37 @@ function merchantOrderList(tab: MerchantOrderTab): MerchantOrder[] {
   return state.merchantOrders.filter((o) => o.status === tab);
 }
 
+const yuan2 = (fen: number): string => `￥${(fen / 100).toFixed(2)}`;
+
+/** 小票内容由服务端拼好下发，前端只负责渲染与送打 */
+function receipt(order: MerchantOrder, type: ReceiptType): ReceiptPreview {
+  const kitchen = type === 'kitchen';
+  const base: ReceiptPreview = {
+    type,
+    title: `美味坊 · ${kitchen ? '后厨联' : '顾客联'}`,
+    meta: `${order.seq}　${order.channel}　${order.placedAtText.replace('下单 ', '')}`,
+    lines: order.lines.map((l) => ({
+      text: l.specText ? `${l.name} ${l.specText}` : l.name,
+      qty: `×${l.qty}`,
+    })),
+    amounts: [],
+  };
+  if (state.printSettings.printRemark && order.remark) base.remark = `备注：${order.remark}`;
+  if (kitchen) return base;
+
+  // 顾客联带金额与页脚
+  base.lines = order.lines.map((l) => ({
+    text: l.specText ? `${l.name} ${l.specText}` : l.name,
+    qty: `×${l.qty}　${yuan2(l.amount)}`,
+  }));
+  base.amounts = [
+    { label: '合计', value: yuan2(order.lines.reduce((n, l) => n + l.amount, 0)) },
+    { label: '顾客实付', value: yuan2(order.total) },
+  ];
+  base.footer = `${order.channel === '自提' ? `取餐码 ${order.pickupCode || '—'}` : order.addressText || ''}\n谢谢光临，欢迎再次下单`;
+  return base;
+}
+
 /** 路由表：path → handler。请求参数已由 request 层归一化。 */
 type Payload = Record<string, unknown>;
 
@@ -203,6 +240,19 @@ const routes: Record<string, (p: Payload) => unknown> = {
     },
   }),
 
+  'GET /merchant/order/detail': (p) => {
+    const order = state.merchantOrders.find((o) => o.id === p.id);
+    if (!order) return null;
+    return {
+      order,
+      countdownText: order.countdown
+        ? `${order.placedAtText} · 剩 ${Math.floor(order.countdown / 60)}:${String(
+            order.countdown % 60
+          ).padStart(2, '0')} 自动拒单`
+        : order.placedAtText,
+    };
+  },
+
   'POST /merchant/order/accept': (p) => {
     const order = state.merchantOrders.find((o) => o.id === p.id);
     if (order) {
@@ -210,8 +260,12 @@ const routes: Record<string, (p: Payload) => unknown> = {
       order.statusText = '备餐中';
       order.countdown = undefined;
       order.countdownText = undefined;
+      // 自动打印后厨联，避免漏单（设计稿 51）
+      if (state.printSettings.autoPrint) {
+        state.printJobs.push({ orderId: order.id, type: 'kitchen', at: Date.now() });
+      }
     }
-    return { ok: true };
+    return { ok: true, autoPrinted: state.printSettings.autoPrint };
   },
 
   'POST /merchant/order/reject': (p) => {
@@ -252,6 +306,35 @@ const routes: Record<string, (p: Payload) => unknown> = {
       }
     }
     return { ok: true };
+  },
+
+  'GET /merchant/print/settings': (): PrintSettings => state.printSettings,
+
+  'POST /merchant/print/settings/update': (p) => {
+    state.printSettings = { ...state.printSettings, ...(p as Partial<PrintSettings>) };
+    state.printSettings.copiesText = `${state.printSettings.copies} 联`;
+    return state.printSettings;
+  },
+
+  'GET /merchant/print/receipt': (p) => {
+    const order = state.merchantOrders.find((o) => o.id === p.orderId);
+    if (!order) return null;
+    return receipt(order, (p.type as ReceiptType) || 'kitchen');
+  },
+
+  'POST /merchant/print': (p) => {
+    const order = state.merchantOrders.find((o) => o.id === p.orderId);
+    if (!order) return { ok: false, message: '订单不存在' };
+    if (!state.printSettings.device.online) {
+      return { ok: false, message: '打印机离线，请检查蓝牙连接' };
+    }
+    const types: ReceiptType[] = p.type
+      ? [p.type as ReceiptType]
+      : state.printSettings.copies >= 2
+        ? ['kitchen', 'customer']
+        : ['kitchen'];
+    types.forEach((type) => state.printJobs.push({ orderId: order.id, type, at: Date.now() }));
+    return { ok: true, message: `已发送到${state.printSettings.device.name}（${types.length} 联）` };
   },
 
   'GET /merchant/shop': (): Shop => state.shop,

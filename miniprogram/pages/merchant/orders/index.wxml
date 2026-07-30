@@ -57,8 +57,8 @@
 
         <!-- 明细（待接单单据展开） -->
         <view wx:if="{{item.status === 'pending'}}" class="mo__items">
-          <view wx:for="{{item.lines}}" wx:for-item="line" wx:key="name" class="mo__item">
-            <text class="flex1">{{line.name}}</text>
+          <view wx:for="{{item.rows}}" wx:for-item="line" wx:key="text" class="mo__item">
+            <text class="flex1">{{line.text}}</text>
             <text class="mo__item-qty">x{{line.qty}}</text>
           </view>
           <view class="mo__item mo__item--total">
@@ -73,7 +73,11 @@
           <view class="mo__btn mo__btn--primary tap" data-id="{{item.id}}" bindtap="onAccept">立即接单</view>
         </view>
         <view wx:elif="{{item.status === 'ongoing'}}" class="mo__actions">
-          <view class="mo__btn mo__btn--ghost mo__btn--half tap" bindtap="onPrint">打印小票</view>
+          <view
+            class="mo__btn mo__btn--ghost mo__btn--half tap"
+            data-id="{{item.id}}"
+            bindtap="onPrint"
+          >打印小票</view>
           <view
             class="mo__btn mo__btn--outline-primary mo__btn--half tap"
             data-id="{{item.id}}"

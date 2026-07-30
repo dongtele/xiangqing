@@ -7,6 +7,7 @@ import type {
   MerchantGoods,
   MerchantOrder,
   Order,
+  PrintSettings,
   Shop,
   UserProfile,
 } from '../../models/index';
@@ -309,12 +310,23 @@ export const merchantOrders: MerchantOrder[] = [
     customerPhone: '138****1234',
     addressText: '科技园南区A座15层1501室',
     distanceText: '距店 1.2km',
-    items: [
-      { name: '招牌红烧肉套餐（大份/微辣）', qty: 1 },
-      { name: '冰镇酸梅汤（常温）', qty: 2 },
+    distanceEtaText: '1.2 km · 预计 25 分钟',
+    lines: [
+      {
+        name: '招牌红烧肉套餐',
+        specText: '大份 / 微辣',
+        qty: 1,
+        amount: 4500,
+        image: IMG.braisedPork,
+      },
+      { name: '冰镇酸梅汤', specText: '常温', qty: 2, amount: 2400, image: IMG.plumJuice },
     ],
     count: 3,
     total: 6400,
+    placedAtText: '下单 12:02',
+    expectText: '立即送出',
+    customerSeqText: '第 3 单',
+    remark: '不要香菜，多给一份醋',
   },
   {
     id: 'm_1023',
@@ -325,9 +337,14 @@ export const merchantOrders: MerchantOrder[] = [
     customerName: '李女士',
     customerPhone: '139****5678',
     pickupCode: '8823',
-    items: [{ name: '农家小炒肉拌饭', qty: 2 }],
+    lines: [
+      { name: '农家小炒肉拌饭', specText: '', qty: 2, amount: 5600, image: IMG.riceBowl },
+    ],
     count: 2,
     total: 5600,
+    placedAtText: '下单 11:48',
+    expectText: '12:20 前自取',
+    customerSeqText: '第 1 单',
     summaryText: '李女士 139****5678 · 农家小炒肉拌饭 x2 · ¥56.00',
   },
   {
@@ -341,12 +358,16 @@ export const merchantOrders: MerchantOrder[] = [
     customerPhone: '137****9911',
     addressText: '软件园二期 3 号楼 B 座 902',
     distanceText: '距店 0.8km',
-    items: [
-      { name: '香煎深海带鱼', qty: 1 },
-      { name: '金黄炸猪排', qty: 1 },
+    distanceEtaText: '0.8 km · 预计 20 分钟',
+    lines: [
+      { name: '香煎深海带鱼', specText: '', qty: 1, amount: 4500, image: IMG.hairtail },
+      { name: '金黄炸猪排', specText: '', qty: 1, amount: 2200, image: IMG.porkChop },
     ],
     count: 2,
     total: 6700,
+    placedAtText: '下单 12:05',
+    expectText: '立即送出',
+    customerSeqText: '第 2 单',
   },
   {
     id: 'm_1021',
@@ -359,26 +380,42 @@ export const merchantOrders: MerchantOrder[] = [
     customerPhone: '135****4432',
     addressText: '中心广场 A 座 1802',
     distanceText: '距店 2.1km',
-    items: [{ name: '农家小炒肉拌饭', qty: 3 }],
+    distanceEtaText: '2.1 km · 预计 30 分钟',
+    lines: [
+      { name: '农家小炒肉拌饭', specText: '', qty: 3, amount: 8400, image: IMG.riceBowl },
+    ],
     count: 3,
     total: 8400,
+    placedAtText: '下单 12:08',
+    expectText: '13:00 前送达',
+    customerSeqText: '首单',
   },
   {
     id: 'm_1020',
-    channel: '外送',
     seq: '#1020',
+    channel: '外送',
     status: 'ongoing',
     statusText: '备餐中',
     customerName: '赵先生',
     customerPhone: '132****7788',
     addressText: '滨江路 66 号 2 单元 301',
     distanceText: '距店 1.9km',
-    items: [
-      { name: '招牌红烧肉套餐（标准/微辣）', qty: 1 },
-      { name: '冰镇酸梅汤（加冰）', qty: 1 },
+    distanceEtaText: '1.9 km · 预计 28 分钟',
+    lines: [
+      {
+        name: '招牌红烧肉套餐',
+        specText: '标准 / 微辣',
+        qty: 1,
+        amount: 3800,
+        image: IMG.braisedPork,
+      },
+      { name: '冰镇酸梅汤', specText: '加冰', qty: 1, amount: 1200, image: IMG.plumJuice },
     ],
     count: 2,
     total: 5000,
+    placedAtText: '下单 11:52',
+    expectText: '立即送出',
+    customerSeqText: '第 5 单',
     summaryText: '赵先生 132****7788 · 红烧肉套餐 x1、酸梅汤 x1 · ¥50.00',
   },
   {
@@ -391,11 +428,37 @@ export const merchantOrders: MerchantOrder[] = [
     customerPhone: '136****2201',
     addressText: '创业大厦 12 层',
     distanceText: '距店 1.6km',
-    items: [{ name: '招牌红烧肉套餐（标准/中辣）', qty: 2 }],
+    distanceEtaText: '1.6 km · 已送达',
+    lines: [
+      {
+        name: '招牌红烧肉套餐',
+        specText: '标准 / 中辣',
+        qty: 2,
+        amount: 7600,
+        image: IMG.braisedPork,
+      },
+    ],
     count: 2,
     total: 7600,
+    placedAtText: '下单 11:20',
+    expectText: '已完成',
+    customerSeqText: '第 8 单',
   },
 ];
+
+export const printSettings: PrintSettings = {
+  device: {
+    id: 'printer_a',
+    name: '后厨打印机 A',
+    online: true,
+    statusText: '在线 · 蓝牙已连接',
+  },
+  autoPrint: true,
+  copies: 2,
+  copiesText: '2 联',
+  width: '58mm',
+  printRemark: true,
+};
 
 export const merchantGoods: MerchantGoods[] = [
   {

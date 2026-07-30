@@ -1,13 +1,20 @@
-import { acceptOrder, finishOrder, getMerchantOrders, rejectOrder } from '../../../services/api';
+import {
+  acceptOrder,
+  finishOrder,
+  getMerchantOrders,
+  printReceipt,
+  rejectOrder,
+} from '../../../services/api';
 import { chrome } from '../../../utils/chrome';
 import { fen2yuan2 } from '../../../utils/money';
 import { mmss } from '../../../utils/time';
-import { toast } from '../../../utils/nav';
+import { push, toast } from '../../../utils/nav';
 import type { MerchantOrder, MerchantOrderTab } from '../../../models/index';
 
 interface OrderVM extends MerchantOrder {
   totalText: string;
-  lines: { name: string; qty: number }[];
+  /** 列表里的紧凑行：名称带规格 */
+  rows: { text: string; qty: number }[];
 }
 
 const TABS: { key: MerchantOrderTab; label: string }[] = [
@@ -55,7 +62,10 @@ Page({
       orders: res.list.map((o) => ({
         ...o,
         totalText: fen2yuan2(o.total),
-        lines: o.items,
+        rows: o.lines.map((l) => ({
+          text: l.specText ? `${l.name}（${l.specText}）` : l.name,
+          qty: l.qty,
+        })),
         countdownText: o.countdown ? `剩 ${mmss(o.countdown)} 未接自动提醒` : undefined,
       })),
     });
@@ -90,8 +100,8 @@ Page({
 
   async onAccept(e: WechatMiniprogram.TouchEvent) {
     const { id } = e.currentTarget.dataset as { id: string };
-    await acceptOrder(id);
-    toast('已接单，进入备餐', 'success');
+    const res = await acceptOrder(id);
+    toast(res.autoPrinted ? '已接单，后厨联已自动打印' : '已接单，进入备餐', 'success');
     this.load();
   },
 
@@ -120,11 +130,14 @@ Page({
 
   onDetail(e: WechatMiniprogram.TouchEvent) {
     const { id } = e.currentTarget.dataset as { id: string };
-    toast(`商家订单详情（62）在后续步骤实现 · ${id}`);
+    push(`/pages/merchant/order-detail/index?id=${id}`);
   },
 
-  onPrint() {
-    toast('小票打印（51）在后续步骤实现');
+  /** 列表内直接补打，不必进详情 */
+  async onPrint(e: WechatMiniprogram.TouchEvent) {
+    const { id } = e.currentTarget.dataset as { id: string };
+    const res = await printReceipt(id);
+    toast(res.message || (res.ok ? '已发送到打印机' : '打印失败'), res.ok ? 'success' : 'none');
   },
 
   onScan() {
