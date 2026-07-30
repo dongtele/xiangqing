@@ -1,0 +1,77 @@
+<view class="orders">
+  <view class="orders__header" style="padding-top:{{headPad}}px">
+    <text class="orders__title">我的订单</text>
+    <view class="orders__seg">
+      <view
+        wx:for="{{tabs}}"
+        wx:key="key"
+        class="orders__seg-item {{activeTab === item.key ? 'orders__seg-item--on' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onSwitchTab"
+      >{{item.label}}</view>
+    </view>
+  </view>
+
+  <scroll-view class="orders__body" scroll-y enhanced show-scrollbar="{{false}}">
+    <block wx:if="{{loading}}">
+      <view wx:for="{{[1,2]}}" wx:key="*this" class="card card--lg orders__card">
+        <view class="skeleton" style="width:50%;height:32rpx" />
+        <view class="skeleton" style="width:100%;height:104rpx" />
+        <view class="skeleton" style="width:60%;height:24rpx" />
+      </view>
+    </block>
+
+    <block wx:elif="{{orders.length}}">
+      <view wx:for="{{orders}}" wx:key="id" class="card card--lg orders__card">
+        <view class="orders__card-top" data-id="{{item.id}}" bindtap="onTapOrder">
+          <text class="orders__shop">{{item.shopName}} ›</text>
+          <text class="orders__status orders__status--{{item.statusTone}}">{{item.statusText}}</text>
+        </view>
+
+        <view class="orders__goods" data-id="{{item.id}}" bindtap="onTapOrder">
+          <image
+            wx:for="{{item.thumbs}}"
+            wx:for-item="thumb"
+            wx:key="*this"
+            class="orders__thumb"
+            src="{{thumb}}"
+            mode="aspectFill"
+            lazy-load
+          />
+          <view class="flex1" />
+          <view class="orders__amount">
+            <text class="orders__amount-num">¥{{item.payableText}}</text>
+            <text class="orders__amount-cnt">共{{item.count}}件</text>
+          </view>
+        </view>
+
+        <text class="orders__meta">{{item.metaText}}</text>
+
+        <view class="orders__actions">
+          <view
+            wx:for="{{item.actions}}"
+            wx:for-item="act"
+            wx:key="key"
+            class="pill tap {{act.style === 'primary' ? 'pill--primary' : (act.style === 'outline-primary' ? 'pill--outline-primary' : 'pill--outline')}}"
+            data-key="{{act.key}}"
+            data-id="{{item.id}}"
+            bindtap="onAction"
+          >{{act.text}}</view>
+        </view>
+      </view>
+
+      <text class="orders__foot">仅展示近90天订单</text>
+    </block>
+
+    <!-- 42 · 订单空状态 -->
+    <view wx:else class="orders__empty">
+      <view class="orders__empty-art">
+        <icon-svg name="order" size="72" color="#C9BEB4" weight="1.6" />
+      </view>
+      <text class="empty__text">还没有订单，先去点一份好吃的吧</text>
+      <view class="btn btn--primary orders__empty-btn tap" bindtap="onGoMenu">去点餐</view>
+    </view>
+  </scroll-view>
+
+  <tab-bar role="customer" active="orders" />
+</view>

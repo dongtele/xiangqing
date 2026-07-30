@@ -1,0 +1,108 @@
+<view class="od">
+  <!-- 状态头部 + 时间轴 -->
+  <view class="od__header" style="padding-top:{{headPad}}px">
+    <nav-bar theme="dark" fixed title="" />
+    <view class="col od__status">
+      <text class="od__status-text">{{order.statusText}}</text>
+      <text class="od__status-eta">{{order.etaText}}</text>
+    </view>
+
+    <view class="od__timeline">
+      <block wx:for="{{order.timeline}}" wx:key="label">
+        <view
+          wx:if="{{index > 0}}"
+          class="od__line {{item.done || item.current ? 'od__line--on' : ''}}"
+        />
+        <view class="od__node">
+          <view wx:if="{{item.done}}" class="od__dot od__dot--done">
+            <text class="od__dot-check">✓</text>
+          </view>
+          <view wx:elif="{{item.current}}" class="od__dot od__dot--current" />
+          <view wx:else class="od__dot od__dot--todo" />
+          <text class="od__node-label {{item.current ? 'od__node-label--current' : (item.done ? '' : 'od__node-label--todo')}}">{{item.label}}</text>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <scroll-view class="od__body" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 骑手 -->
+    <view wx:if="{{order.rider}}" class="card od__rider">
+      <view class="od__rider-avatar">{{order.rider.avatarText}}</view>
+      <view class="flex1 col od__rider-text">
+        <text class="od__rider-name">{{order.rider.name}} · {{order.rider.role}}</text>
+        <text class="od__rider-status">{{order.rider.statusText}}</text>
+      </view>
+      <view class="pill pill--outline-primary tap" bindtap="onCallRider">拨打电话</view>
+    </view>
+
+    <!-- 自提取餐码 -->
+    <view wx:if="{{order.pickupCode}}" class="card od__code">
+      <text class="od__code-label">取餐码</text>
+      <text class="od__code-num">{{order.pickupCode}}</text>
+    </view>
+
+    <!-- 商品与金额 -->
+    <view class="card">
+      <view wx:for="{{goods}}" wx:key="name" class="od__goods">
+        <image class="od__goods-img" src="{{item.image}}" mode="aspectFill" lazy-load />
+        <view class="flex1 col od__goods-info">
+          <text class="od__goods-name">{{item.name}}</text>
+          <text class="od__goods-spec">{{item.specText ? item.specText + ' · ' : ''}}x{{item.qty}}</text>
+        </view>
+        <text class="od__goods-amount">¥{{item.amountText}}</text>
+      </view>
+
+      <view class="hairline" />
+
+      <view class="od__fee">
+        <text class="od__fee-label">打包费 + 配送费</text>
+        <text class="od__fee-label">¥{{feeText}}</text>
+      </view>
+      <view wx:if="{{order.couponDiscount}}" class="od__fee">
+        <text class="od__fee-label">优惠券</text>
+        <text class="od__fee-cut">-¥{{couponText}}</text>
+      </view>
+      <view class="od__paid">
+        <text class="od__paid-label">实付</text>
+        <price-text fen="{{order.payable}}" size="36" color="#20160F" />
+      </view>
+    </view>
+
+    <!-- 订单信息 -->
+    <view class="card od__info">
+      <view class="od__info-row">
+        <text class="od__info-label">订单编号</text>
+        <view class="od__no">
+          <text class="od__info-value">{{order.orderNo}}</text>
+          <text class="od__copy tap" bindtap="onCopyNo">复制</text>
+        </view>
+      </view>
+      <view class="od__info-row">
+        <text class="od__info-label">下单时间</text>
+        <text class="od__info-value">{{order.createdAtText}}</text>
+      </view>
+      <view class="od__info-row">
+        <text class="od__info-label">支付方式</text>
+        <text class="od__info-value">{{order.payMethodText}}</text>
+      </view>
+      <view wx:if="{{order.address}}" class="od__info-row">
+        <text class="od__info-label">配送地址</text>
+        <text class="od__info-value">{{order.address.detail}}</text>
+      </view>
+      <view wx:if="{{order.remark}}" class="od__info-row">
+        <text class="od__info-label">备注</text>
+        <text class="od__info-value">{{order.remark}}</text>
+      </view>
+    </view>
+
+    <view class="od__foot" />
+  </scroll-view>
+
+  <!-- 底部操作 -->
+  <view class="od__bar">
+    <view wx:if="{{order.status === 'delivering'}}" class="od__btn tap" bindtap="onTrack">查看配送</view>
+    <view class="od__btn tap" bindtap="onContactShop">联系商家</view>
+    <view class="od__btn tap" bindtap="onAftersale">申请售后</view>
+  </view>
+</view>

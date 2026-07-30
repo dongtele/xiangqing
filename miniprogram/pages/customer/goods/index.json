@@ -1,0 +1,8 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "nav-bar": "../../../components/nav-bar/index",
+    "price-text": "../../../components/price/index",
+    "qty-stepper": "../../../components/qty-stepper/index"
+  }
+}

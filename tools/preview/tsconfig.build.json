@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "rootDir": "../../miniprogram",
+    "outDir": "../../.preview-build",
+    "sourceMap": false,
+    "declaration": false
+  },
+  "include": ["../../miniprogram/**/*.ts", "../../typings/**/*.d.ts"]
+}

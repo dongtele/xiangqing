@@ -1,0 +1,154 @@
+.orders {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.orders__header {
+  background: #ffffff;
+  padding-left: 32rpx;
+  padding-right: 32rpx;
+  padding-bottom: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+  flex-shrink: 0;
+}
+
+.orders__title {
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: 800;
+}
+
+.orders__seg {
+  background: #f1eee9;
+  border-radius: 26rpx;
+  padding: 8rpx;
+  display: flex;
+}
+
+.orders__seg-item {
+  flex: 1;
+  text-align: center;
+  font-size: 25rpx;
+  color: var(--c-text-weak);
+  padding: 14rpx 0;
+  border-radius: 20rpx;
+}
+
+.orders__seg-item--on {
+  background: #ffffff;
+  font-weight: 800;
+  color: var(--c-text);
+  box-shadow: 0 2rpx 8rpx rgba(32, 22, 15, 0.06);
+}
+
+.orders__body {
+  flex: 1;
+  min-height: 0;
+  padding: 28rpx 32rpx calc(200rpx + env(safe-area-inset-bottom));
+}
+
+.orders__card {
+  margin-bottom: 24rpx;
+  gap: 24rpx;
+}
+
+.orders__card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.orders__shop {
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.orders__status--primary {
+  font-size: 25rpx;
+  font-weight: 800;
+  color: var(--c-primary);
+}
+
+.orders__status--weak {
+  font-size: 25rpx;
+  font-weight: 700;
+  color: var(--c-text-weaker);
+}
+
+.orders__goods {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.orders__thumb {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 20rpx;
+  background: var(--c-img-placeholder);
+  flex-shrink: 0;
+}
+
+.orders__amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4rpx;
+}
+
+.orders__amount-num {
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.orders__amount-cnt {
+  font-size: 21rpx;
+  color: var(--c-text-weaker);
+}
+
+.orders__meta {
+  font-size: 22rpx;
+  color: var(--c-text-weaker);
+}
+
+.orders__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 20rpx;
+}
+
+.orders__foot {
+  display: block;
+  text-align: center;
+  font-size: 22rpx;
+  color: var(--c-text-placeholder);
+  padding-top: 16rpx;
+}
+
+/* 42 · 空状态 */
+.orders__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28rpx;
+  padding: 160rpx 64rpx 0;
+}
+
+.orders__empty-art {
+  width: 176rpx;
+  height: 176rpx;
+  border-radius: 50%;
+  background: #f1ece5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orders__empty-btn {
+  width: 320rpx;
+  margin-top: 8rpx;
+}

@@ -1,0 +1,14 @@
+{
+  "name": "weiweifang-miniprogram",
+  "version": "0.1.0",
+  "private": true,
+  "description": "美味坊点餐小程序（顾客端 / 商家端）",
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "preview": "node tools/preview/build.js"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^5.2.2",
+    "typescript": "^5.6.3"
+  }
+}

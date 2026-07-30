@@ -1,0 +1,32 @@
+{
+  "description": "美味坊点餐小程序 · 顾客端 + 商家端",
+  "appid": "touristappid",
+  "projectname": "weiweifang",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "miniprogram/",
+  "libVersion": "3.5.5",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "coverView": true,
+    "nodeModules": false,
+    "autoAudits": false,
+    "checkInvalidKey": true,
+    "uploadWithSourceMap": true,
+    "useCompilerPlugins": ["typescript"],
+    "ignoreUploadUnusedFiles": true,
+    "packNpmManually": false,
+    "packNpmRelationList": []
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        { "name": "顾客端 · 点餐菜单", "pathName": "pages/customer/menu/index", "query": "", "scene": null },
+        { "name": "商家端 · 工作台", "pathName": "pages/merchant/dashboard/index", "query": "", "scene": null }
+      ]
+    }
+  }
+}

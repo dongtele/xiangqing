@@ -1,0 +1,6 @@
+<view
+  class="tg tg--{{size}} {{on ? 'tg--on' : ''}} {{disabled ? 'tg--disabled' : ''}}"
+  bindtap="onTap"
+>
+  <view class="tg__knob" />
+</view>

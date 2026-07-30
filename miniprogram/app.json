@@ -1,0 +1,29 @@
+{
+  "entryPagePath": "pages/login/index",
+  "pages": [
+    "pages/login/index",
+    "pages/customer/menu/index",
+    "pages/customer/orders/index",
+    "pages/customer/profile/index",
+    "pages/customer/goods/index",
+    "pages/customer/checkout/index",
+    "pages/customer/pay-method/index",
+    "pages/customer/pay/index",
+    "pages/customer/pay-result/index",
+    "pages/customer/order-detail/index",
+    "pages/merchant/dashboard/index",
+    "pages/merchant/orders/index",
+    "pages/merchant/goods/index",
+    "pages/merchant/shop/index"
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#F6F5F2",
+    "backgroundTextStyle": "dark",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "美味坊"
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

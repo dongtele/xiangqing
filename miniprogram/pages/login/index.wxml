@@ -1,0 +1,36 @@
+<view class="login">
+  <view class="login__main" style="padding-top:{{topPad}}px">
+    <view class="login__logo">
+      <text class="login__logo-text">味</text>
+    </view>
+    <text class="login__brand">美味坊小店</text>
+    <text class="login__hint">申请获取以下权限用于账户服务</text>
+
+    <view class="login__perms">
+      <view wx:for="{{permissions}}" wx:key="title" class="login__perm">
+        <view class="login__dot" />
+        <view class="login__perm-text">
+          <text class="login__perm-title">{{item.title}}</text>
+          <text class="login__perm-sub">{{item.sub}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="login__actions">
+      <button
+        class="login__btn login__btn--wechat"
+        open-type="getPhoneNumber"
+        bindgetphonenumber="onGetPhone"
+        loading="{{loading}}"
+      >手机号快捷登录</button>
+      <view class="login__btn login__btn--ghost tap" bindtap="onSkip">暂不登录，先逛逛</view>
+    </view>
+  </view>
+
+  <view class="login__footer">
+    <text>登录即代表同意 </text>
+    <text class="login__link" bindtap="onAgreement">《用户服务协议》</text>
+    <text>及</text>
+    <text class="login__link" bindtap="onAgreement">《隐私政策》</text>
+  </view>
+</view>

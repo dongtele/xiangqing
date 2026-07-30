@@ -1,0 +1,42 @@
+.tg {
+  border-radius: 999rpx;
+  background: #d9d2c9;
+  padding: 4rpx;
+  display: flex;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  transition: background 0.18s ease;
+}
+
+.tg--md {
+  width: 88rpx;
+  height: 50rpx;
+}
+
+.tg--sm {
+  width: 80rpx;
+  height: 46rpx;
+}
+
+.tg--on {
+  background: var(--c-success-2);
+  justify-content: flex-end;
+}
+
+.tg--disabled {
+  opacity: 0.5;
+}
+
+.tg__knob {
+  width: 42rpx;
+  height: 42rpx;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.15);
+  transition: transform 0.18s ease;
+}
+
+.tg--sm .tg__knob {
+  width: 38rpx;
+  height: 38rpx;
+}

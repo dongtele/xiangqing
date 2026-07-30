@@ -1,0 +1,71 @@
+<view class="ms">
+  <view class="ms__header" style="padding-top:{{headPad}}px">
+    <image class="ms__logo" src="{{shop.logo}}" mode="aspectFill" />
+    <view class="flex1 col ms__id">
+      <text class="ms__name">{{shop.name}}</text>
+      <view class="ms__badges">
+        <text class="ms__badge">★ {{shop.score}}</text>
+        <text wx:if="{{shop.certified}}" class="ms__badge">✓ 企业资质已认证</text>
+      </view>
+    </view>
+    <text class="ms__arrow" data-key="info" bindtap="onTapCell">›</text>
+  </view>
+
+  <scroll-view class="ms__body" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="card card--lg card--flat ms__group">
+      <view class="cell">
+        <text class="cell__label">营业状态</text>
+        <view class="cell__value">
+          <text class="{{shop.open ? 'ms__on' : ''}}">{{shop.open ? '营业中' : '休息中'}}</text>
+          <toggle on="{{shop.open}}" bindchange="onToggleOpen" />
+        </view>
+      </view>
+      <view class="cell tap" data-key="hours" bindtap="onTapCell">
+        <text class="cell__label">营业时间</text>
+        <view class="cell__value">
+          <text>{{shop.businessHours}}</text>
+          <text class="chevron">›</text>
+        </view>
+      </view>
+      <view class="cell tap" data-key="delivery" bindtap="onTapCell">
+        <text class="cell__label">配送范围与运费</text>
+        <view class="cell__value">
+          <text>{{shop.deliveryText}}</text>
+          <text class="chevron">›</text>
+        </view>
+      </view>
+      <view class="cell tap" data-key="activity" bindtap="onTapCell">
+        <text class="cell__label">优惠活动</text>
+        <view class="cell__value">
+          <text class="ms__primary">{{shop.activityText}}</text>
+          <text class="chevron">›</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card card--lg card--flat ms__group">
+      <view class="cell tap" data-key="license" bindtap="onTapCell">
+        <text class="cell__label">资质证照</text>
+        <view class="cell__value">
+          <text class="ms__on">✓ 已认证</text>
+          <text class="chevron">›</text>
+        </view>
+      </view>
+      <view class="cell tap" data-key="staff" bindtap="onTapCell">
+        <text class="cell__label">员工账号</text>
+        <view class="cell__value">
+          <text>{{shop.staffCount}}人</text>
+          <text class="chevron">›</text>
+        </view>
+      </view>
+      <view class="cell">
+        <text class="cell__label">新订单提醒</text>
+        <toggle on="{{shop.newOrderAlert}}" bindchange="onToggleAlert" />
+      </view>
+    </view>
+
+    <view class="ms__switch tap" bindtap="onSwitchToCustomer">切换到顾客视角</view>
+  </scroll-view>
+
+  <tab-bar role="merchant" active="shop" />
+</view>

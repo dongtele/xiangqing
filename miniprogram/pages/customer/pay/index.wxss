@@ -1,0 +1,149 @@
+.pay {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pay__body {
+  flex: 1;
+  min-height: 0;
+  padding: 20rpx 32rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.pay__amount {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 20rpx 0;
+}
+
+.pay__amount-label {
+  font-size: 24rpx;
+  color: var(--c-text-weak);
+}
+
+.pay__amount-num {
+  font-size: 68rpx;
+  font-weight: 800;
+  color: var(--c-primary-deep);
+  letter-spacing: -2rpx;
+}
+
+.pay__amount-left {
+  font-size: 23rpx;
+  color: var(--c-text-weaker);
+}
+
+.pay__method {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.pay__method-text {
+  gap: 4rpx;
+}
+
+.pay__method-name {
+  font-size: 27rpx;
+  font-weight: 700;
+}
+
+.pay__method-desc {
+  font-size: 21rpx;
+  color: var(--c-text-weaker);
+}
+
+.pay__method-flag,
+.pay__method-value {
+  font-size: 25rpx;
+  color: var(--c-text-weak);
+  font-weight: 600;
+}
+
+.pay__loading {
+  text-align: center;
+  padding-top: 20rpx;
+}
+
+.pay__loading-text {
+  font-size: 24rpx;
+  color: var(--c-text-weaker);
+}
+
+/* 失败弹窗 */
+.pay__mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(32, 22, 15, 0.45);
+  z-index: 60;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.pay__mask--on {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pay__dialog {
+  position: fixed;
+  left: 48rpx;
+  right: 48rpx;
+  top: 52%;
+  transform: translateY(-50%) scale(0.94);
+  z-index: 61;
+  background: #fff;
+  border-radius: 40rpx;
+  padding: 52rpx 44rpx 36rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.pay__dialog--on {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+  pointer-events: auto;
+}
+
+.pay__dialog-icon {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 50%;
+  background: var(--c-primary-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pay__dialog-title {
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+.pay__dialog-desc {
+  font-size: 25rpx;
+  color: var(--c-text-weak);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.pay__dialog-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding-top: 16rpx;
+}

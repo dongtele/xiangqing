@@ -1,0 +1,60 @@
+<view class="gd">
+  <!-- 大图 + 返回 -->
+  <view class="gd__hero">
+    <image class="gd__hero-img" src="{{goods.image}}" mode="aspectFill" bindtap="onPreview" />
+    <nav-bar theme="dark" fixed title="" />
+    <text wx:if="{{goods.rankTag}}" class="gd__hero-tag">热销 {{goods.rankTag}} · 月售{{goods.monthSold}}</text>
+  </view>
+
+  <!-- 详情 -->
+  <scroll-view class="gd__sheet" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="gd__head">
+      <view class="gd__title-row">
+        <text class="gd__name">{{goods.name}}</text>
+        <price-text fen="{{goods.price}}" size="48" from="{{groups.length > 0}}" />
+      </view>
+      <text class="gd__praise">好评率 {{goods.praiseRate}}% · 回头客最爱</text>
+      <text class="gd__desc">{{goods.desc}}</text>
+    </view>
+
+    <view wx:for="{{groups}}" wx:for-item="group" wx:key="id" class="gd__group">
+      <view class="gd__group-title">
+        <text>{{group.name}}</text>
+        <text wx:if="{{group.required}}" class="gd__req">必选</text>
+        <text wx:else class="gd__opt">可多选</text>
+      </view>
+      <view class="gd__options">
+        <view
+          wx:for="{{group.options}}"
+          wx:key="id"
+          class="gd__option {{item.selected ? 'gd__option--on' : ''}}"
+          data-gid="{{group.id}}"
+          data-oid="{{item.id}}"
+          data-multiple="{{group.multiple}}"
+          bindtap="onTapOption"
+        >{{item.label}}</view>
+      </view>
+    </view>
+
+    <view class="gd__sheet-foot" />
+  </scroll-view>
+
+  <!-- 底部操作条 -->
+  <view class="gd__bar">
+    <view class="gd__bar-left">
+      <text wx:if="{{selectedText}}" class="gd__selected">已选：{{selectedText}}</text>
+      <price-text fen="{{unitPrice}}" size="44" />
+    </view>
+    <qty-stepper
+      qty="{{qty}}"
+      always-minus
+      plus-size="56"
+      minus-size="56"
+      font-size="30"
+      tone="soft"
+      bindplus="onPlus"
+      bindminus="onMinus"
+    />
+    <view class="gd__add tap" bindtap="onAddToCart">加入购物车</view>
+  </view>
+</view>

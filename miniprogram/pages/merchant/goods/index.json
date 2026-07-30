@@ -1,0 +1,9 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "icon-svg": "../../../components/icon/index",
+    "price-text": "../../../components/price/index",
+    "toggle": "../../../components/toggle/index",
+    "tab-bar": "../../../components/tab-bar/index"
+  }
+}

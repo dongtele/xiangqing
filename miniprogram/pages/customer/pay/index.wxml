@@ -1,0 +1,49 @@
+<view class="pay">
+  <nav-bar title="订单支付" />
+
+  <view class="pay__body">
+    <view class="card">
+      <view class="pay__amount">
+        <text class="pay__amount-label">待支付</text>
+        <text class="pay__amount-num">￥{{payableText}}</text>
+        <text class="pay__amount-left">剩余支付时间 {{leftText}}</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="pay__method">
+        <view class="col pay__method-text">
+          <text class="pay__method-name">微信支付</text>
+          <text class="pay__method-desc">零钱 / 银行卡</text>
+        </view>
+        <text class="pay__method-flag">● 推荐</text>
+      </view>
+      <view class="hairline" />
+      <view class="pay__method">
+        <view class="col pay__method-text">
+          <text class="pay__method-name">余额支付</text>
+          <text class="pay__method-desc">余额不足，需组合支付</text>
+        </view>
+        <text class="pay__method-value">￥12.40</text>
+      </view>
+    </view>
+
+    <view wx:if="{{paying}}" class="pay__loading">
+      <text class="pay__loading-text">正在唤起微信支付…</text>
+    </view>
+  </view>
+
+  <!-- 支付失败兜底 -->
+  <view class="pay__mask {{failed ? 'pay__mask--on' : ''}}" />
+  <view class="pay__dialog {{failed ? 'pay__dialog--on' : ''}}">
+    <view class="pay__dialog-icon">
+      <icon-svg name="warn" size="52" color="#FF3800" weight="2" />
+    </view>
+    <text class="pay__dialog-title">支付未完成</text>
+    <text class="pay__dialog-desc">订单已为你保留 15 分钟，超时后库存将释放</text>
+    <view class="pay__dialog-actions">
+      <view class="btn btn--primary tap" bindtap="onRetry">重新支付</view>
+      <view class="btn btn--ghost tap" bindtap="onAbandon">放弃订单</view>
+    </view>
+  </view>
+</view>

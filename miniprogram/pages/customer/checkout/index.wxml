@@ -1,0 +1,101 @@
+<view class="co">
+  <nav-bar title="确认订单" />
+
+  <scroll-view class="co__body" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 配送方式 -->
+    <view class="co__seg">
+      <view
+        class="co__seg-item {{deliveryType === 'delivery' ? 'co__seg-item--on' : ''}}"
+        data-type="delivery"
+        bindtap="onSwitchDelivery"
+      >外卖配送</view>
+      <view
+        class="co__seg-item {{deliveryType === 'pickup' ? 'co__seg-item--on' : ''}}"
+        data-type="pickup"
+        bindtap="onSwitchDelivery"
+      >到店自取</view>
+    </view>
+
+    <!-- 地址 / 自提门店 + 时间 -->
+    <view class="card">
+      <view class="co__addr tap" bindtap="onTapAddress">
+        <view class="co__addr-icon">
+          <icon-svg name="pin" size="30" color="#FF4A17" weight="2" />
+        </view>
+        <view class="flex1 col co__addr-text">
+          <text class="co__addr-detail">{{deliveryType === 'delivery' ? address.detail : shop.name}}</text>
+          <text class="co__addr-sub">
+            {{deliveryType === 'delivery' ? address.receiver + '（' + address.gender + '）' + address.phoneMask : '自取门店 · ' + shop.distanceText}}
+          </text>
+        </view>
+        <text class="chevron">›</text>
+      </view>
+      <view class="hairline" />
+      <view class="row--between tap" bindtap="onTapTime">
+        <text class="co__row-label">{{deliveryType === 'delivery' ? '立即送出' : '尽快取餐'}}</text>
+        <text class="co__row-primary">{{trial.etaText}} ›</text>
+      </view>
+    </view>
+
+    <!-- 商品与金额 -->
+    <view class="card">
+      <text class="co__shop">{{shop.name}}</text>
+
+      <view wx:for="{{rows}}" wx:key="key" class="co__item">
+        <image class="co__item-img" src="{{item.image}}" mode="aspectFill" lazy-load />
+        <view class="flex1 col co__item-info">
+          <text class="co__item-name">{{item.name}}</text>
+          <text wx:if="{{item.specText}}" class="co__item-spec">{{item.specText}}</text>
+        </view>
+        <view class="co__item-right">
+          <text class="co__item-amount">¥{{item.amountText}}</text>
+          <text class="co__item-qty">x{{item.qty}}</text>
+        </view>
+      </view>
+
+      <view class="hairline" />
+
+      <view class="co__fee">
+        <text>打包费</text>
+        <text>¥{{packFeeText}}</text>
+      </view>
+      <view wx:if="{{deliveryType === 'delivery'}}" class="co__fee">
+        <text>配送费</text>
+        <text>¥{{deliveryFeeText}}</text>
+      </view>
+
+      <view class="row--between tap" bindtap="onTapCoupon">
+        <view class="co__coupon">
+          <text class="co__coupon-tag">券</text>
+          <text>{{trial.couponName}}</text>
+        </view>
+        <text class="co__coupon-cut">{{trial.couponDiscount ? '-¥' + couponText : '去选择'}} ›</text>
+      </view>
+
+      <view class="co__subtotal">
+        <text class="co__subtotal-label">共{{trial.count}}件 · 小计</text>
+        <price-text fen="{{trial.payable}}" size="34" color="#20160F" />
+      </view>
+    </view>
+
+    <!-- 备注 -->
+    <view class="card co__remark tap" bindtap="onTapRemark">
+      <text class="co__row-label">备注</text>
+      <text class="co__remark-ph">{{remark || '口味偏好、餐具份数'}} ›</text>
+    </view>
+
+    <view class="co__foot" />
+  </scroll-view>
+
+  <!-- 底部合计 + 支付 -->
+  <view class="co__bar">
+    <view class="col">
+      <view class="co__total">
+        <text class="co__total-label">合计</text>
+        <price-text fen="{{trial.payable}}" size="48" />
+      </view>
+      <text wx:if="{{trial.discountTotal}}" class="co__saved">已优惠 ¥{{discountText}}</text>
+    </view>
+    <view class="co__pay tap {{submitting ? 'btn--disabled' : ''}}" bindtap="onSubmit">微信支付</view>
+  </view>
+</view>

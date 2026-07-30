@@ -1,0 +1,71 @@
+/**
+ * Design Tokens · 美味坊
+ * 取值全部来自交付文档「Design Tokens」，是最终值，勿随意改动。
+ * 尺寸换算：设计稿 375px 画框 → 1 设计 px = 2rpx。
+ */
+page,
+.dt-scope {
+  /* 品牌 / 主色 */
+  --c-primary: #ff4a17;
+  --c-primary-deep: #ff3800;
+  --grad-main: linear-gradient(135deg, #ff7b1c, #ff3d00);
+  --grad-header: linear-gradient(165deg, #ff7b1c 0%, #ff3d00 90%);
+  --c-primary-bg: #fff1e9;
+  --c-primary-bg-weak: #fff9f5;
+  --c-primary-line: #ffd9c0;
+  --c-primary-line-deep: #ffc4ac;
+  --c-primary-text-deep: #8a4b25;
+
+  /* 文字 */
+  --c-text: #20160f;
+  --c-text-2: #5c5248;
+  --c-text-3: #6b6157;
+  --c-text-weak: #8a8078;
+  --c-text-weaker: #a39890;
+  --c-text-placeholder: #b0a69d;
+  --c-text-placeholder-2: #c9beb4;
+
+  /* 背景 / 线条 */
+  --c-bg: #f6f5f2;
+  --c-canvas: #efece6;
+  --c-card: #ffffff;
+  --c-fill: #f7f4ef;
+  --c-fill-2: #f1ece5;
+  --c-fill-3: #f1eee9;
+  --c-img-placeholder: #f0eae3;
+  --c-line: #f4efe9;
+  --c-line-2: #ede7e0;
+  --c-line-3: #e9e2d9;
+  --c-line-4: #e4ded6;
+  --c-line-5: #d8cfc5;
+  --c-border-btn: #e5ded6;
+
+  /* 语义色 */
+  --c-success: #07c160;
+  --c-success-2: #00b578;
+  --c-success-deep: #00915f;
+  --c-success-bg: #e8f8ef;
+  --c-success-bg-2: #e6f9f0;
+  --c-warn: #ffb020;
+  --c-warn-bg: #fff7e8;
+  --c-warn-text: #c08a2d;
+  --c-warn-text-2: #a0752b;
+  --c-danger: #d14343;
+  --c-danger-bg: #fbecec;
+  --c-gold: #ffc85c;
+  --grad-dark: linear-gradient(135deg, #3a2a1e, #20160f);
+
+  /* 阴影 */
+  --sh-card: 0 8rpx 40rpx rgba(32, 22, 15, 0.05);
+  --sh-round-btn: 0 4rpx 16rpx rgba(32, 22, 15, 0.08);
+  --sh-primary-btn: 0 16rpx 40rpx rgba(255, 74, 23, 0.28);
+  --sh-bottom-bar: 0 -12rpx 40rpx rgba(32, 22, 15, 0.06);
+
+  /* 圆角 */
+  --r-tag: 12rpx;
+  --r-sm: 20rpx;
+  --r-md: 24rpx;
+  --r-card: 32rpx;
+  --r-card-lg: 36rpx;
+  --r-btn: 48rpx;
+}

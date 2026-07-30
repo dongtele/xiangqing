@@ -1,0 +1,138 @@
+<view class="menu">
+  <!-- 店铺头部 -->
+  <view class="menu__header" style="padding-top:{{headPad}}px">
+    <view class="menu__shop tap" bindtap="onShopHome">
+      <image class="menu__logo" src="{{shop.logo}}" mode="aspectFill" />
+      <view class="menu__shop-info">
+        <view class="menu__shop-name">
+          <text>{{shop.name}}</text>
+          <text class="menu__shop-arrow">›</text>
+        </view>
+        <text class="menu__shop-meta">★ {{shop.score}} · {{shop.monthSoldText}} · {{shop.etaText}} · {{shop.distanceText}}</text>
+      </view>
+    </view>
+
+    <view class="menu__search tap" bindtap="onSearch">
+      <icon-svg name="search" size="28" color="#B0A69D" weight="2.4" />
+      <text class="menu__search-ph">搜索店内美食</text>
+    </view>
+
+    <view class="menu__promo">
+      <text class="menu__promo-tag">{{shop.promoTag}}</text>
+      <text class="menu__promo-text ellipsis">{{shop.promoText}}</text>
+    </view>
+  </view>
+
+  <!-- 分类 + 商品 -->
+  <view class="menu__content">
+    <scroll-view class="menu__rail" scroll-y enhanced show-scrollbar="{{false}}">
+      <view
+        wx:for="{{groups}}"
+        wx:key="id"
+        class="menu__cat {{activeCatId === item.id ? 'menu__cat--on' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onTapCategory"
+      >
+        <view wx:if="{{activeCatId === item.id}}" class="menu__cat-bar" />
+        <text>{{item.name}}</text>
+      </view>
+    </scroll-view>
+
+    <scroll-view
+      class="menu__list"
+      scroll-y
+      enhanced
+      show-scrollbar="{{false}}"
+      scroll-into-view="{{scrollIntoId}}"
+      scroll-with-animation
+      bindscroll="onListScroll"
+    >
+      <block wx:if="{{loading}}">
+        <view class="menu__group">
+          <view class="skeleton" style="width:160rpx;height:32rpx" />
+          <view wx:for="{{[1,2,3,4]}}" wx:key="*this" class="menu__row">
+            <view class="skeleton" style="width:192rpx;height:192rpx;border-radius:28rpx" />
+            <view class="menu__row-main">
+              <view class="skeleton" style="width:70%;height:30rpx" />
+              <view class="skeleton" style="width:40%;height:24rpx" />
+            </view>
+          </view>
+        </view>
+      </block>
+
+      <view
+        wx:for="{{groups}}"
+        wx:for-item="group"
+        wx:key="id"
+        id="g-{{group.id}}"
+        class="menu__group js-group"
+      >
+        <text class="menu__group-title">{{group.name}}</text>
+
+        <view wx:for="{{group.goods}}" wx:key="id" class="menu__row">
+          <view class="menu__thumb-wrap" data-id="{{item.id}}" bindtap="onTapGoods">
+            <image class="menu__thumb" src="{{item.image}}" mode="aspectFill" lazy-load />
+            <text wx:if="{{item.rankTag}}" class="menu__rank">{{item.rankTag}}</text>
+          </view>
+
+          <view class="menu__row-main">
+            <view class="menu__row-top" data-id="{{item.id}}" bindtap="onTapGoods">
+              <text class="menu__name">{{item.name}}</text>
+              <text class="menu__meta">月售{{item.monthSold}} · 好评{{item.praiseRate}}%</text>
+            </view>
+            <view class="menu__row-bottom">
+              <price-text
+                fen="{{item.price}}"
+                size="38"
+                from="{{item.priceFrom}}"
+                unit="{{item.unit}}"
+              />
+              <view
+                wx:if="{{item.hasSpec}}"
+                class="menu__spec-btn tap-sm"
+                data-id="{{item.id}}"
+                bindtap="onTapGoods"
+              >选规格</view>
+              <qty-stepper
+                wx:else
+                qty="{{item.qty}}"
+                plus-size="52"
+                minus-size="48"
+                data-id="{{item.id}}"
+                bindplus="onPlus"
+                bindminus="onMinus"
+              />
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="menu__list-foot" />
+    </scroll-view>
+  </view>
+
+  <cart-bar
+    count="{{cartCount}}"
+    total="{{cartTotal}}"
+    promo-text="{{barPromo}}"
+    bindopencart="onOpenCart"
+    bindcheckout="onCheckout"
+  />
+
+  <cart-sheet
+    show="{{sheetShow}}"
+    items="{{cartRows}}"
+    count="{{cartCount}}"
+    total="{{cartTotal}}"
+    promo-text="{{sheetPromo}}"
+    promo-note="{{sheetPromoNote}}"
+    footer-note="{{sheetFooterNote}}"
+    bindclose="onCloseCart"
+    bindclear="onClearCart"
+    bindplus="onSheetPlus"
+    bindminus="onSheetMinus"
+    bindcheckout="onCheckout"
+  />
+
+  <tab-bar role="customer" active="menu" />
+</view>

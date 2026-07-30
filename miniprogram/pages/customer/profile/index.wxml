@@ -1,0 +1,70 @@
+<view class="profile">
+  <view class="profile__header" style="padding-top:{{headPad}}px">
+    <view class="profile__avatar">
+      <image wx:if="{{profile.avatar}}" class="profile__avatar-img" src="{{profile.avatar}}" mode="aspectFill" />
+      <text wx:else>{{avatarText}}</text>
+    </view>
+    <view class="profile__id">
+      <text class="profile__name">{{profile ? profile.nickname : '未登录'}}</text>
+      <text class="profile__phone">{{profile ? profile.phoneMask : '登录后可下单与查看订单'}}</text>
+    </view>
+  </view>
+
+  <scroll-view class="profile__body" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 订单快捷入口 -->
+    <view class="card card--lg profile__orders">
+      <view class="row--between">
+        <text class="profile__card-title">我的订单</text>
+        <text class="profile__card-more tap" bindtap="onAllOrders">全部 ›</text>
+      </view>
+      <view class="profile__quick">
+        <view
+          wx:for="{{quick}}"
+          wx:key="key"
+          class="profile__quick-item tap-sm"
+          data-tab="{{item.tab}}"
+          bindtap="onTapOrders"
+        >
+          <view class="profile__quick-icon">
+            <icon-svg name="{{item.icon}}" size="36" color="#FF4A17" weight="1.9" />
+          </view>
+          <text class="profile__quick-label">{{item.label}}</text>
+          <text wx:if="{{item.badge}}" class="profile__quick-badge">{{item.badge}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 角色分流 -->
+    <view class="profile__merchant tap" bindtap="onEnterMerchant">
+      <view class="profile__merchant-icon">
+        <icon-svg name="shop" size="40" color="#FF4A17" />
+      </view>
+      <view class="flex1 col profile__merchant-text">
+        <text class="profile__merchant-title">{{isMerchant ? '商家管理' : '成为商家 · 0元入驻'}}</text>
+        <text class="profile__merchant-sub">{{isMerchant ? '已认证商家 · 进入工作台处理订单' : '提交资质，最快 1 个工作日开通'}}</text>
+      </view>
+      <text class="pill pill--primary">{{isMerchant ? '进入' : '去入驻'}}</text>
+    </view>
+
+    <!-- 功能列表 -->
+    <view class="card card--lg card--flat">
+      <view
+        wx:for="{{cells}}"
+        wx:key="key"
+        class="cell tap"
+        data-key="{{item.key}}"
+        bindtap="onTapCell"
+      >
+        <text class="cell__label">{{item.label}}</text>
+        <view class="cell__value">
+          <text wx:if="{{item.value}}" class="{{item.primary ? 'profile__cell-primary' : ''}}">{{item.value}}</text>
+          <text class="chevron">›</text>
+        </view>
+      </view>
+    </view>
+
+    <text class="profile__foot">{{isMerchant ? '商家账号可随时在工作台与顾客视角间切换' : '入驻后此处变为「商家管理」入口'}}</text>
+  </scroll-view>
+
+  <tab-bar role="customer" active="profile" />
+</view>

@@ -1,0 +1,78 @@
+:host {
+  display: block;
+  flex-shrink: 0;
+}
+
+.nav {
+  position: relative;
+  z-index: 40;
+  flex-shrink: 0;
+}
+
+.nav--fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.nav__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 32rpx;
+}
+
+.nav__title {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: var(--c-text);
+}
+
+.nav__back {
+  position: absolute;
+  left: 32rpx;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: var(--sh-round-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav__back-glyph {
+  font-size: 38rpx;
+  line-height: 1;
+  color: var(--c-text);
+  margin-top: -4rpx;
+  margin-left: -2rpx;
+}
+
+.nav__right {
+  position: absolute;
+  right: 32rpx;
+  font-size: 25rpx;
+  font-weight: 800;
+  color: var(--c-primary);
+}
+
+/* 深色（渐变 / 大图）头部 */
+.nav--dark .nav__title {
+  color: #ffffff;
+}
+
+.nav--dark .nav__back {
+  background: rgba(0, 0, 0, 0.38);
+  box-shadow: none;
+}
+
+.nav--dark .nav__back-glyph {
+  color: #ffffff;
+}
+
+.nav--dark .nav__right {
+  color: #ffffff;
+}

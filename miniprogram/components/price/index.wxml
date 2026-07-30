@@ -1,0 +1,6 @@
+<view class="price" style="color:{{color}}">
+  <text class="price__sym" style="font-size:{{symSize}}rpx">¥</text>
+  <text class="price__num" style="font-size:{{size}}rpx">{{text}}</text>
+  <text wx:if="{{unit}}" class="price__suffix" style="font-size:{{suffixSize}}rpx">{{unit}}</text>
+  <text wx:if="{{from}}" class="price__suffix" style="font-size:{{suffixSize}}rpx"> 起</text>
+</view>
