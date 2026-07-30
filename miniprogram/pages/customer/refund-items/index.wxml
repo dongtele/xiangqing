@@ -1,0 +1,48 @@
+<view class="ri">
+  <nav-bar title="选择退款商品" />
+
+  <scroll-view class="ri__body" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="ri__tip">{{partialTip}}</view>
+
+    <view
+      wx:for="{{items}}"
+      wx:key="key"
+      class="ri__item {{item.checked ? 'ri__item--on' : ''}} tap"
+      data-key="{{item.key}}"
+      bindtap="onToggle"
+    >
+      <view class="ri__check {{item.checked ? 'ri__check--on' : ''}}">
+        <icon-svg wx:if="{{item.checked}}" name="check" size="22" color="#FFFFFF" weight="3.4" />
+      </view>
+      <image class="ri__img" src="{{item.image}}" mode="aspectFill" lazy-load />
+      <view class="flex1 col ri__info">
+        <text class="ri__name">{{item.name}}</text>
+        <text class="ri__spec">{{item.specText || '×' + item.qty}}</text>
+      </view>
+      <text class="ri__amount">￥{{item.amountText}}</text>
+    </view>
+
+    <view class="card">
+      <view class="row--between">
+        <text class="cell__label">商品金额</text>
+        <text class="cell__value">￥{{itemsAmountText}}</text>
+      </view>
+      <view class="hairline" />
+      <view class="row--between">
+        <text class="cell__label">优惠分摊</text>
+        <text class="cell__value">-￥{{couponShareText}}</text>
+      </view>
+      <view class="hairline" />
+      <view class="row--between">
+        <text class="ri__total-label">预计退款</text>
+        <text class="ri__total">￥{{refundText}}</text>
+      </view>
+    </view>
+
+    <view class="ri__foot" />
+  </scroll-view>
+
+  <view class="ri__bar">
+    <view class="btn btn--primary tap" bindtap="onNext">下一步 · 填写原因</view>
+  </view>
+</view>

@@ -76,6 +76,9 @@ Page({
       case 'comment':
         toast('发布评价（55）在后续步骤实现');
         break;
+      case 'aftersale':
+        push(`/pages/customer/order-detail/index?id=${id}`);
+        break;
       default:
         break;
     }

@@ -1,0 +1,15 @@
+<view class="vt">
+  <view wx:for="{{nodes}}" wx:key="title" class="vt__row">
+    <view class="vt__rail">
+      <view class="vt__dot {{item.done ? 'vt__dot--on' : ''}}" />
+      <view
+        wx:if="{{index < nodes.length - 1}}"
+        class="vt__line {{item.done && nodes[index + 1].done ? 'vt__line--on' : ''}}"
+      />
+    </view>
+    <view class="vt__text {{index < nodes.length - 1 ? 'vt__text--gap' : ''}}">
+      <text class="vt__title {{item.done ? '' : 'vt__title--todo'}}">{{item.title}}</text>
+      <text class="vt__sub">{{item.sub}}</text>
+    </view>
+  </view>
+</view>

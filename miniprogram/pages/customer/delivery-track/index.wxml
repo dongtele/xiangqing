@@ -1,0 +1,61 @@
+<view class="dt">
+  <!-- 示意底图：接入腾讯位置服务后替换为 <map> 组件 -->
+  <view class="dt__map">
+    <view class="dt__grid">
+      <view class="dt__h" style="top:18%" />
+      <view class="dt__h" style="top:38%" />
+      <view class="dt__h" style="top:58%" />
+      <view class="dt__h" style="top:78%" />
+      <view class="dt__v" style="left:22%" />
+      <view class="dt__v" style="left:52%" />
+      <view class="dt__v" style="left:80%" />
+    </view>
+
+    <view class="dt__route" style="background-image:{{routeBg}}" />
+
+    <view
+      class="dt__me"
+      style="left:{{track.userPoint.left}}%;top:{{track.userPoint.top}}%"
+    >
+      <view class="dt__me-dot" />
+    </view>
+    <view
+      class="dt__shop"
+      style="left:{{track.shopPoint.left}}%;top:{{track.shopPoint.top}}%"
+    />
+  </view>
+
+  <view class="dt__back tap" style="top:{{backTop}}px" bindtap="onBack">
+    <text class="dt__back-glyph">‹</text>
+  </view>
+
+  <!-- 底部信息卡 -->
+  <view class="dt__panel">
+    <view class="col dt__eta">
+      <text class="dt__eta-title">{{track.etaText}}</text>
+      <text class="dt__eta-sub">{{track.subText}}</text>
+    </view>
+
+    <view class="dt__bar">
+      <view class="dt__bar-fill" style="width:{{track.percent}}%" />
+    </view>
+    <view class="dt__stages">
+      <text
+        wx:for="{{track.stages}}"
+        wx:key="*this"
+        class="dt__stage {{index === track.activeStage ? 'dt__stage--on' : ''}}"
+      >{{item}}</text>
+    </view>
+
+    <view class="dt__rider">
+      <view class="dt__rider-avatar">{{track.rider.avatarText}}</view>
+      <view class="flex1 col dt__rider-text">
+        <text class="dt__rider-name">{{track.rider.titleText}}</text>
+        <text class="dt__rider-credit">{{track.rider.creditText}}</text>
+      </view>
+      <view class="dt__call tap" bindtap="onCall">
+        <icon-svg name="phone" size="34" color="#FFFFFF" weight="2" />
+      </view>
+    </view>
+  </view>
+</view>

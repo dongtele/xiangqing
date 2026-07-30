@@ -1,0 +1,63 @@
+<view class="rr">
+  <nav-bar title="退款申请" />
+
+  <scroll-view class="rr__body" scroll-y enhanced show-scrollbar="{{false}}">
+    <view wx:if="{{!handled}}" class="rr__countdown">{{autoAgreeText}}</view>
+    <view wx:else class="rr__handled">本单已处理：{{refund.statusText}}</view>
+
+    <view class="card">
+      <view class="row--between">
+        <text class="cell__label">订单编号</text>
+        <text class="cell__value">{{refund.orderNo}}</text>
+      </view>
+      <view class="hairline" />
+      <view class="row--between">
+        <text class="cell__label">下单时间</text>
+        <text class="cell__value">{{refund.placedAtText}}</text>
+      </view>
+      <view class="hairline" />
+      <view class="row--between">
+        <text class="cell__label">申请金额</text>
+        <text class="cell__value">￥{{amountText}}</text>
+      </view>
+      <view class="hairline" />
+      <view class="row--between">
+        <text class="cell__label">退款类型</text>
+        <text class="cell__value">{{refund.typeText}}</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="t-section">退款原因</text>
+      <text class="rr__reason">{{refund.reasonText}}{{refund.desc ? '：' + refund.desc : ''}}</text>
+      <view wx:if="{{refund.photos.length}}" class="rr__photos">
+        <image
+          wx:for="{{refund.photos}}"
+          wx:key="index"
+          class="rr__photo"
+          src="{{item}}"
+          mode="aspectFill"
+        />
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="t-section">退款商品</text>
+      <view wx:for="{{itemRows}}" wx:key="key" class="rr__item">
+        <image class="rr__item-img" src="{{item.image}}" mode="aspectFill" lazy-load />
+        <view class="flex1 col rr__item-info">
+          <text class="rr__item-name">{{item.name}}</text>
+          <text class="rr__item-spec">{{item.specText}}</text>
+        </view>
+        <text class="rr__item-amount">￥{{item.amountText}}</text>
+      </view>
+    </view>
+
+    <view class="rr__foot" />
+  </scroll-view>
+
+  <view wx:if="{{!handled}}" class="rr__bar">
+    <view class="rr__btn rr__btn--ghost tap" bindtap="onReject">拒绝并说明</view>
+    <view class="rr__btn rr__btn--primary tap" bindtap="onApprove">同意退款</view>
+  </view>
+</view>

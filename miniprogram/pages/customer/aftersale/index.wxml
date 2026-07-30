@@ -1,0 +1,91 @@
+<view class="as">
+  <nav-bar title="申请售后" />
+
+  <scroll-view class="as__body" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 订单摘要 -->
+    <view class="card as__order">
+      <image class="as__order-img" src="{{options.orderImage}}" mode="aspectFill" />
+      <view class="flex1 col as__order-text">
+        <text class="as__order-title">{{options.orderTitle}}</text>
+        <text class="as__order-meta">{{options.orderMetaText}}</text>
+      </view>
+    </view>
+
+    <!-- 售后类型 -->
+    <view class="card">
+      <text class="t-section">售后类型</text>
+      <view class="as__types">
+        <view
+          wx:for="{{options.types}}"
+          wx:key="id"
+          class="as__type {{type === item.id ? 'as__type--on' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onPickType"
+        >
+          <text class="as__type-name">{{item.name}}</text>
+          <text class="as__type-sub">{{item.sub}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 退款商品范围 -->
+    <view class="card as__scope tap" bindtap="onPickItems">
+      <text class="cell__label">退款商品</text>
+      <view class="cell__value">
+        <text>{{itemsText}}</text>
+        <text class="chevron">›</text>
+      </view>
+    </view>
+
+    <!-- 原因 + 描述 + 凭证 -->
+    <view class="card">
+      <text class="t-section">售后原因</text>
+      <view class="as__reasons">
+        <text
+          wx:for="{{options.reasons}}"
+          wx:key="*this"
+          class="as__reason {{reason === item ? 'as__reason--on' : ''}}"
+          data-name="{{item}}"
+          bindtap="onPickReason"
+        >{{item}}</text>
+      </view>
+
+      <textarea
+        class="as__desc"
+        value="{{desc}}"
+        placeholder="补充描述（选填），可上传照片凭证…"
+        placeholder-class="as__desc-ph"
+        maxlength="200"
+        auto-height
+        bindinput="onDesc"
+      />
+
+      <view class="as__photos">
+        <view wx:for="{{photos}}" wx:key="*this" class="as__photo">
+          <image class="as__photo-img" src="{{item}}" mode="aspectFill" />
+          <text class="as__photo-del tap" data-index="{{index}}" catchtap="onRemovePhoto">✕</text>
+        </view>
+        <view wx:if="{{photos.length < 3}}" class="as__photo-add tap" bindtap="onAddPhoto">
+          <text class="as__photo-plus">＋</text>
+          <text class="as__photo-hint">凭证</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 金额 -->
+    <view class="card as__amount">
+      <text class="as__amount-label">预计退款金额</text>
+      <view class="as__amount-num">
+        <text class="as__amount-sym">¥</text>
+        <text class="as__amount-value">{{refundText}}</text>
+      </view>
+    </view>
+
+    <text class="as__tip">{{options.tip}}</text>
+    <view class="as__foot" />
+  </scroll-view>
+
+  <view class="as__bar">
+    <view class="btn btn--primary tap {{submitting ? 'btn--disabled' : ''}}" bindtap="onSubmit">提交申请</view>
+  </view>
+</view>

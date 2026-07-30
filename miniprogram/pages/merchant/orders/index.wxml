@@ -67,8 +67,24 @@
           </view>
         </view>
 
+        <!-- 售后单：退款摘要 -->
+        <view wx:if="{{item.status === 'aftersale'}}" class="mo__refund">
+          <view class="row--between">
+            <text class="mo__refund-label">申请退款</text>
+            <text class="mo__refund-amount">￥{{item.refundAmountText}}</text>
+          </view>
+          <text class="mo__refund-reason">原因：{{item.refundReason}}</text>
+        </view>
+
         <!-- 操作 -->
-        <view wx:if="{{item.status === 'pending'}}" class="mo__actions">
+        <view wx:if="{{item.status === 'aftersale'}}" class="mo__actions">
+          <view
+            class="mo__btn mo__btn--primary tap"
+            data-refund="{{item.refundId}}"
+            bindtap="onReview"
+          >处理退款申请</view>
+        </view>
+        <view wx:elif="{{item.status === 'pending'}}" class="mo__actions">
           <view class="mo__btn mo__btn--ghost tap" data-id="{{item.id}}" bindtap="onReject">拒单</view>
           <view class="mo__btn mo__btn--primary tap" data-id="{{item.id}}" bindtap="onAccept">立即接单</view>
         </view>

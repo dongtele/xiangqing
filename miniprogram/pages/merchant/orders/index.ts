@@ -13,6 +13,7 @@ import type { MerchantOrder, MerchantOrderTab } from '../../../models/index';
 
 interface OrderVM extends MerchantOrder {
   totalText: string;
+  refundAmountText: string;
   /** 列表里的紧凑行：名称带规格 */
   rows: { text: string; qty: number }[];
 }
@@ -62,6 +63,7 @@ Page({
       orders: res.list.map((o) => ({
         ...o,
         totalText: fen2yuan2(o.total),
+        refundAmountText: fen2yuan2(o.refundAmount || 0),
         rows: o.lines.map((l) => ({
           text: l.specText ? `${l.name}（${l.specText}）` : l.name,
           qty: l.qty,
@@ -126,6 +128,12 @@ Page({
     await finishOrder(id);
     toast('已出餐', 'success');
     this.load();
+  },
+
+  /** 售后单 → 退款审核（48） */
+  onReview(e: WechatMiniprogram.TouchEvent) {
+    const { refund } = e.currentTarget.dataset as { refund: string };
+    push(`/pages/merchant/refund-review/index?id=${refund}`);
   },
 
   onDetail(e: WechatMiniprogram.TouchEvent) {

@@ -8,6 +8,8 @@ import type {
   MerchantOrder,
   Order,
   PrintSettings,
+  Refund,
+  RiderMessage,
   Shop,
   UserProfile,
 } from '../../models/index';
@@ -215,7 +217,10 @@ export const orders: Order[] = [
       role: '专送骑手',
       statusText: '已取餐，正在配送途中',
       avatarText: '王',
-      phone: '400-000-0000',
+      phone: '1010-8899',
+      titleText: '王师傅 · 浙A·D3821',
+      creditText: '已服务 1,204 单 · 准时率 98%',
+      virtualPhone: '1010-8899',
     },
     payMethodText: '微信支付',
     timeline: [
@@ -266,6 +271,60 @@ export const orders: Order[] = [
     ],
   },
 ];
+
+
+/** 商家侧待处理的售后单（09 售后 Tab → 48 审核） */
+export const refunds: Refund[] = [
+  {
+    id: 'rf_2001',
+    orderId: 'm_1019',
+    orderNo: '#20260727039',
+    status: 'reviewing',
+    statusText: '退款处理中',
+    statusSub: '商家将在 2 小时内处理，超时自动退款',
+    type: 'refundOnly',
+    typeText: '仅退款（已出餐）',
+    amount: 2800,
+    itemsText: '招牌红烧肉套餐 ×1',
+    reasonText: '口味/质量问题',
+    desc: '菜品与描述不符：红烧肉偏咸',
+    photos: ['', ''],
+    items: [
+      {
+        key: 'rfi_1',
+        name: '招牌红烧肉套餐',
+        specText: '大份 / 微辣',
+        qty: 1,
+        amount: 2800,
+        image: IMG.braisedPork,
+        checked: true,
+      },
+    ],
+    createdAtText: '7月27日 12:41',
+    autoAgreeIn: 6720,
+    timeline: [
+      { title: '提交退款申请', sub: '7月27日 12:41', done: true },
+      { title: '商家审核中', sub: '预计 14:41 前完成', done: true },
+      { title: '退款到账', sub: '原路退回微信零钱', done: false },
+    ],
+    placedAtText: '今天 12:05',
+  },
+];
+
+/** 联系骑手的会话（84） */
+export const riderMessages: RiderMessage[] = [
+  {
+    id: 'rm_1',
+    from: 'rider',
+    text: '我已取到餐，大概 12 分钟到，路上有点堵。',
+    timeText: '12:12',
+  },
+  { id: 'rm_2', from: 'me', text: '好的，到了放门口就行，谢谢！' },
+];
+
+export const riderQuickReplies = ['放门口，不用敲门', '到了给我打电话', '我在小区南门等'];
+
+export const aftersaleReasons = ['配送超时未送达', '少送 / 漏送', '餐品洒漏', '口味/质量问题'];
 
 export const dashboard: Dashboard = {
   shopName: shop.name,
@@ -417,6 +476,35 @@ export const merchantOrders: MerchantOrder[] = [
     expectText: '立即送出',
     customerSeqText: '第 5 单',
     summaryText: '赵先生 132****7788 · 红烧肉套餐 x1、酸梅汤 x1 · ¥50.00',
+  },
+  {
+    id: 'm_1019',
+    seq: '#1019',
+    channel: '外送',
+    status: 'aftersale',
+    statusText: '退款待处理',
+    customerName: '孙女士',
+    customerPhone: '133****6655',
+    addressText: '云谷小区 8 号楼 1201',
+    distanceText: '距店 1.4km',
+    distanceEtaText: '1.4 km · 已送达',
+    lines: [
+      {
+        name: '招牌红烧肉套餐',
+        specText: '大份 / 微辣',
+        qty: 1,
+        amount: 4500,
+        image: IMG.braisedPork,
+      },
+    ],
+    count: 1,
+    total: 4500,
+    placedAtText: '下单 12:05',
+    expectText: '已送达',
+    customerSeqText: '第 2 单',
+    refundId: 'rf_2001',
+    refundAmount: 2800,
+    refundReason: '口味/质量问题',
   },
   {
     id: 'm_1018',

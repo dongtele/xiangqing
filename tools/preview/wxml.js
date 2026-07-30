@@ -14,6 +14,7 @@ const TAG_MAP = {
   block: null, // fragment
   button: 'button',
   input: 'input',
+  textarea: 'div',
   navigator: 'a',
 };
 
@@ -245,6 +246,16 @@ function renderElement(node, scope, ctx) {
       if (src) html += ` data-src="${escapeHtml(src)}"`;
       style = `background:#F0EAE3 center/40px 40px no-repeat ${PLACEHOLDER_GLYPH};${style}`;
     }
+  }
+  if (tag === 'textarea') {
+    // 预览里用 div 呈现，空值时显示 placeholder
+    const val = String(resolveValue(attrs.value, scope) || '');
+    const ph = String(resolveValue(attrs.placeholder, scope) || '');
+    const body = val || ph;
+    const phClass = val ? '' : ' data-empty="1"';
+    return `<div class="${escapeHtml(String(resolveValue(attrs.class, scope) || ''))}"${phClass} style="${escapeHtml(
+      rpx(safeArea(String(resolveValue(attrs.style, scope) || '')))
+    )}">${escapeHtml(body)}</div>`;
   }
   if (tag === 'input') {
     const val = resolveValue(attrs.value, scope);

@@ -139,6 +139,77 @@ const SCENES = [
     settle: 500,
   },
   {
+    id: '53',
+    name: '配送实时追踪',
+    note: '06 →「查看配送」：轨迹示意图 + 进度条 + 骑手信息（8s 轮询，离开页面停止）',
+    page: 'pages/customer/delivery-track/index',
+    query: { id: 'ord_1024' },
+    seed: 'user',
+    dark: false,
+    step: 4,
+  },
+  {
+    id: '84',
+    name: '联系骑手',
+    note: '53 点电话按钮：虚拟号提示 + 会话 + 快捷短语',
+    page: 'pages/customer/rider-chat/index',
+    query: { id: 'ord_1024' },
+    seed: 'user',
+    dark: false,
+    step: 4,
+  },
+  {
+    id: '20',
+    name: '申请售后',
+    note: '06 →「申请售后」：类型 / 原因 / 说明 / 凭证，退款金额由服务端试算',
+    page: 'pages/customer/aftersale/index',
+    query: { id: 'ord_1024' },
+    seed: 'user',
+    dark: false,
+    step: 4,
+  },
+  {
+    id: '56',
+    name: '选择退款商品',
+    note: '20 →「退款商品」：勾选部分商品，按实付比例分摊优惠实时算退款额',
+    page: 'pages/customer/refund-items/index',
+    query: { id: 'ord_1024' },
+    seed: 'user',
+    dark: false,
+    step: 4,
+  },
+  {
+    id: '40',
+    name: '退款进度',
+    note: '20 提交后进入：状态时间轴 + 金额与流水，可撤销申请',
+    page: 'pages/customer/refund-detail/index',
+    query: { id: 'rf_2001' },
+    seed: 'user',
+    dark: false,
+    step: 4,
+  },
+  {
+    id: '48',
+    name: '退款审核',
+    note: '09 售后 Tab →「处理退款申请」：凭证、退款商品、同意 / 拒绝（超时自动同意）',
+    page: 'pages/merchant/refund-review/index',
+    query: { id: 'rf_2001' },
+    seed: 'merchant',
+    dark: false,
+    step: 4,
+  },
+  {
+    id: '09b',
+    name: '订单管理 · 售后 Tab',
+    note: '售后单卡片：退款金额与原因 + 处理入口',
+    page: 'pages/merchant/orders/index',
+    seed: 'merchant',
+    dark: false,
+    step: 4,
+    after: (inst) => inst.onSwitchTab({ currentTarget: { dataset: { key: 'aftersale' } } }),
+    settle: 500,
+  },
+  {
     id: '02',
     name: '商品详情',
     note: '01 →「选规格」进入：份量 / 辣度 / 加料，实时算价',
@@ -503,19 +574,20 @@ async function main() {
   const step1 = results.filter((r) => r.scene.step === 1);
   const step2 = results.filter((r) => r.scene.step === 2);
   const step3 = results.filter((r) => r.scene.step === 3);
+  const step4 = results.filter((r) => r.scene.step === 4);
 
   const html = `<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>美味坊小程序 · 第 1–3 步实现预览</title>
+<title>美味坊小程序 · 第 1–4 步实现预览</title>
 <style>${BASE_CSS}\n${kf}\n${css}</style>
 </head>
 <body>
 <div class="pv-head">
   <span class="pv-kicker">WEIWEIFANG · MINIPROGRAM PREVIEW</span>
-  <h1>美味坊点餐小程序 · 第 1–3 步实现效果</h1>
+  <h1>美味坊点餐小程序 · 第 1–4 步实现效果</h1>
   <p>下面每一屏都由<strong>工程里真实的 WXML + WXSS + TypeScript 逻辑</strong>渲染：先编译 <code>miniprogram/**/*.ts</code>，用替身运行时跑一遍页面的 <code>onLoad / onShow</code>（含 mock 接口请求、购物车 store、服务端试算），再拿页面最终的 <code>data</code> 渲染真实模板。所以这里看到的价格、状态、倒计时都是代码算出来的，不是另画一遍的静态图。</p>
   <p>预览环境与真机的差异仅在于：<code>rpx</code> 按 375px 折算成 px、<code>position:fixed</code> 改为相对画框定位、<code>env(safe-area-inset-bottom)</code> 取 iPhone X 的 34px。顶部状态栏与胶囊按钮、底部小白条是画框装饰，真机由微信绘制。</p>
 </div>
@@ -545,6 +617,15 @@ async function main() {
     <span class="pv-sub">接单出餐已打通</span>
   </div>
   <div class="pv-grid">${step3.map(frameDeco).join('')}</div>
+</div>
+
+<div class="pv-section">
+  <div class="pv-section__title">
+    <span class="pv-tag">第 4 步</span>
+    <h2>配送与售后：53 / 84 / 20 / 56 / 40 / 48</h2>
+    <span class="pv-sub">退款闭环（顾客申请 → 商家审核）已打通</span>
+  </div>
+  <div class="pv-grid">${step4.map(frameDeco).join('')}</div>
 </div>
 
 <div class="pv-foot">由 tools/preview/build.js 生成 · ${new Date().toISOString().slice(0, 10)}</div>

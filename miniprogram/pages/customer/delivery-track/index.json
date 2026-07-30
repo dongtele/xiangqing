@@ -1,0 +1,6 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "icon-svg": "../../../components/icon/index"
+  }
+}

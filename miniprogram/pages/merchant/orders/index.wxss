@@ -221,3 +221,31 @@
   padding: 160rpx 0;
   text-align: center;
 }
+
+/* 售后单摘要 */
+.mo__refund {
+  background: #fdf1f1;
+  border: 1px dashed #f0c9c9;
+  border-radius: 24rpx;
+  padding: 20rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.mo__refund-label {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--c-danger);
+}
+
+.mo__refund-amount {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--c-danger);
+}
+
+.mo__refund-reason {
+  font-size: 22rpx;
+  color: var(--c-text-weak);
+}

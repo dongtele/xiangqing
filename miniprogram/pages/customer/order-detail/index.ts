@@ -1,7 +1,7 @@
 import { getOrder } from '../../../services/api';
 import { chrome } from '../../../utils/chrome';
 import { fen2yuan } from '../../../utils/money';
-import { toast } from '../../../utils/nav';
+import { push, toast } from '../../../utils/nav';
 import type { Order, OrderGoods } from '../../../models/index';
 
 interface GoodsVM extends OrderGoods {
@@ -53,15 +53,13 @@ Page({
     wx.setClipboardData({ data: order.orderNo });
   },
 
+  /** 虚拟号 + 快捷短语，避免暴露真实号码（84） */
   onCallRider() {
-    const order = this.data.order;
-    if (!order || !order.rider) return;
-    // 真实场景走虚拟号，避免暴露真实号码（84 联系骑手）
-    wx.makePhoneCall({ phoneNumber: order.rider.phone, fail: () => toast('拨号已取消') });
+    push(`/pages/customer/rider-chat/index?id=${this.orderId}`);
   },
 
   onTrack() {
-    toast('配送实时追踪（53）在后续步骤实现');
+    push(`/pages/customer/delivery-track/index?id=${this.orderId}`);
   },
 
   onContactShop() {
@@ -69,6 +67,11 @@ Page({
   },
 
   onAftersale() {
-    toast('申请售后（20）在后续步骤实现');
+    const order = this.data.order;
+    if (order && order.status === 'refunding') {
+      toast('本单退款进行中，可在「我的订单 · 售后」查看进度');
+      return;
+    }
+    push(`/pages/customer/aftersale/index?id=${this.orderId}`);
   },
 });
