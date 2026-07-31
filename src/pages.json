@@ -176,6 +176,60 @@
       "style": {
         "navigationBarTitleText": "批量管理"
       }
+    },
+    {
+      "path": "pages/customer/search/index",
+      "style": {
+        "navigationBarTitleText": "店内搜索"
+      }
+    },
+    {
+      "path": "pages/customer/shop/index",
+      "style": {
+        "navigationBarTitleText": "店铺主页"
+      }
+    },
+    {
+      "path": "pages/customer/photo-view/index",
+      "style": {
+        "navigationBarTitleText": "菜品图片"
+      }
+    },
+    {
+      "path": "pages/customer/reviews/index",
+      "style": {
+        "navigationBarTitleText": "全部评价"
+      }
+    },
+    {
+      "path": "pages/customer/license/index",
+      "style": {
+        "navigationBarTitleText": "资质公示"
+      }
+    },
+    {
+      "path": "pages/customer/address-edit/index",
+      "style": {
+        "navigationBarTitleText": "编辑地址"
+      }
+    },
+    {
+      "path": "pages/customer/addresses/index",
+      "style": {
+        "navigationBarTitleText": "收货地址"
+      }
+    },
+    {
+      "path": "pages/customer/map-picker/index",
+      "style": {
+        "navigationBarTitleText": "地图选点"
+      }
+    },
+    {
+      "path": "pages/customer/pickup-stores/index",
+      "style": {
+        "navigationBarTitleText": "选择自提门店"
+      }
     }
   ],
   "globalStyle": {

@@ -4,7 +4,7 @@ import { onLoad } from '@dcloudio/uni-app';
 import { getGoods } from '@/services/api';
 import { CURRENT_SHOP_ID } from '@/config';
 import { useCartStore } from '@/stores/cart';
-import { back, toast, todo } from '@/utils/nav';
+import { back, push, toast } from '@/utils/nav';
 import type { Goods, SpecOption } from '@/models';
 
 /** 02 · 商品详情：规格 / 加料选择 → 加入购物车 */
@@ -104,7 +104,7 @@ function onAddToCart(): void {
   <view v-if="goods" class="gd">
     <!-- 大图 + 返回 -->
     <view class="gd__hero">
-      <view class="gd__hero-img" @tap="todo('54', '菜品大图预览')">
+      <view class="gd__hero-img" @tap="push(`/pages/customer/photo-view/index?id=${goods.id}`)">
         <wf-thumb :src="goods.image" :radius="0" />
       </view>
       <wf-nav-bar theme="dark" fixed title="" />

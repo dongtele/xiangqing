@@ -4,6 +4,7 @@ import { MOCK_LATENCY, PAY_FAIL_FIRST_ATTEMPT } from './config';
 import type {
   AftersaleItem,
   AftersaleOptions,
+  AddressFull,
   AftersaleType,
   BulkGoods,
   BulkTab,
@@ -44,6 +45,8 @@ const state = {
   refunds: db.refunds.map((r) => ({ ...r })),
   riderMessages: db.riderMessages.map((m) => ({ ...m })),
   optionLib: db.optionLib.map((g) => ({ ...g, options: g.options.map((o) => ({ ...o })) })),
+  addresses: db.addresses.map((a) => ({ ...a })),
+  reviews: db.reviews.map((r) => ({ ...r })),
   categoryRows: db.categoryRows.map((c) => ({ ...c })),
   stockGoods: db.stockGoods.map((g) => ({ ...g })),
   bulkGoods: db.bulkGoods.map((g) => ({ ...g })),
@@ -242,6 +245,76 @@ const routes: Record<string, (p: Payload) => unknown> = {
   'GET /menu': () => ({ categories: db.categories, groups: menuGroups() }),
 
   'GET /goods/detail': (p) => db.goodsList.find((g) => g.id === p.id) as Goods,
+
+  /* ---------------- 浏览与选餐扩展：18 / 32 / 82 / 61 ---------------- */
+
+  'GET /goods/search': (p) => {
+    const kw = String(p.keyword || '').trim();
+    const list = kw ? db.goodsList.filter((g) => g.name.indexOf(kw) >= 0) : [];
+    return { list, hotWords: db.hotWords };
+  },
+
+  'GET /shop/profile': () => ({ ...db.shopProfile, open: state.shop.open }),
+
+  'GET /shop/reviews': (p) => {
+    const key = String(p.filter || 'all');
+    const list =
+      key === 'photo'
+        ? state.reviews.filter((r) => r.photos.length > 0)
+        : key === 'bad'
+          ? state.reviews.filter((r) => r.stars <= 3)
+          : state.reviews;
+    return { summary: db.reviewSummary, list };
+  },
+
+  'GET /shop/license': () => db.licenseInfo,
+
+  /* ---------------- 结算二级页：31 / 15 / 16 / 38 / 52 / 83 ---------------- */
+
+  'GET /remark/options': () => db.remarkOptions,
+
+  'GET /address/list': () => state.addresses,
+
+  'GET /address/detail': (p) => state.addresses.find((a) => a.id === p.id) || null,
+
+  'POST /address/save': (p) => {
+    const patch = p as unknown as AddressFull;
+    const detail = `${patch.poi}${patch.houseNo}`;
+    const hit = state.addresses.find((a) => a.id === patch.id);
+    if (hit) {
+      Object.assign(hit, patch, { detail });
+    } else {
+      state.addresses.push({
+        ...patch,
+        id: `addr_${state.addresses.length + 1}`,
+        detail,
+        distanceText: '距店 1.5km',
+        outOfRange: false,
+      });
+    }
+    if (patch.isDefault) {
+      state.addresses.forEach((a) => {
+        a.isDefault = a.id === (hit ? hit.id : state.addresses[state.addresses.length - 1].id);
+      });
+    }
+    return { ok: true };
+  },
+
+  'POST /address/remove': (p) => {
+    state.addresses = state.addresses.filter((a) => a.id !== p.id);
+    return { ok: true };
+  },
+
+  'POST /address/default': (p) => {
+    state.addresses.forEach((a) => {
+      a.isDefault = a.id === p.id;
+    });
+    return { ok: true };
+  },
+
+  'GET /map/pois': () => db.pois,
+
+  'GET /pickup/stores': () => db.pickupStores,
 
   'POST /checkout/trial': (p) =>
     trial(p.items as CartItem[], (p.deliveryType as DeliveryType) || 'delivery'),

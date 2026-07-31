@@ -124,6 +124,126 @@ export interface Address {
   phoneMask: string;
 }
 
+/** 完整地址（15 / 16 / 38），Address 是它在订单里的精简投影 */
+export interface AddressFull {
+  id: string;
+  /** 家 / 公司 / 学校 */
+  tag: string;
+  receiver: string;
+  gender: string;
+  phone: string;
+  phoneMask: string;
+  /** 地图选点得到的 POI */
+  poi: string;
+  /** 门牌号 */
+  houseNo: string;
+  /** poi + houseNo 拼出的完整地址 */
+  detail: string;
+  isDefault: boolean;
+  distanceText: string;
+  /** 超出配送范围时不可选 */
+  outOfRange: boolean;
+  latitude: number;
+  longitude: number;
+}
+
+/** 52 地图选点的候选 POI */
+export interface PoiItem {
+  id: string;
+  name: string;
+  districtText: string;
+  distanceText: string;
+  latitude: number;
+  longitude: number;
+}
+
+/** 83 自提门店 */
+export interface PickupStore {
+  id: string;
+  name: string;
+  open: boolean;
+  addressText: string;
+  distanceText: string;
+  /** 预计 15 分钟可取 / 明日 10:00 开始接单 */
+  etaText: string;
+  hoursText: string;
+  latitude: number;
+  longitude: number;
+}
+
+/** 31 订单备注 */
+export interface RemarkOptions {
+  quick: string[];
+  maxLength: number;
+}
+
+/* ---------------- 店铺主页 / 评价 / 资质 ---------------- */
+
+export interface ShopProfile {
+  name: string;
+  logo: string;
+  headerImage: string;
+  score: number;
+  categoryText: string;
+  badges: { text: string; tone: 'primary' | 'success' | 'grey' }[];
+  notice: string;
+  hoursText: string;
+  open: boolean;
+  addressText: string;
+  phone: string;
+  licenseText: string;
+  reviewCount: number;
+  reviewTagText: string;
+}
+
+export interface ReviewDim {
+  label: string;
+  value: number;
+  /** 0–100 */
+  percent: number;
+}
+
+export interface ReviewFilter {
+  key: string;
+  label: string;
+  count: number;
+}
+
+export interface Review {
+  id: string;
+  name: string;
+  avatarText: string;
+  anonymous: boolean;
+  stars: number;
+  dateText: string;
+  text: string;
+  photos: string[];
+  reply?: string;
+  repeatText?: string;
+}
+
+export interface ReviewSummary {
+  score: number;
+  total: number;
+  dims: ReviewDim[];
+  filters: ReviewFilter[];
+}
+
+export interface LicenseDoc {
+  title: string;
+  image: string;
+  noLabel: string;
+  no: string;
+  validText: string;
+}
+
+export interface LicenseInfo {
+  shopName: string;
+  companyName: string;
+  logo: string;
+  docs: LicenseDoc[];
+}
+
 /** 服务端试算结果，前端不自行计算优惠 */
 export interface CheckoutTrial {
   count: number;

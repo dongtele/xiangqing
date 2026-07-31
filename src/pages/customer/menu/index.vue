@@ -6,7 +6,7 @@ import { CURRENT_SHOP_ID } from '@/config';
 import { useCartStore } from '@/stores/cart';
 import { chrome } from '@/utils/chrome';
 import { fen2yuan } from '@/utils/money';
-import { push, todo } from '@/utils/nav';
+import { push } from '@/utils/nav';
 import type { CheckoutTrial, Goods, MenuGroup, Shop } from '@/models';
 
 /** 01 · 点餐菜单（首页）：左侧分类锚点 + 右侧商品列表 + 底部购物车条 */
@@ -194,7 +194,7 @@ function onCheckout(): void {
   <view class="menu">
     <!-- 店铺头部 -->
     <view class="menu__header" :style="{ paddingTop: headPad + 'px' }">
-      <view class="menu__shop tap" @tap="todo('32', '店铺主页')">
+      <view class="menu__shop tap" @tap="push('/pages/customer/shop/index')">
         <view class="menu__logo"><wf-thumb :src="shop ? shop.logo : ''" :radius="28" /></view>
         <view class="menu__shop-info">
           <view class="menu__shop-name">
@@ -208,7 +208,7 @@ function onCheckout(): void {
         </view>
       </view>
 
-      <view class="menu__search tap" @tap="todo('18', '店内搜索')">
+      <view class="menu__search tap" @tap="push('/pages/customer/search/index')">
         <wf-icon name="search" :size="28" color="#B0A69D" :weight="2.4" />
         <text class="menu__search-ph">搜索店内美食</text>
       </view>

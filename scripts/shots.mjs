@@ -61,6 +61,16 @@ const ROUTES = [
   ['22-分类管理', '/pages/merchant/categories/index'],
   ['93-批量管理', '/pages/merchant/goods-bulk/index'],
   ['49-沽清管理', '/pages/merchant/stock/index'],
+  // 顾客端二级页
+  ['18-店内搜索', '/pages/customer/search/index'],
+  ['32-店铺主页', '/pages/customer/shop/index'],
+  ['54-菜品大图预览', '/pages/customer/photo-view/index?id=g1'],
+  ['82-店铺全部评价', '/pages/customer/reviews/index'],
+  ['61-资质公示', '/pages/customer/license/index'],
+  ['38-地址管理', '/pages/customer/addresses/index'],
+  ['16-编辑地址', '/pages/customer/address-edit/index?id=addr_1'],
+  ['52-地图选点', '/pages/customer/map-picker/index'],
+  ['83-选择自提门店', '/pages/customer/pickup-stores/index'],
 ];
 
 const MIME = {
@@ -153,6 +163,15 @@ async function main() {
   await tap('.sheet__btn');
   await wait(600);
   await shot('03-确认订单');
+
+  // 15 / 31 是盖在 03 上的半屏浮层，只能从这里打开
+  await tap('.co__addr');
+  await shot('15-选择收货地址');
+  await tap('.as__close');
+
+  await tap('.co__remark');
+  await shot('31-订单备注');
+  await tap('.rs__close');
 
   await tap('.co__pay');
   await shot('85-支付方式选择');

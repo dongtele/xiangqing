@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { chrome } from '@/utils/chrome';
-import { gotoRoleHome, relaunch, todo } from '@/utils/nav';
+import { gotoRoleHome, push, relaunch, todo } from '@/utils/nav';
 import { useUserStore } from '@/stores/user';
 
 /** 07 · 我的（个人中心）—— 顾客端 → 商家端的角色分流入口在此 */
@@ -17,10 +17,10 @@ const quick = [
 ];
 
 const cells = [
-  { key: 'address', label: '地址管理', value: '', primary: false, screen: '38' },
-  { key: 'coupon', label: '优惠券', value: '2张可用', primary: true, screen: '39' },
-  { key: 'contact', label: '联系商家', value: '', primary: false, screen: '41' },
-  { key: 'about', label: '关于小店', value: '', primary: false, screen: '78' },
+  { key: 'address', label: '地址管理', value: '', primary: false, screen: '38', url: '/pages/customer/addresses/index' },
+  { key: 'coupon', label: '优惠券', value: '2张可用', primary: true, screen: '39', url: '' },
+  { key: 'contact', label: '联系商家', value: '', primary: false, screen: '41', url: '' },
+  { key: 'about', label: '关于小店', value: '', primary: false, screen: '78', url: '' },
 ];
 
 const cellNames: Record<string, string> = {
@@ -37,6 +37,14 @@ const avatarText = computed(() =>
 onLoad(() => {
   headPad.value = chrome().capsuleBottom + 24;
 });
+
+function onCell(c: { key: string; screen: string; url: string }): void {
+  if (c.url) {
+    push(c.url);
+    return;
+  }
+  todo(c.screen, cellNames[c.key]);
+}
 
 function onTapOrders(tab: string): void {
   relaunch(`/pages/customer/orders/index?tab=${tab}`);
@@ -118,7 +126,7 @@ function onEnterMerchant(): void {
           v-for="c in cells"
           :key="c.key"
           class="cell tap"
-          @tap="todo(c.screen, cellNames[c.key])"
+          @tap="onCell(c)"
         >
           <text class="cell__label">{{ c.label }}</text>
           <view class="cell__value">

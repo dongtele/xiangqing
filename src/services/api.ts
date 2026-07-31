@@ -1,8 +1,16 @@
 import { request } from './request';
 import type {
+  AddressFull,
   AftersaleItem,
   AftersaleOptions,
   AftersaleType,
+  LicenseInfo,
+  PickupStore,
+  PoiItem,
+  RemarkOptions,
+  Review,
+  ReviewSummary,
+  ShopProfile,
   BulkGoods,
   BulkTab,
   CartItem,
@@ -50,7 +58,41 @@ export const getMenu = (): Promise<{ categories: Category[]; groups: MenuGroup[]
 
 export const getGoods = (id: string): Promise<Goods> => request<Goods>('/goods/detail', { id });
 
+export const searchGoods = (keyword: string): Promise<{ list: Goods[]; hotWords: string[] }> =>
+  request('/goods/search', { keyword });
+
+export const getShopProfile = (): Promise<ShopProfile> => request('/shop/profile');
+
+export const getShopReviews = (
+  filter: string
+): Promise<{ summary: ReviewSummary; list: Review[] }> => request('/shop/reviews', { filter });
+
+export const getLicenseInfo = (): Promise<LicenseInfo> => request('/shop/license');
+
 /* ---------------- 顾客端 · 结算支付 ---------------- */
+
+export const getRemarkOptions = (): Promise<RemarkOptions> => request('/remark/options');
+
+export const getAddresses = (): Promise<AddressFull[]> => request('/address/list');
+
+export const getAddress = (id: string): Promise<AddressFull | null> =>
+  request('/address/detail', { id });
+
+export const saveAddress = (address: AddressFull): Promise<{ ok: boolean }> =>
+  request('/address/save', address as unknown as Record<string, unknown>, {
+    method: 'POST',
+    loading: true,
+  });
+
+export const removeAddress = (id: string): Promise<{ ok: boolean }> =>
+  request('/address/remove', { id }, { method: 'POST' });
+
+export const setDefaultAddress = (id: string): Promise<{ ok: boolean }> =>
+  request('/address/default', { id }, { method: 'POST', silent: true });
+
+export const getPois = (): Promise<PoiItem[]> => request('/map/pois');
+
+export const getPickupStores = (): Promise<PickupStore[]> => request('/pickup/stores');
 
 export const trialCheckout = (
   items: CartItem[],

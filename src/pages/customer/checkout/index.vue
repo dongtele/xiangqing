@@ -1,30 +1,28 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import { createOrder, getShop, trialCheckout } from '@/services/api';
+import { createOrder, getAddresses, getShop, trialCheckout } from '@/services/api';
 import { useCartStore } from '@/stores/cart';
+import { useCheckoutStore } from '@/stores/checkout';
 import { fen2yuan } from '@/utils/money';
 import { back, push, toast, todo } from '@/utils/nav';
-import type { CheckoutTrial, DeliveryType, Shop } from '@/models';
+import type { AddressFull, CheckoutTrial, DeliveryType, Shop } from '@/models';
 
 /**
  * 03 · 确认订单：配送方式、地址、时间、优惠、金额明细。
  * 所有金额与优惠都来自 POST /checkout/trial 的服务端试算，前端不自己算。
  */
 const cart = useCartStore();
+const checkout = useCheckoutStore();
 
 const shop = ref<Shop | null>(null);
 const trial = ref<CheckoutTrial | null>(null);
 const deliveryType = ref<DeliveryType>('delivery');
 const submitting = ref(false);
+const addressSheet = ref(false);
+const remarkSheet = ref(false);
 
-// 地址暂用默认收货地址；选择收货地址（15）/ 自提门店（83）在后续步骤接入
-const address = {
-  detail: '科技园南区A座15层1501室',
-  receiver: '吃货小王',
-  gender: '先生',
-  phoneMask: '138****8000',
-};
+const address = computed<AddressFull | null>(() => checkout.address);
 
 const rows = computed(() =>
   cart.items.map((i) => ({ ...i, amountText: fen2yuan(i.unitPrice * i.qty) }))
@@ -38,6 +36,11 @@ onLoad(async () => {
   }
   deliveryType.value = cart.deliveryType;
   shop.value = await getShop();
+  if (!checkout.address) {
+    // 默认收货地址：取默认且在配送范围内的一条
+    const list = await getAddresses();
+    checkout.setAddress(list.find((a) => a.isDefault && !a.outOfRange) || list[0] || null);
+  }
   await refreshTrial();
 });
 
@@ -54,10 +57,21 @@ function onSwitchDelivery(type: DeliveryType): void {
 
 function onTapAddress(): void {
   if (deliveryType.value === 'pickup') {
-    todo('83', '选择自提门店');
+    push('/pages/customer/pickup-stores/index');
     return;
   }
-  todo('15', '选择收货地址');
+  addressSheet.value = true;
+}
+
+function onPickAddress(next: AddressFull): void {
+  checkout.setAddress(next);
+  addressSheet.value = false;
+}
+
+function onConfirmRemark(payload: { remark: string; tableware: number }): void {
+  cart.setRemark(payload.remark);
+  checkout.tableware = payload.tableware;
+  remarkSheet.value = false;
 }
 
 /** 提交订单 → 支付方式选择（85） */
@@ -65,7 +79,8 @@ async function onSubmit(): Promise<void> {
   if (submitting.value || !trial.value) return;
   submitting.value = true;
   try {
-    const { orderId } = await createOrder(cart.snapshot(), deliveryType.value, cart.remark);
+    const remark = [cart.remark, `餐具 ${checkout.tableware} 份`].filter(Boolean).join('，');
+    const { orderId } = await createOrder(cart.snapshot(), deliveryType.value, remark);
     push(`/pages/customer/pay-method/index?id=${orderId}`);
   } finally {
     submitting.value = false;
@@ -102,12 +117,22 @@ async function onSubmit(): Promise<void> {
           </view>
           <view class="flex1 col co__addr-text">
             <text class="co__addr-detail">{{
-              deliveryType === 'delivery' ? address.detail : shop.name
+              deliveryType === 'delivery'
+                ? address
+                  ? address.detail
+                  : '请选择收货地址'
+                : checkout.pickupStore
+                  ? checkout.pickupStore.name
+                  : shop.name
             }}</text>
             <text class="co__addr-sub">{{
               deliveryType === 'delivery'
-                ? `${address.receiver}（${address.gender}）${address.phoneMask}`
-                : `自取门店 · ${shop.distanceText}`
+                ? address
+                  ? `${address.receiver}（${address.gender}）${address.phoneMask}`
+                  : '点击选择'
+                : checkout.pickupStore
+                  ? `自取门店 · ${checkout.pickupStore.distanceText}`
+                  : `自取门店 · ${shop.distanceText}`
             }}</text>
           </view>
           <text class="chevron">›</text>
@@ -166,13 +191,30 @@ async function onSubmit(): Promise<void> {
       </view>
 
       <!-- 备注 -->
-      <view class="card co__remark tap" @tap="todo('31', '订单备注')">
+      <view class="card co__remark tap" @tap="remarkSheet = true">
         <text class="co__row-label">备注</text>
-        <text class="co__remark-ph">{{ cart.remark || '口味偏好、餐具份数' }} ›</text>
+        <text class="co__remark-ph"
+          >{{ cart.remark || '口味偏好' }} · 餐具 {{ checkout.tableware }} 份 ›</text
+        >
       </view>
 
       <view class="co__foot" />
     </scroll-view>
+
+    <!-- 15 选择收货地址 / 31 备注与餐具：设计稿是盖在本屏上的半屏浮层 -->
+    <wf-address-sheet
+      :show="addressSheet"
+      :selected-id="address ? address.id : ''"
+      @close="addressSheet = false"
+      @confirm="onPickAddress"
+    />
+    <wf-remark-sheet
+      :show="remarkSheet"
+      :remark="cart.remark"
+      :tableware="checkout.tableware"
+      @close="remarkSheet = false"
+      @confirm="onConfirmRemark"
+    />
 
     <!-- 底部合计 + 支付 -->
     <view v-if="trial" class="co__bar">

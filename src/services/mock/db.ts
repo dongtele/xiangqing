@@ -1,12 +1,20 @@
 import { IMG } from './images';
 import type {
   Address,
+  AddressFull,
   BulkGoods,
   Category,
   CategoryRow,
   Dashboard,
   Goods,
+  LicenseInfo,
   OptionLibGroup,
+  PickupStore,
+  PoiItem,
+  RemarkOptions,
+  Review,
+  ReviewSummary,
+  ShopProfile,
   StockGoods,
   MerchantGoods,
   MerchantOrder,
@@ -183,6 +191,220 @@ export const defaultAddress: Address = {
   gender: '先生',
   phoneMask: '138****8000',
 };
+
+/** 15 / 16 / 38 · 收货地址簿 */
+export const addresses: AddressFull[] = [
+  {
+    id: 'addr_1',
+    tag: '公司',
+    receiver: '吃货小王',
+    gender: '先生',
+    phone: '13880008000',
+    phoneMask: '138****8000',
+    poi: '科技园南区A座',
+    houseNo: '15层1501室',
+    detail: '科技园南区A座15层1501室',
+    isDefault: true,
+    distanceText: '距店 1.2km',
+    outOfRange: false,
+    latitude: 30.2731,
+    longitude: 120.0128,
+  },
+  {
+    id: 'addr_2',
+    tag: '家',
+    receiver: '吃货小王',
+    gender: '先生',
+    phone: '13880008000',
+    phoneMask: '138****8000',
+    poi: '阳光花园3栋2单元',
+    houseNo: '801',
+    detail: '阳光花园3栋2单元801',
+    isDefault: false,
+    distanceText: '距店 4.8km',
+    outOfRange: true,
+    latitude: 30.3011,
+    longitude: 120.0512,
+  },
+  {
+    id: 'addr_3',
+    tag: '学校',
+    receiver: '王女士',
+    gender: '女士',
+    phone: '13922112211',
+    phoneMask: '139****2211',
+    poi: '创业大厦B座',
+    houseNo: '12层',
+    detail: '创业大厦B座12层',
+    isDefault: false,
+    distanceText: '距店 2.1km',
+    outOfRange: false,
+    latitude: 30.2688,
+    longitude: 120.0201,
+  },
+];
+
+/** 52 · 地图选点候选 POI */
+export const pois: PoiItem[] = [
+  {
+    id: 'poi_1',
+    name: '文三路 100 号',
+    districtText: '西湖区',
+    distanceText: '距当前位置 80m',
+    latitude: 30.2795,
+    longitude: 120.0215,
+  },
+  {
+    id: 'poi_2',
+    name: '学院路 25 号',
+    districtText: '西湖区',
+    distanceText: '240m',
+    latitude: 30.2801,
+    longitude: 120.0232,
+  },
+  {
+    id: 'poi_3',
+    name: '嘉绿苑小区',
+    districtText: '西湖区',
+    distanceText: '520m',
+    latitude: 30.2777,
+    longitude: 120.0248,
+  },
+];
+
+/** 83 · 自提门店 */
+export const pickupStores: PickupStore[] = [
+  {
+    id: 'ps_1',
+    name: '美味坊（文三路店）',
+    open: true,
+    addressText: '西湖区文三路 100 号 1 层 · 距你 320m',
+    distanceText: '320m',
+    etaText: '预计 15 分钟可取',
+    hoursText: '09:00-21:30',
+    latitude: 30.2795,
+    longitude: 120.0215,
+  },
+  {
+    id: 'ps_2',
+    name: '美味坊（黄龙店）',
+    open: true,
+    addressText: '西湖区黄龙路 8 号 B1 · 距你 1.4km',
+    distanceText: '1.4km',
+    etaText: '预计 20 分钟可取',
+    hoursText: '10:00-22:00',
+    latitude: 30.2712,
+    longitude: 120.1301,
+  },
+  {
+    id: 'ps_3',
+    name: '美味坊（滨江店）',
+    open: false,
+    addressText: '滨江区江南大道 66 号 · 距你 6.2km',
+    distanceText: '6.2km',
+    etaText: '明日 10:00 开始接单',
+    hoursText: '10:00-22:00',
+    latitude: 30.2088,
+    longitude: 120.2101,
+  },
+];
+
+/** 31 · 快捷备注 */
+export const remarkOptions: RemarkOptions = {
+  quick: ['不要香菜', '少放辣', '米饭多一点', '放前台代收', '到了打电话'],
+  maxLength: 50,
+};
+
+/** 32 · 店铺主页 */
+export const shopProfile: ShopProfile = {
+  name: shop.name,
+  logo: IMG.shopLogo,
+  headerImage: '',
+  score: 4.9,
+  categoryText: '中式快餐 · 月售 2000+ 单',
+  badges: [
+    { text: '✓ 企业资质认证', tone: 'primary' },
+    { text: '食安封签配送', tone: 'success' },
+    { text: '开业 3 年', tone: 'grey' },
+  ],
+  notice: '本店招牌红烧肉每日限量 60 份，售完即止；全场满 50 减 10 长期有效。',
+  hoursText: '周一至周日 09:00–22:00',
+  open: true,
+  addressText: '科技园中路88号1层',
+  phone: '0755-8888 6666',
+  licenseText: '营业执照 · 食品经营许可证',
+  reviewCount: 326,
+  reviewTagText: '"分量足" "味道正宗" 提及最多',
+};
+
+/** 82 · 评价 */
+export const reviewSummary: ReviewSummary = {
+  score: 4.8,
+  total: 1246,
+  dims: [
+    { label: '口味', value: 4.9, percent: 96 },
+    { label: '包装', value: 4.7, percent: 92 },
+    { label: '配送', value: 4.6, percent: 88 },
+  ],
+  filters: [
+    { key: 'all', label: '全部', count: 1246 },
+    { key: 'photo', label: '有图', count: 328 },
+    { key: 'portion', label: '份量足', count: 402 },
+    { key: 'fast', label: '出餐快', count: 265 },
+    { key: 'bad', label: '差评', count: 12 },
+  ],
+};
+
+export const reviews: Review[] = [
+  {
+    id: 'rv_1',
+    name: '李**',
+    avatarText: '李',
+    anonymous: false,
+    stars: 5,
+    dateText: '7月26日',
+    text: '宫保鸡丁花生米很脆，米饭也给得足，30 分钟就到了。',
+    photos: ['', '', ''],
+    reply: '谢谢夸奖，下次给您多送一份小菜～',
+    repeatText: '回头客 5 次',
+  },
+  {
+    id: 'rv_2',
+    name: '匿名用户',
+    avatarText: '匿',
+    anonymous: true,
+    stars: 4,
+    dateText: '7月25日',
+    text: '味道不错，就是雨天等了 50 分钟，希望配送再快一点。',
+    photos: [],
+  },
+];
+
+/** 61 · 资质公示 */
+export const licenseInfo: LicenseInfo = {
+  shopName: '美味坊（文三路店）',
+  companyName: '杭州美味坊餐饮有限公司',
+  logo: IMG.shopLogo,
+  docs: [
+    {
+      title: '营业执照',
+      image: '',
+      noLabel: '统一社会信用代码',
+      no: '91330100MA2XXXXX',
+      validText: '2025.03.12 - 长期',
+    },
+    {
+      title: '食品经营许可证',
+      image: '',
+      noLabel: '证件编号',
+      no: 'JY13301080XXXXXX',
+      validText: '2025.04.01 - 2030.03.31',
+    },
+  ],
+};
+
+/** 18 · 搜索热词 */
+export const hotWords = ['酸梅汤', '小炒肉', '带鱼', '猪排饭'];
 
 /** 顾客端订单：一单配送中、一单已完成待评价 */
 export const orders: Order[] = [
