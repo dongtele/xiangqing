@@ -224,7 +224,9 @@ async function onPrint(id: string): Promise<void> {
 
           <!-- 操作 -->
           <view v-if="row.status === 'aftersale'" class="mo__actions">
-            <view class="mo__btn mo__btn--primary tap" @tap="todo('48', '退款审核')"
+            <view
+              class="mo__btn mo__btn--primary tap"
+              @tap="push(`/pages/merchant/refund-review/index?id=${row.refundId}`)"
               >处理退款申请</view
             >
           </view>

@@ -194,6 +194,101 @@ export interface Rider {
   virtualPhone: string;
 }
 
+/* ---------------- 配送追踪 / 联系骑手 ---------------- */
+
+export interface TrackPoint {
+  /** 经纬度，给 <map> 组件用（接入腾讯位置服务后即为真实坐标） */
+  latitude: number;
+  longitude: number;
+  /** 百分比坐标，无地图 key 时降级用示意底图定位 */
+  left: number;
+  top: number;
+}
+
+export interface DeliveryTrack {
+  etaText: string;
+  subText: string;
+  /** 0–100 */
+  percent: number;
+  stages: string[];
+  activeStage: number;
+  rider: Rider;
+  shopPoint: TrackPoint;
+  userPoint: TrackPoint;
+  /** 骑手轨迹折线（SVG path，示意用） */
+  routePath: string;
+}
+
+export interface RiderMessage {
+  id: string;
+  from: 'rider' | 'me';
+  text: string;
+  /** 有值时在气泡上方显示时间胶囊 */
+  timeText?: string;
+}
+
+/* ---------------- 售后 / 退款 ---------------- */
+
+export type AftersaleType = 'refundOnly' | 'refundCompensate';
+
+export interface AftersaleItem {
+  key: string;
+  name: string;
+  specText: string;
+  qty: number;
+  /** 该行实付，分 */
+  amount: number;
+  image: string;
+  checked: boolean;
+}
+
+export interface AftersaleOptions {
+  orderNo: string;
+  orderTitle: string;
+  orderMetaText: string;
+  orderImage: string;
+  /** 整单实付，分 */
+  payable: number;
+  types: { id: AftersaleType; name: string; sub: string }[];
+  reasons: string[];
+  items: AftersaleItem[];
+  tip: string;
+  /** 已出餐提示（56 顶部） */
+  partialTip: string;
+}
+
+/** 退款试算：按实付比例分摊优惠 */
+export interface RefundTrial {
+  itemsAmount: number;
+  couponShare: number;
+  refundAmount: number;
+}
+
+export type RefundStatus = 'reviewing' | 'agreed' | 'rejected' | 'cancelled';
+
+export interface Refund {
+  id: string;
+  orderId: string;
+  orderNo: string;
+  status: RefundStatus;
+  statusText: string;
+  statusSub: string;
+  type: AftersaleType;
+  typeText: string;
+  amount: number;
+  itemsText: string;
+  reasonText: string;
+  desc: string;
+  photos: string[];
+  items: AftersaleItem[];
+  createdAtText: string;
+  /** 商家侧倒计时（秒），超时自动同意 */
+  autoAgreeIn: number;
+  timeline: { title: string; sub: string; done: boolean }[];
+  /** 商家侧展示的顾客下单时间 */
+  placedAtText: string;
+}
+
 export interface OrderAction {
   key: 'again' | 'progress' | 'comment' | 'pay' | 'aftersale';
   text: string;
@@ -318,6 +413,7 @@ export interface MerchantOrder {
   /** 自提单的紧凑摘要行 */
   summaryText?: string;
   /** 售后单关联（status = aftersale 时有值） */
+  refundId?: string;
   refundAmount?: number;
   refundReason?: string;
 }

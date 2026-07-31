@@ -2,9 +2,13 @@ import * as db from './db';
 import { HOT_CATEGORY_ID } from './db';
 import { MOCK_LATENCY, PAY_FAIL_FIRST_ATTEMPT } from './config';
 import type {
+  AftersaleItem,
+  AftersaleOptions,
+  AftersaleType,
   CartItem,
   CheckoutTrial,
   CustomerOrderTab,
+  DeliveryTrack,
   DeliveryType,
   Goods,
   MenuGroup,
@@ -14,6 +18,9 @@ import type {
   PrintSettings,
   ReceiptPreview,
   ReceiptType,
+  Refund,
+  RefundTrial,
+  RiderMessage,
   Shop,
 } from '@/models';
 
@@ -30,6 +37,8 @@ const state = {
   merchantOrders: db.merchantOrders.map((o) => ({ ...o })),
   merchantGoods: db.merchantGoods.map((g) => ({ ...g })),
   printSettings: { ...db.printSettings },
+  refunds: db.refunds.map((r) => ({ ...r })),
+  riderMessages: db.riderMessages.map((m) => ({ ...m })),
   payAttempts: {} as Record<string, number>,
   orderSeq: 1025,
   /** 打印任务流水，仅用于演示「已发送到打印机」 */
@@ -187,6 +196,31 @@ function receipt(order: MerchantOrder, type: ReceiptType): ReceiptPreview {
   return base;
 }
 
+/** 售后：按实付比例分摊优惠后算退款额 */
+function refundTrial(order: Order, items: AftersaleItem[]): RefundTrial {
+  const itemsAmount = items.reduce((n, i) => n + (i.checked ? i.amount : 0), 0);
+  const share = order.itemsTotal
+    ? Math.round((order.couponDiscount * itemsAmount) / order.itemsTotal)
+    : 0;
+  return {
+    itemsAmount,
+    couponShare: share,
+    refundAmount: Math.max(0, itemsAmount - share),
+  };
+}
+
+function aftersaleItemsOf(order: Order): AftersaleItem[] {
+  return order.items.map((i, idx) => ({
+    key: `as_${idx}`,
+    name: i.name,
+    specText: i.specText,
+    qty: i.qty,
+    amount: i.amount,
+    image: i.image,
+    checked: idx === 0,
+  }));
+}
+
 /** 路由表：`METHOD /path` → handler。请求参数已由 request 层归一化。 */
 type Payload = Record<string, unknown>;
 
@@ -227,6 +261,171 @@ const routes: Record<string, (p: Payload) => unknown> = {
   'GET /order/list': (p) => customerOrders((p.tab as CustomerOrderTab) || 'all'),
 
   'GET /order/detail': (p) => state.orders.find((o) => o.id === p.id),
+
+  /* ---------------- 配送追踪 / 联系骑手 ---------------- */
+
+  'GET /delivery/track': (p): DeliveryTrack | null => {
+    const order = state.orders.find((o) => o.id === p.orderId);
+    if (!order || !order.rider) return null;
+    return {
+      etaText: '预计 12:38 送达',
+      subText: '骑手已取餐，正在赶往你的位置 · 还有 2.1 公里',
+      percent: 62,
+      stages: ['已接单', '配送中', '已送达'],
+      activeStage: 1,
+      rider: order.rider,
+      // 经纬度用于 <map> 组件；没有腾讯位置服务 key 时页面降级为示意底图
+      shopPoint: { latitude: 30.2795, longitude: 120.0215, left: 70, top: 26 },
+      userPoint: { latitude: 30.2731, longitude: 120.0128, left: 18, top: 64 },
+      routePath: 'M72 200 L72 140 L200 140 L200 80 L266 80',
+    };
+  },
+
+  'GET /rider/chat': (p) => {
+    const order = state.orders.find((o) => o.id === p.orderId);
+    return {
+      rider: order && order.rider ? order.rider : null,
+      messages: state.riderMessages,
+      quickReplies: db.riderQuickReplies,
+    };
+  },
+
+  'POST /rider/chat/send': (p) => {
+    const msg: RiderMessage = {
+      id: `rm_${state.riderMessages.length + 1}`,
+      from: 'me',
+      text: String(p.text || ''),
+    };
+    state.riderMessages = [...state.riderMessages, msg];
+    return { messages: state.riderMessages };
+  },
+
+  /* ---------------- 售后与退款 ---------------- */
+
+  'GET /aftersale/options': (p): AftersaleOptions | null => {
+    const order = state.orders.find((o) => o.id === p.orderId);
+    if (!order) return null;
+    const first = order.items[0];
+    return {
+      orderNo: order.orderNo,
+      orderTitle: `${first.name} 等${order.count}件`,
+      orderMetaText: `订单 ${order.orderNo} · 实付 ￥${(order.payable / 100).toFixed(0)}`,
+      orderImage: first.image,
+      payable: order.payable,
+      types: [
+        { id: 'refundOnly', name: '仅退款', sub: '未收到餐' },
+        { id: 'refundCompensate', name: '退款+补偿', sub: '餐品有问题' },
+      ],
+      reasons: db.aftersaleReasons,
+      items: aftersaleItemsOf(order),
+      tip: '商家 2 小时内未处理将自动退款，原路退回微信零钱',
+      partialTip: '已出餐订单仅支持「仅退款」，退款金额按实付比例计算',
+    };
+  },
+
+  'POST /aftersale/trial': (p) => {
+    const order = state.orders.find((o) => o.id === p.orderId);
+    if (!order) return { itemsAmount: 0, couponShare: 0, refundAmount: 0 };
+    return refundTrial(order, (p.items as AftersaleItem[]) || []);
+  },
+
+  'POST /aftersale/apply': (p) => {
+    const order = state.orders.find((o) => o.id === p.orderId);
+    if (!order) return { refundId: '' };
+    const items = ((p.items as AftersaleItem[]) || []).filter((i) => i.checked);
+    const trial = refundTrial(order, items);
+    const id = `rf_${3000 + state.refunds.length}`;
+    const refund: Refund = {
+      id,
+      orderId: order.id,
+      orderNo: order.orderNo,
+      status: 'reviewing',
+      statusText: '退款处理中',
+      statusSub: '商家将在 2 小时内处理，超时自动退款',
+      type: (p.type as AftersaleType) || 'refundOnly',
+      typeText: p.type === 'refundCompensate' ? '退款+补偿' : '仅退款（已出餐）',
+      amount: trial.refundAmount,
+      itemsText: items.map((i) => `${i.name} ×${i.qty}`).join('、') || '整单',
+      reasonText: String(p.reason || ''),
+      desc: String(p.desc || ''),
+      photos: (p.photos as string[]) || [],
+      items,
+      createdAtText: '今天 12:41',
+      autoAgreeIn: 7200,
+      timeline: [
+        { title: '提交退款申请', sub: '今天 12:41', done: true },
+        { title: '商家审核中', sub: '预计 14:41 前完成', done: true },
+        { title: '退款到账', sub: '原路退回微信零钱', done: false },
+      ],
+      placedAtText: order.createdAtText,
+    };
+    state.refunds = [refund, ...state.refunds];
+    order.status = 'refunding';
+    order.statusText = '退款处理中';
+    order.actions = [{ key: 'aftersale', text: '查看退款', style: 'primary' }];
+    return { refundId: id };
+  },
+
+  'GET /refund/detail': (p) => state.refunds.find((r) => r.id === p.id) || null,
+
+  'POST /refund/cancel': (p) => {
+    const refund = state.refunds.find((r) => r.id === p.id);
+    if (refund) {
+      refund.status = 'cancelled';
+      refund.statusText = '已撤销申请';
+      refund.statusSub = '你已撤销本次退款申请';
+      refund.timeline = [
+        ...refund.timeline.slice(0, 1),
+        { title: '已撤销申请', sub: '今天 12:52', done: true },
+      ];
+      const order = state.orders.find((o) => o.id === refund.orderId);
+      if (order) {
+        order.status = 'delivering';
+        order.statusText = '骑手配送中';
+        order.actions = [
+          { key: 'again', text: '再来一单', style: 'outline' },
+          { key: 'progress', text: '查看进度', style: 'primary' },
+        ];
+      }
+    }
+    return { ok: true };
+  },
+
+  /* 商家侧退款审核（48） */
+
+  'GET /merchant/refund/detail': (p) => state.refunds.find((r) => r.id === p.id) || null,
+
+  'POST /merchant/refund/approve': (p) => {
+    const refund = state.refunds.find((r) => r.id === p.id);
+    if (refund) {
+      refund.status = 'agreed';
+      refund.statusText = '退款成功';
+      refund.statusSub = '款项已原路退回微信零钱，1-3 个工作日到账';
+      refund.timeline = [
+        { title: '提交退款申请', sub: refund.createdAtText, done: true },
+        { title: '商家已同意', sub: '刚刚', done: true },
+        { title: '退款到账', sub: '原路退回微信零钱', done: true },
+      ];
+      state.merchantOrders = state.merchantOrders.filter((o) => o.refundId !== refund.id);
+    }
+    return { ok: true };
+  },
+
+  'POST /merchant/refund/reject': (p) => {
+    const refund = state.refunds.find((r) => r.id === p.id);
+    if (refund) {
+      refund.status = 'rejected';
+      refund.statusText = '商家已拒绝';
+      refund.statusSub = String(p.reason || '商家认为不符合退款条件');
+      refund.timeline = [
+        { title: '提交退款申请', sub: refund.createdAtText, done: true },
+        { title: '商家已拒绝', sub: '刚刚', done: true },
+        { title: '可联系客服介入', sub: '48 小时内可申请平台介入', done: false },
+      ];
+      state.merchantOrders = state.merchantOrders.filter((o) => o.refundId !== refund.id);
+    }
+    return { ok: true };
+  },
 
   'GET /merchant/dashboard': () => ({
     ...db.dashboard,

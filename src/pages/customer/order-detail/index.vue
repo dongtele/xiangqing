@@ -4,7 +4,7 @@ import { onLoad, onShow } from '@dcloudio/uni-app';
 import { getOrder } from '@/services/api';
 import { chrome } from '@/utils/chrome';
 import { fen2yuan } from '@/utils/money';
-import { toast, todo } from '@/utils/nav';
+import { push, toast, todo } from '@/utils/nav';
 import type { Order } from '@/models';
 
 /** 06 · 订单详情：状态时间轴、骑手、商品、金额、操作 */
@@ -45,7 +45,7 @@ function onAftersale(): void {
     toast('本单退款进行中，可在「我的订单 · 售后」查看进度');
     return;
   }
-  todo('20', '申请售后');
+  push(`/pages/customer/aftersale/index?id=${orderId}`);
 }
 </script>
 
@@ -93,7 +93,11 @@ function onAftersale(): void {
           <text class="od__rider-name">{{ order.rider.name }} · {{ order.rider.role }}</text>
           <text class="od__rider-status">{{ order.rider.statusText }}</text>
         </view>
-        <view class="pill pill--outline-primary tap" @tap="todo('84', '联系骑手')">拨打电话</view>
+        <view
+          class="pill pill--outline-primary tap"
+          @tap="push(`/pages/customer/rider-chat/index?id=${orderId}`)"
+          >拨打电话</view
+        >
       </view>
 
       <!-- 自提取餐码 -->
@@ -166,7 +170,7 @@ function onAftersale(): void {
       <view
         v-if="order.status === 'delivering'"
         class="od__btn tap"
-        @tap="todo('53', '配送实时追踪')"
+        @tap="push(`/pages/customer/delivery-track/index?id=${orderId}`)"
         >查看配送</view
       >
       <view class="od__btn tap" @tap="todo('41', '在线客服')">联系商家</view>

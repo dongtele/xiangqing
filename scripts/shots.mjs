@@ -31,6 +31,30 @@ function loadPlaywright() {
   }
 }
 
+/**
+ * 不需要交互前置的屏：`[截图名, 路由]`，逐条 goto + 截图。
+ * 需要真实点击才能到达的（下单闭环、角色分流）写在 main() 的流程段里。
+ */
+const ROUTES = [
+  // 顾客端 TabBar
+  ['05-我的订单', '/pages/customer/orders/index'],
+  ['07-我的', '/pages/customer/profile/index'],
+  // 商家端 TabBar
+  ['09-订单管理', '/pages/merchant/orders/index'],
+  ['10-商品管理', '/pages/merchant/goods/index'],
+  ['12-店铺中心', '/pages/merchant/shop/index'],
+  // 商家履约
+  ['62-商家订单详情', '/pages/merchant/order-detail/index?id=m_1024'],
+  ['51-小票打印', '/pages/merchant/print/index?orderId=m_1024'],
+  // 配送与售后
+  ['53-配送实时追踪', '/pages/customer/delivery-track/index?id=ord_1024'],
+  ['84-联系骑手', '/pages/customer/rider-chat/index?id=ord_1024'],
+  ['20-申请售后', '/pages/customer/aftersale/index?id=ord_1024'],
+  ['56-选择退款商品', '/pages/customer/refund-items/index?id=ord_1024'],
+  ['40-退款进度', '/pages/customer/refund-detail/index?id=rf_2001'],
+  ['48-退款审核', '/pages/merchant/refund-review/index?id=rf_2001'],
+];
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -134,35 +158,18 @@ async function main() {
   await tap('.pr__btn--primary');
   await shot('06-订单详情');
 
-  /* ---------- 顾客端 TabBar：05 / 07 ---------- */
-
-  await go('/pages/customer/orders/index');
-  await shot('05-我的订单');
+  /* ---------- 角色分流：07 →「商家管理」→ 08 ---------- */
 
   await go('/pages/customer/profile/index');
-  await shot('07-我的');
-
-  /* ---------- 商家端 TabBar：08 / 09 / 10 / 12 ---------- */
-
   await tap('.profile__merchant');
   await shot('08-工作台');
 
-  await go('/pages/merchant/orders/index');
-  await shot('09-订单管理');
+  /* ---------- 其余屏：直接进路由即可，不需要交互前置 ---------- */
 
-  await go('/pages/merchant/goods/index');
-  await shot('10-商品管理');
-
-  await go('/pages/merchant/shop/index');
-  await shot('12-店铺中心');
-
-  /* ---------- 商家履约链路：62 / 51 ---------- */
-
-  await go('/pages/merchant/order-detail/index?id=m_1024');
-  await shot('62-商家订单详情');
-
-  await go('/pages/merchant/print/index?orderId=m_1024');
-  await shot('51-小票打印');
+  for (const [name, route] of ROUTES) {
+    await go(route);
+    await shot(name);
+  }
 
   await browser.close();
   server.close();

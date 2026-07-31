@@ -1,7 +1,11 @@
 import { request } from './request';
 import type {
+  AftersaleItem,
+  AftersaleOptions,
+  AftersaleType,
   CartItem,
   Category,
+  DeliveryTrack,
   CheckoutTrial,
   CustomerOrderTab,
   Dashboard,
@@ -15,6 +19,10 @@ import type {
   PrintSettings,
   ReceiptPreview,
   ReceiptType,
+  Refund,
+  RefundTrial,
+  Rider,
+  RiderMessage,
   Shop,
   UserProfile,
 } from '@/models';
@@ -71,9 +79,64 @@ export const getOrders = (tab: CustomerOrderTab): Promise<Order[]> =>
 
 export const getOrder = (id: string): Promise<Order> => request<Order>('/order/detail', { id });
 
+/* ---------------- 顾客端 · 配送与联系骑手 ---------------- */
+
+export const getDeliveryTrack = (orderId: string): Promise<DeliveryTrack | null> =>
+  request('/delivery/track', { orderId });
+
+export const getRiderChat = (
+  orderId: string
+): Promise<{ rider: Rider | null; messages: RiderMessage[]; quickReplies: string[] }> =>
+  request('/rider/chat', { orderId });
+
+export const sendRiderMessage = (
+  orderId: string,
+  text: string
+): Promise<{ messages: RiderMessage[] }> =>
+  request('/rider/chat/send', { orderId, text }, { method: 'POST' });
+
+/* ---------------- 顾客端 · 售后与退款 ---------------- */
+
+export const getAftersaleOptions = (orderId: string): Promise<AftersaleOptions | null> =>
+  request('/aftersale/options', { orderId });
+
+export const trialRefund = (orderId: string, items: AftersaleItem[]): Promise<RefundTrial> =>
+  request('/aftersale/trial', { orderId, items } as unknown as Record<string, unknown>, {
+    method: 'POST',
+  });
+
+export const applyAftersale = (payload: {
+  orderId: string;
+  type: AftersaleType;
+  reason: string;
+  desc: string;
+  photos: string[];
+  items: AftersaleItem[];
+}): Promise<{ refundId: string }> =>
+  request('/aftersale/apply', payload as unknown as Record<string, unknown>, {
+    method: 'POST',
+    loading: true,
+  });
+
+export const getRefund = (id: string): Promise<Refund | null> => request('/refund/detail', { id });
+
+export const cancelRefund = (id: string): Promise<{ ok: boolean }> =>
+  request('/refund/cancel', { id }, { method: 'POST' });
+
 /* ---------------- 商家端 ---------------- */
 
 export const getDashboard = (): Promise<Dashboard> => request<Dashboard>('/merchant/dashboard');
+
+/* ---------------- 商家端 · 退款审核 ---------------- */
+
+export const getMerchantRefund = (id: string): Promise<Refund | null> =>
+  request('/merchant/refund/detail', { id });
+
+export const approveRefund = (id: string): Promise<{ ok: boolean }> =>
+  request('/merchant/refund/approve', { id }, { method: 'POST', loading: true });
+
+export const rejectRefund = (id: string, reason: string): Promise<{ ok: boolean }> =>
+  request('/merchant/refund/reject', { id, reason }, { method: 'POST', loading: true });
 
 export const getMerchantOrders = (
   tab: MerchantOrderTab

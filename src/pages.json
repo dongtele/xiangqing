@@ -98,6 +98,42 @@
       "style": {
         "navigationBarTitleText": "打印设置"
       }
+    },
+    {
+      "path": "pages/customer/delivery-track/index",
+      "style": {
+        "navigationBarTitleText": "配送追踪"
+      }
+    },
+    {
+      "path": "pages/customer/rider-chat/index",
+      "style": {
+        "navigationBarTitleText": "联系骑手"
+      }
+    },
+    {
+      "path": "pages/customer/aftersale/index",
+      "style": {
+        "navigationBarTitleText": "申请售后"
+      }
+    },
+    {
+      "path": "pages/customer/refund-items/index",
+      "style": {
+        "navigationBarTitleText": "选择退款商品"
+      }
+    },
+    {
+      "path": "pages/customer/refund-detail/index",
+      "style": {
+        "navigationBarTitleText": "退款详情"
+      }
+    },
+    {
+      "path": "pages/merchant/refund-review/index",
+      "style": {
+        "navigationBarTitleText": "退款审核"
+      }
     }
   ],
   "globalStyle": {
