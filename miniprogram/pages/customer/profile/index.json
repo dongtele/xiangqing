@@ -1,7 +1,0 @@
-{
-  "navigationStyle": "custom",
-  "usingComponents": {
-    "icon-svg": "../../../components/icon/index",
-    "tab-bar": "../../../components/tab-bar/index"
-  }
-}

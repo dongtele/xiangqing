@@ -1,7 +1,0 @@
-{
-  "component": true,
-  "usingComponents": {
-    "icon-svg": "../icon/index",
-    "qty-stepper": "../qty-stepper/index"
-  }
-}
