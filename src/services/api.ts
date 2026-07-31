@@ -3,9 +3,16 @@ import type {
   AftersaleItem,
   AftersaleOptions,
   AftersaleType,
+  BulkGoods,
+  BulkTab,
   CartItem,
   Category,
+  CategoryRow,
   DeliveryTrack,
+  GoodsDraft,
+  OptionLibGroup,
+  StockGoods,
+  StockTab,
   CheckoutTrial,
   CustomerOrderTab,
   Dashboard,
@@ -177,7 +184,54 @@ export const printReceipt = (
 ): Promise<{ ok: boolean; message?: string }> =>
   request('/merchant/print', { orderId, type }, { method: 'POST', silent: true });
 
-/* ---------------- 商家端 · 商品 ---------------- */
+/* ---------------- 商家端 · 商品与菜单 ---------------- */
+
+export const getGoodsDraft = (id: string): Promise<GoodsDraft | null> =>
+  request('/merchant/goods/detail', { id });
+
+export const saveGoodsDraft = (draft: GoodsDraft): Promise<{ ok: boolean }> =>
+  request('/merchant/goods/save', draft as unknown as Record<string, unknown>, {
+    method: 'POST',
+    loading: true,
+  });
+
+export const getOptionLib = (): Promise<OptionLibGroup[]> => request('/merchant/option-lib');
+
+export const toggleLibOption = (groupId: string, optionId: string): Promise<{ ok: boolean }> =>
+  request('/merchant/option-lib/toggle', { groupId, optionId }, { method: 'POST', silent: true });
+
+export const getCategoryRows = (): Promise<CategoryRow[]> => request('/merchant/categories');
+
+export const moveCategory = (from: number, to: number): Promise<{ ok: boolean }> =>
+  request('/merchant/categories/move', { from, to }, { method: 'POST', silent: true });
+
+export const saveCategory = (id: string, name: string): Promise<{ ok: boolean }> =>
+  request('/merchant/categories/save', { id, name }, { method: 'POST' });
+
+export const getStockGoods = (): Promise<{
+  list: StockGoods[];
+  counts: Record<StockTab, number>;
+}> => request('/merchant/stock');
+
+export const toggleStock = (id: string): Promise<{ ok: boolean }> =>
+  request('/merchant/stock/toggle', { id }, { method: 'POST', silent: true });
+
+export const restoreAllStock = (): Promise<{ ok: boolean }> =>
+  request('/merchant/stock/restore-all', {}, { method: 'POST' });
+
+export const getBulkGoods = (
+  tab: BulkTab
+): Promise<{ list: BulkGoods[]; counts: Record<BulkTab, number> }> =>
+  request('/merchant/goods/bulk', { tab });
+
+export const bulkAction = (
+  ids: string[],
+  action: 'on' | 'off' | 'category' | 'delete'
+): Promise<{ ok: boolean; count: number }> =>
+  request('/merchant/goods/bulk-action', { ids, action } as unknown as Record<string, unknown>, {
+    method: 'POST',
+    loading: true,
+  });
 
 export const getMerchantGoods = (
   categoryName?: string

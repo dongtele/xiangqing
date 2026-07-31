@@ -5,7 +5,11 @@ import type {
   AftersaleItem,
   AftersaleOptions,
   AftersaleType,
+  BulkGoods,
+  BulkTab,
   CartItem,
+  CategoryRow,
+  GoodsDraft,
   CheckoutTrial,
   CustomerOrderTab,
   DeliveryTrack,
@@ -39,6 +43,12 @@ const state = {
   printSettings: { ...db.printSettings },
   refunds: db.refunds.map((r) => ({ ...r })),
   riderMessages: db.riderMessages.map((m) => ({ ...m })),
+  optionLib: db.optionLib.map((g) => ({ ...g, options: g.options.map((o) => ({ ...o })) })),
+  categoryRows: db.categoryRows.map((c) => ({ ...c })),
+  stockGoods: db.stockGoods.map((g) => ({ ...g })),
+  bulkGoods: db.bulkGoods.map((g) => ({ ...g })),
+  /** 11 编辑商品的草稿副本，保存后写回 goodsList / merchantGoods */
+  goodsDrafts: {} as Record<string, GoodsDraft>,
   payAttempts: {} as Record<string, number>,
   orderSeq: 1025,
   /** 打印任务流水，仅用于演示「已发送到打印机」 */
@@ -491,6 +501,159 @@ const routes: Record<string, (p: Payload) => unknown> = {
       order.statusText = '已完成';
     }
     return { ok: true };
+  },
+
+  /* ---------------- 商家端 · 商品与菜单 ---------------- */
+
+  'GET /merchant/goods/detail': (p): GoodsDraft | null => {
+    const id = String(p.id || '');
+    if (state.goodsDrafts[id]) return state.goodsDrafts[id];
+    const goods = db.goodsList.find((g) => g.id === id);
+    const row = state.merchantGoods.find((g) => g.id === id);
+    if (!goods && !row) return null;
+    const draft: GoodsDraft = {
+      id,
+      name: goods ? goods.name : row ? row.name : '',
+      categoryName: row
+        ? row.categoryName
+        : db.categories.find((c) => c.id === (goods ? goods.categoryId : ''))?.name || '',
+      price: goods ? goods.price : row ? row.price : 0,
+      stock: goods ? goods.stock : row ? row.stock : 0,
+      images: [goods ? goods.image : row ? row.image : ''],
+      onSale: row ? row.onSale : true,
+      specGroups: goods ? JSON.parse(JSON.stringify(goods.specGroups)) : [],
+    };
+    state.goodsDrafts[id] = draft;
+    return draft;
+  },
+
+  'POST /merchant/goods/save': (p) => {
+    const draft = p as unknown as GoodsDraft;
+    state.goodsDrafts[draft.id] = draft;
+    // 写回顾客端菜单与商家商品列表，保证 01 / 02 / 10 立即同步
+    const goods = db.goodsList.find((g) => g.id === draft.id);
+    if (goods) {
+      goods.name = draft.name;
+      goods.price = draft.price;
+      goods.stock = draft.stock;
+      goods.specGroups = draft.specGroups;
+      goods.onSale = draft.onSale;
+    }
+    const row = state.merchantGoods.find((g) => g.id === draft.id);
+    if (row) {
+      row.name = draft.name;
+      row.price = draft.price;
+      row.stock = draft.stock;
+      row.onSale = draft.onSale;
+      row.priceFrom = draft.specGroups.some((sg) => sg.options.some((o) => o.priceDelta > 0));
+    }
+    return { ok: true };
+  },
+
+  'GET /merchant/option-lib': () => state.optionLib,
+
+  'POST /merchant/option-lib/toggle': (p) => {
+    const group = state.optionLib.find((g) => g.id === p.groupId);
+    const option = group?.options.find((o) => o.id === p.optionId);
+    if (option) option.checked = !option.checked;
+    return { ok: true };
+  },
+
+  'GET /merchant/categories': (): CategoryRow[] => state.categoryRows,
+
+  'POST /merchant/categories/move': (p) => {
+    const from = Number(p.from);
+    const to = Number(p.to);
+    const list = [...state.categoryRows];
+    if (from < 0 || to < 0 || from >= list.length || to >= list.length) return { ok: false };
+    // 置顶的自动聚合分类不参与排序
+    if (list[from].pinned || list[to].pinned) return { ok: false };
+    const [moved] = list.splice(from, 1);
+    list.splice(to, 0, moved);
+    state.categoryRows = list;
+    return { ok: true };
+  },
+
+  'POST /merchant/categories/save': (p) => {
+    const id = String(p.id || '');
+    const name = String(p.name || '');
+    const hit = state.categoryRows.find((c) => c.id === id);
+    if (hit) {
+      hit.name = name;
+    } else {
+      state.categoryRows.push({
+        id: `c_${state.categoryRows.length + 1}`,
+        name,
+        sub: '0 个商品',
+        pinned: false,
+        hidden: true,
+      });
+    }
+    return { ok: true };
+  },
+
+  'GET /merchant/stock': () => ({
+    list: state.stockGoods,
+    counts: {
+      all: state.stockGoods.length,
+      onSale: state.stockGoods.filter((g) => g.available).length,
+      soldOut: state.stockGoods.filter((g) => !g.available).length,
+    },
+  }),
+
+  'POST /merchant/stock/toggle': (p) => {
+    const goods = state.stockGoods.find((g) => g.id === p.id);
+    if (goods) {
+      goods.available = !goods.available;
+      if (goods.available && goods.remain === 0) goods.remain = 10;
+      if (!goods.available) goods.remain = 0;
+    }
+    return { ok: true };
+  },
+
+  'POST /merchant/stock/restore-all': () => {
+    state.stockGoods.forEach((g) => {
+      if (!g.available) {
+        g.available = true;
+        g.remain = 10;
+      }
+    });
+    return { ok: true };
+  },
+
+  'GET /merchant/goods/bulk': (p) => {
+    const tab = (p.tab as BulkTab) || 'all';
+    const all = state.bulkGoods;
+    const list: BulkGoods[] =
+      tab === 'off'
+        ? all.filter((g) => g.offShelf)
+        : tab === 'soldOut'
+          ? all.filter((g) => !g.offShelf).slice(0, 2)
+          : tab === 'hot'
+            ? all.slice(0, 3)
+            : all;
+    return {
+      list,
+      counts: {
+        all: all.length,
+        hot: 3,
+        off: all.filter((g) => g.offShelf).length,
+        soldOut: state.stockGoods.filter((g) => !g.available).length,
+      },
+    };
+  },
+
+  'POST /merchant/goods/bulk-action': (p) => {
+    const ids = (p.ids as string[]) || [];
+    const action = String(p.action || '');
+    if (action === 'delete') {
+      state.bulkGoods = state.bulkGoods.filter((g) => ids.indexOf(g.id) < 0);
+    } else if (action === 'on' || action === 'off') {
+      state.bulkGoods.forEach((g) => {
+        if (ids.indexOf(g.id) >= 0) g.offShelf = action === 'off';
+      });
+    }
+    return { ok: true, count: ids.length };
   },
 
   'GET /merchant/print/settings': (): PrintSettings => state.printSettings,

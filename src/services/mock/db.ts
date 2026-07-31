@@ -1,9 +1,13 @@
 import { IMG } from './images';
 import type {
   Address,
+  BulkGoods,
   Category,
+  CategoryRow,
   Dashboard,
   Goods,
+  OptionLibGroup,
+  StockGoods,
   MerchantGoods,
   MerchantOrder,
   Order,
@@ -527,6 +531,132 @@ export const merchantOrders: MerchantOrder[] = [
     expectText: '已完成',
     customerSeqText: '第 8 单',
   },
+];
+
+/** 64 · 选项库：可复用的规格 / 加料组 */
+export const optionLib: OptionLibGroup[] = [
+  {
+    id: 'ol_1',
+    name: '份量',
+    multiple: false,
+    required: true,
+    metaText: '单选 · 必选 · 已用于 18 个商品',
+    options: [
+      { id: 'olo_1', name: '小份', priceDelta: 0, checked: false },
+      { id: 'olo_2', name: '标准', priceDelta: 0, checked: false },
+      { id: 'olo_3', name: '大份', priceDelta: 600, checked: false },
+    ],
+  },
+  {
+    id: 'ol_2',
+    name: '辣度',
+    multiple: false,
+    required: false,
+    metaText: '单选 · 可选 · 已用于 12 个商品',
+    options: [
+      { id: 'olo_4', name: '不辣', priceDelta: 0, checked: false },
+      { id: 'olo_5', name: '微辣', priceDelta: 0, checked: false },
+      { id: 'olo_6', name: '中辣', priceDelta: 0, checked: false },
+      { id: 'olo_7', name: '特辣', priceDelta: 0, checked: false },
+    ],
+  },
+  {
+    id: 'ol_3',
+    name: '加料',
+    multiple: true,
+    required: false,
+    metaText: '多选 · 最多 3 项 · 已用于 9 个商品',
+    options: [
+      { id: 'olo_8', name: '加米饭', priceDelta: 300, checked: true },
+      { id: 'olo_9', name: '加鸡蛋', priceDelta: 200, checked: true },
+      { id: 'olo_10', name: '加青菜', priceDelta: 400, checked: false },
+    ],
+  },
+];
+
+/** 22 · 分类管理 */
+export const categoryRows: CategoryRow[] = [
+  { id: 'hot', name: '热销推荐', sub: '自动聚合 · 按月售排序', pinned: true, hidden: false },
+  { id: 'c1', name: '招牌热菜', sub: '8 个商品', pinned: false, hidden: false },
+  { id: 'c2', name: '经典小炒', sub: '6 个商品', pinned: false, hidden: false },
+  { id: 'c3', name: '海鲜水产', sub: '4 个商品 · 1 个售罄', pinned: false, hidden: false },
+  { id: 'c4', name: '主食米饭', sub: '5 个商品', pinned: false, hidden: false },
+  {
+    id: 'c5',
+    name: '汤品饮品',
+    sub: '分类内无在售商品，顾客端自动隐藏',
+    pinned: false,
+    hidden: true,
+  },
+];
+
+/** 49 · 沽清与库存 */
+export const stockGoods: StockGoods[] = [
+  {
+    id: 'sg_1',
+    name: '宫保鸡丁',
+    image: '',
+    categoryName: '招牌热菜',
+    soldTodayText: '今日已售 38',
+    remain: 12,
+    available: true,
+  },
+  {
+    id: 'sg_2',
+    name: '水煮牛肉',
+    image: '',
+    categoryName: '招牌热菜',
+    soldTodayText: '今日已售 25',
+    remain: 4,
+    available: true,
+  },
+  {
+    id: 'sg_3',
+    name: '清蒸鲈鱼',
+    image: '',
+    categoryName: '海鲜水产',
+    soldTodayText: '今日已售 9',
+    remain: 0,
+    available: false,
+  },
+  {
+    id: 'sg_4',
+    name: '蒜蓉西兰花',
+    image: '',
+    categoryName: '经典小炒',
+    soldTodayText: '今日已售 21',
+    remain: 26,
+    available: true,
+  },
+  {
+    id: 'sg_5',
+    name: '酸辣汤',
+    image: '',
+    categoryName: '汤品饮品',
+    soldTodayText: '今日已售 6',
+    remain: 0,
+    available: false,
+  },
+];
+
+/** 93 · 商品批量管理 */
+export const bulkGoods: BulkGoods[] = [
+  { id: 'bg_1', name: '宫保鸡丁', image: '', metaText: '热菜 · ￥28.00 · 月售 186', offShelf: false },
+  {
+    id: 'bg_2',
+    name: '红烧肉盖饭',
+    image: '',
+    metaText: '主食 · ￥29.00 · 月售 154',
+    offShelf: false,
+  },
+  {
+    id: 'bg_3',
+    name: '酸辣土豆丝',
+    image: '',
+    metaText: '热菜 · ￥12.00 · 月售 121',
+    offShelf: false,
+  },
+  { id: 'bg_4', name: '干锅花菜', image: '', metaText: '热菜 · ￥26.00 · 月售 3', offShelf: true },
 ];
 
 export const printSettings: PrintSettings = {

@@ -455,6 +455,70 @@ export interface ReceiptPreview {
   footer?: string;
 }
 
+/* ---------------- 商家端 · 商品与菜单 ---------------- */
+
+/** 11 编辑商品的可编辑副本 */
+export interface GoodsDraft {
+  id: string;
+  name: string;
+  categoryName: string;
+  /** 基础价，分 */
+  price: number;
+  stock: number;
+  images: string[];
+  onSale: boolean;
+  specGroups: SpecGroup[];
+}
+
+/** 64 规格与加料选项库：可复用的选项组 */
+export interface OptionLibGroup {
+  id: string;
+  name: string;
+  multiple: boolean;
+  required: boolean;
+  /** 单选 · 必选 · 已用于 18 个商品 */
+  metaText: string;
+  options: { id: string; name: string; priceDelta: number; checked: boolean }[];
+}
+
+/** 22 分类管理 */
+export interface CategoryRow {
+  id: string;
+  name: string;
+  sub: string;
+  /** 热销推荐这类自动聚合分类不可删改 */
+  pinned: boolean;
+  /** 分类内无在售商品，顾客端自动隐藏 */
+  hidden: boolean;
+}
+
+/** 49 沽清与库存 */
+export interface StockGoods {
+  id: string;
+  name: string;
+  image: string;
+  categoryName: string;
+  /** 今日已售 38 */
+  soldTodayText: string;
+  remain: number;
+  /** false = 已沽清 */
+  available: boolean;
+}
+
+export type StockTab = 'all' | 'onSale' | 'soldOut';
+
+/** 93 商品批量管理 */
+export interface BulkGoods {
+  id: string;
+  name: string;
+  image: string;
+  /** 热菜 · ￥28.00 · 月售 186 */
+  metaText: string;
+  offShelf: boolean;
+}
+
+export type BulkTab = 'all' | 'hot' | 'off' | 'soldOut';
+
 export interface MerchantGoods {
   id: string;
   name: string;

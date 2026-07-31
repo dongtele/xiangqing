@@ -134,6 +134,48 @@
       "style": {
         "navigationBarTitleText": "退款审核"
       }
+    },
+    {
+      "path": "pages/merchant/goods-edit/index",
+      "style": {
+        "navigationBarTitleText": "编辑商品"
+      }
+    },
+    {
+      "path": "pages/merchant/spec-edit/index",
+      "style": {
+        "navigationBarTitleText": "规格与价格"
+      }
+    },
+    {
+      "path": "pages/merchant/option-lib/index",
+      "style": {
+        "navigationBarTitleText": "选项库"
+      }
+    },
+    {
+      "path": "pages/merchant/image-crop/index",
+      "style": {
+        "navigationBarTitleText": "裁剪图片"
+      }
+    },
+    {
+      "path": "pages/merchant/categories/index",
+      "style": {
+        "navigationBarTitleText": "分类管理"
+      }
+    },
+    {
+      "path": "pages/merchant/stock/index",
+      "style": {
+        "navigationBarTitleText": "沽清管理"
+      }
+    },
+    {
+      "path": "pages/merchant/goods-bulk/index",
+      "style": {
+        "navigationBarTitleText": "批量管理"
+      }
     }
   ],
   "globalStyle": {

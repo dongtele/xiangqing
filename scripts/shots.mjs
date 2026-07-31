@@ -53,6 +53,14 @@ const ROUTES = [
   ['56-选择退款商品', '/pages/customer/refund-items/index?id=ord_1024'],
   ['40-退款进度', '/pages/customer/refund-detail/index?id=rf_2001'],
   ['48-退款审核', '/pages/merchant/refund-review/index?id=rf_2001'],
+  // 商品与菜单
+  ['11-编辑商品', '/pages/merchant/goods-edit/index?id=g1'],
+  ['36-规格与价格', '/pages/merchant/spec-edit/index?id=g1'],
+  ['64-选项库', '/pages/merchant/option-lib/index'],
+  ['63-图片裁剪', '/pages/merchant/image-crop/index?id=g1'],
+  ['22-分类管理', '/pages/merchant/categories/index'],
+  ['93-批量管理', '/pages/merchant/goods-bulk/index'],
+  ['49-沽清管理', '/pages/merchant/stock/index'],
 ];
 
 const MIME = {

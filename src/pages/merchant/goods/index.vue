@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import { getMerchantGoods, setGoodsOnSale } from '@/services/api';
 import { chrome } from '@/utils/chrome';
-import { toast, todo } from '@/utils/nav';
+import { push, toast } from '@/utils/nav';
 import type { MerchantGoods } from '@/models';
 
 /** 10 · 商品管理：分类筛选 + 上下架直达 + 库存预警 */
@@ -58,8 +58,15 @@ async function onToggleSale(id: string, on: boolean): Promise<void> {
       <view class="row--between">
         <text class="mg__title">商品管理</text>
         <view class="row mg__head-actions">
-          <view class="mg__pill mg__pill--grey tap" @tap="todo('22', '分类管理')">分类管理</view>
-          <view class="mg__pill mg__pill--primary tap" @tap="todo('11', '发布商品')"
+          <view class="mg__pill mg__pill--grey tap" @tap="push('/pages/merchant/categories/index')"
+            >分类管理</view
+          >
+          <view class="mg__pill mg__pill--grey tap" @tap="push('/pages/merchant/goods-bulk/index')"
+            >批量</view
+          >
+          <view
+            class="mg__pill mg__pill--primary tap"
+            @tap="push('/pages/merchant/goods-edit/index?id=g1')"
             >＋ 发布商品</view
           >
         </view>
@@ -104,7 +111,7 @@ async function onToggleSale(id: string, on: boolean): Promise<void> {
           class="mg__card"
           :class="{ 'mg__card--off': !item.onSale }"
         >
-          <view class="mg__thumb-wrap" @tap="todo('11', '编辑商品')">
+          <view class="mg__thumb-wrap" @tap="push(`/pages/merchant/goods-edit/index?id=${item.id}`)">
             <view class="mg__thumb" :class="{ 'mg__thumb--out': item.stockLevel === 'out' }">
               <wf-thumb :src="item.image" :radius="0" />
             </view>
@@ -113,7 +120,7 @@ async function onToggleSale(id: string, on: boolean): Promise<void> {
             </view>
           </view>
 
-          <view class="mg__info" @tap="todo('11', '编辑商品')">
+          <view class="mg__info" @tap="push(`/pages/merchant/goods-edit/index?id=${item.id}`)">
             <text class="mg__name">{{ item.name }}</text>
             <view class="mg__tags">
               <text class="mg__tag">{{ item.categoryName }}</text>
@@ -132,7 +139,7 @@ async function onToggleSale(id: string, on: boolean): Promise<void> {
             <view
               v-if="item.stockLevel === 'out'"
               class="pill pill--outline-primary tap"
-              @tap="todo('49', '沽清与库存')"
+              @tap="push('/pages/merchant/stock/index')"
               >补货</view
             >
             <template v-else>
