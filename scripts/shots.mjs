@@ -156,6 +156,14 @@ async function main() {
   await go('/pages/merchant/shop/index');
   await shot('12-店铺中心');
 
+  /* ---------- 商家履约链路：62 / 51 ---------- */
+
+  await go('/pages/merchant/order-detail/index?id=m_1024');
+  await shot('62-商家订单详情');
+
+  await go('/pages/merchant/print/index?orderId=m_1024');
+  await shot('51-小票打印');
+
   await browser.close();
   server.close();
   console.log(`\n截图已输出到 ${outDir}`);

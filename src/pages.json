@@ -5,59 +5,99 @@
   "pages": [
     {
       "path": "pages/login/index",
-      "style": { "navigationBarTitleText": "登录美味坊" }
+      "style": {
+        "navigationBarTitleText": "登录美味坊"
+      }
     },
     {
       "path": "pages/customer/menu/index",
-      "style": { "navigationBarTitleText": "点餐" }
+      "style": {
+        "navigationBarTitleText": "点餐"
+      }
     },
     {
       "path": "pages/customer/orders/index",
-      "style": { "navigationBarTitleText": "我的订单" }
+      "style": {
+        "navigationBarTitleText": "我的订单"
+      }
     },
     {
       "path": "pages/customer/profile/index",
-      "style": { "navigationBarTitleText": "我的" }
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
     },
     {
       "path": "pages/customer/goods/index",
-      "style": { "navigationBarTitleText": "商品详情" }
+      "style": {
+        "navigationBarTitleText": "商品详情"
+      }
     },
     {
       "path": "pages/customer/checkout/index",
-      "style": { "navigationBarTitleText": "确认订单" }
+      "style": {
+        "navigationBarTitleText": "确认订单"
+      }
     },
     {
       "path": "pages/customer/pay-method/index",
-      "style": { "navigationBarTitleText": "选择支付方式" }
+      "style": {
+        "navigationBarTitleText": "选择支付方式"
+      }
     },
     {
       "path": "pages/customer/pay/index",
-      "style": { "navigationBarTitleText": "收银台" }
+      "style": {
+        "navigationBarTitleText": "收银台"
+      }
     },
     {
       "path": "pages/customer/pay-result/index",
-      "style": { "navigationBarTitleText": "支付结果" }
+      "style": {
+        "navigationBarTitleText": "支付结果"
+      }
     },
     {
       "path": "pages/customer/order-detail/index",
-      "style": { "navigationBarTitleText": "订单详情" }
+      "style": {
+        "navigationBarTitleText": "订单详情"
+      }
     },
     {
       "path": "pages/merchant/dashboard/index",
-      "style": { "navigationBarTitleText": "工作台" }
+      "style": {
+        "navigationBarTitleText": "工作台"
+      }
     },
     {
       "path": "pages/merchant/orders/index",
-      "style": { "navigationBarTitleText": "订单管理" }
+      "style": {
+        "navigationBarTitleText": "订单管理"
+      }
     },
     {
       "path": "pages/merchant/goods/index",
-      "style": { "navigationBarTitleText": "商品管理" }
+      "style": {
+        "navigationBarTitleText": "商品管理"
+      }
     },
     {
       "path": "pages/merchant/shop/index",
-      "style": { "navigationBarTitleText": "店铺中心" }
+      "style": {
+        "navigationBarTitleText": "店铺中心"
+      }
+    },
+    {
+      "path": "pages/merchant/order-detail/index",
+      "style": {
+        "navigationBarTitleText": "商家订单详情"
+      }
+    },
+    {
+      "path": "pages/merchant/print/index",
+      "style": {
+        "navigationBarTitleText": "打印设置"
+      }
     }
   ],
   "globalStyle": {

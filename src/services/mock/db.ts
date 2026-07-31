@@ -7,6 +7,7 @@ import type {
   MerchantGoods,
   MerchantOrder,
   Order,
+  PrintSettings,
   Shop,
   UserProfile,
 } from '@/models';
@@ -471,6 +472,20 @@ export const merchantOrders: MerchantOrder[] = [
     customerSeqText: '第 8 单',
   },
 ];
+
+export const printSettings: PrintSettings = {
+  device: {
+    id: 'printer_a',
+    name: '后厨打印机 A',
+    online: true,
+    statusText: '在线 · 蓝牙已连接',
+  },
+  autoPrint: true,
+  copies: 2,
+  copiesText: '2 联',
+  width: '58mm',
+  printRemark: true,
+};
 
 export const merchantGoods: MerchantGoods[] = [
   {

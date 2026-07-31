@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app';
-import { getMerchantOrders } from '@/services/api';
+import {
+  acceptOrder,
+  finishOrder,
+  getMerchantOrders,
+  printReceipt,
+  rejectOrder,
+} from '@/services/api';
 import { chrome } from '@/utils/chrome';
 import { fen2yuan2 } from '@/utils/money';
 import { mmss } from '@/utils/time';
-import { toast, todo } from '@/utils/nav';
+import { push, toast, todo } from '@/utils/nav';
 import type { MerchantOrder, MerchantOrderTab } from '@/models';
 
 const TABS: { key: MerchantOrderTab; label: string }[] = [
@@ -17,8 +23,11 @@ const TABS: { key: MerchantOrderTab; label: string }[] = [
 
 /**
  * 09 · 订单管理：按状态分流，新单高亮 + 超时倒计时。
- * 接单 / 拒单 / 出餐 / 打印属第 3 步（商家履约链路 08 → 09 → 62 → 51），
- * 退款审核（48）属第 4 步，本轮点击给出所属步骤提示，不做无声失效。
+ * 列表内可直接接单 / 拒单 / 出餐 / 补打，点卡片进商家订单详情（62）。
+ *
+ * 注：倒计时文案在设计稿里两处不一致——09 写「剩 3:42 未接自动提醒」，
+ * 62 写「剩 2:38 自动拒单」。同一个倒计时，一处是提醒、一处是自动拒单，
+ * 目前两屏各自照稿实现，**超时到底是提醒还是自动拒单需要业务确认**。
  */
 const headPad = ref(96);
 const activeTab = ref<MerchantOrderTab>('pending');
@@ -97,8 +106,37 @@ function onSwitchTab(key: MerchantOrderTab): void {
   load();
 }
 
-function fulfillTodo(): void {
-  toast('接单 / 出餐 / 打印属第 3 步（商家履约链路）');
+async function onAccept(id: string): Promise<void> {
+  const res = await acceptOrder(id);
+  toast(res.autoPrinted ? '已接单，后厨联已自动打印' : '已接单，进入备餐', 'success');
+  load();
+}
+
+function onReject(id: string): void {
+  uni.showModal({
+    title: '确认拒单？',
+    content: '拒单后顾客将收到通知并自动退款',
+    confirmText: '拒单',
+    confirmColor: '#D14343',
+    success: async (res) => {
+      if (!res.confirm) return;
+      await rejectOrder(id);
+      toast('已拒单');
+      load();
+    },
+  });
+}
+
+async function onFinish(id: string): Promise<void> {
+  await finishOrder(id);
+  toast('已出餐', 'success');
+  load();
+}
+
+/** 列表内直接补打，不必进详情 */
+async function onPrint(id: string): Promise<void> {
+  const res = await printReceipt(id);
+  toast(res.message || (res.ok ? '已发送到打印机' : '打印失败'), res.ok ? 'success' : 'none');
 }
 </script>
 
@@ -137,7 +175,7 @@ function fulfillTodo(): void {
           class="mo__card"
           :class="{ 'mo__card--new': row.status === 'pending' }"
         >
-          <view class="row--between" @tap="todo('62', '商家订单详情')">
+          <view class="row--between" @tap="push(`/pages/merchant/order-detail/index?id=${row.id}`)">
             <view class="row mo__seq">
               <text
                 class="mo__channel"
@@ -191,16 +229,16 @@ function fulfillTodo(): void {
             >
           </view>
           <view v-else-if="row.status === 'pending'" class="mo__actions">
-            <view class="mo__btn mo__btn--ghost tap" @tap="fulfillTodo">拒单</view>
-            <view class="mo__btn mo__btn--primary tap" @tap="fulfillTodo">立即接单</view>
+            <view class="mo__btn mo__btn--ghost tap" @tap="onReject(row.id)">拒单</view>
+            <view class="mo__btn mo__btn--primary tap" @tap="onAccept(row.id)">立即接单</view>
           </view>
           <view v-else-if="row.status === 'ongoing'" class="mo__actions">
-            <view class="mo__btn mo__btn--ghost mo__btn--half tap" @tap="todo('51', '小票打印')"
+            <view class="mo__btn mo__btn--ghost mo__btn--half tap" @tap="onPrint(row.id)"
               >打印小票</view
             >
             <view
               class="mo__btn mo__btn--outline-primary mo__btn--half tap"
-              @tap="fulfillTodo"
+              @tap="onFinish(row.id)"
               >出餐完成</view
             >
           </view>

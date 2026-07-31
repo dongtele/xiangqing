@@ -296,6 +296,8 @@ export interface MerchantOrder {
   countdown?: number;
   /** 列表页倒计时文案 */
   countdownText?: string;
+  /** 详情页倒计时文案（超时后自动拒单） */
+  detailCountdownText?: string;
   customerName: string;
   customerPhone: string;
   addressText?: string;
@@ -318,6 +320,43 @@ export interface MerchantOrder {
   /** 售后单关联（status = aftersale 时有值） */
   refundAmount?: number;
   refundReason?: string;
+}
+
+/* ---------------- 商家端 · 小票打印 ---------------- */
+
+export interface PrinterDevice {
+  id: string;
+  name: string;
+  online: boolean;
+  /** 在线 · 蓝牙已连接 */
+  statusText: string;
+}
+
+export interface PrintSettings {
+  device: PrinterDevice;
+  autoPrint: boolean;
+  copies: number;
+  copiesText: string;
+  width: string;
+  printRemark: boolean;
+}
+
+export type ReceiptType = 'kitchen' | 'customer';
+
+export interface ReceiptLine {
+  text: string;
+  qty: string;
+}
+
+export interface ReceiptPreview {
+  type: ReceiptType;
+  title: string;
+  meta: string;
+  lines: ReceiptLine[];
+  remark?: string;
+  /** 顾客联的金额区 */
+  amounts: { label: string; value: string }[];
+  footer?: string;
 }
 
 export interface MerchantGoods {
