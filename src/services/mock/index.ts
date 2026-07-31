@@ -6,6 +6,8 @@ import type {
   AftersaleOptions,
   AddressFull,
   AftersaleType,
+  InvoiceTitle,
+  SupportMessage,
   BulkGoods,
   BulkTab,
   CartItem,
@@ -47,6 +49,9 @@ const state = {
   optionLib: db.optionLib.map((g) => ({ ...g, options: g.options.map((o) => ({ ...o })) })),
   addresses: db.addresses.map((a) => ({ ...a })),
   reviews: db.reviews.map((r) => ({ ...r })),
+  myReviews: db.myReviews.map((r) => ({ ...r })),
+  invoiceTitles: db.invoiceTitles.map((t) => ({ ...t })),
+  supportMessages: db.supportMessages.map((m) => ({ ...m })),
   categoryRows: db.categoryRows.map((c) => ({ ...c })),
   stockGoods: db.stockGoods.map((g) => ({ ...g })),
   bulkGoods: db.bulkGoods.map((g) => ({ ...g })),
@@ -342,6 +347,107 @@ const routes: Record<string, (p: Payload) => unknown> = {
   },
 
   'GET /order/list': (p) => customerOrders((p.tab as CustomerOrderTab) || 'all'),
+
+  /* ---------------- 取餐 / 评价 / 发票 / 客服 ---------------- */
+
+  'GET /order/pickup-code': (p) => {
+    const order = state.orders.find((o) => o.id === p.id);
+    if (!order || !order.pickupCode) return null;
+    return {
+      code: order.pickupCode,
+      qrData: `WWF-${order.orderNo}-${order.pickupCode}`,
+      orderNo: order.orderNo,
+      itemsText: `${order.items.map((i) => `${i.name} x${i.qty}`).join('、')} · 共￥${(
+        order.payable / 100
+      ).toFixed(0)}`,
+      statusTitle: '备餐完成，请到店取餐',
+      statusSub: '向店员出示此码，或报 4 位取餐码',
+      waitText: '尽快取餐（已出餐 5 分钟）',
+      shopName: state.shop.name,
+      shopAddress: db.shopProfile.addressText,
+      shopDistance: state.shop.distanceText,
+    };
+  },
+
+  'GET /comment/options': () => db.commentOptions,
+
+  'POST /comment/submit': (p) => {
+    const order = state.orders.find((o) => o.id === p.orderId);
+    if (order) {
+      order.status = 'commented';
+      order.statusText = '已评价';
+      order.statusTone = 'weak';
+      order.actions = [{ key: 'again', text: '再来一单', style: 'outline' }];
+    }
+    state.myReviews = [
+      {
+        id: `mr_${state.myReviews.length + 1}`,
+        name: '我',
+        avatarText: '王',
+        anonymous: !!p.anonymous,
+        stars: Number(p.stars || 5),
+        dateText: '今天',
+        text: String(p.text || ''),
+        photos: (p.photos as string[]) || [],
+        canAppend: true,
+      },
+      ...state.myReviews,
+    ];
+    return { ok: true };
+  },
+
+  'GET /comment/mine': () => ({
+    list: state.myReviews,
+    counts: {
+      todo: customerOrders('toComment').length,
+      done: state.myReviews.length,
+    },
+  }),
+
+  'POST /comment/remove': (p) => {
+    state.myReviews = state.myReviews.filter((r) => r.id !== p.id);
+    return { ok: true };
+  },
+
+  'GET /invoice/options': () => db.invoiceOptions,
+
+  'GET /invoice/titles': (): InvoiceTitle[] => state.invoiceTitles,
+
+  'POST /invoice/title/default': (p) => {
+    state.invoiceTitles.forEach((t) => {
+      t.isDefault = t.id === p.id;
+    });
+    return { ok: true };
+  },
+
+  'POST /invoice/title/remove': (p) => {
+    state.invoiceTitles = state.invoiceTitles.filter((t) => t.id !== p.id);
+    return { ok: true };
+  },
+
+  'POST /invoice/apply': () => ({ ok: true }),
+
+  'GET /support/chat': () => ({
+    messages: state.supportMessages,
+    quickReplies: db.supportQuickReplies,
+  }),
+
+  'POST /support/send': (p) => {
+    const msg: SupportMessage = {
+      id: `sm_${state.supportMessages.length + 1}`,
+      from: 'me',
+      kind: 'text',
+      text: String(p.text || ''),
+    };
+    state.supportMessages = [...state.supportMessages, msg];
+    return { messages: state.supportMessages };
+  },
+
+  'GET /help/center': () => db.helpCenter,
+
+  'GET /feedback/options': () => db.feedbackOptions,
+
+  'POST /feedback/submit': () => ({ ok: true }),
 
   'GET /order/detail': (p) => state.orders.find((o) => o.id === p.id),
 

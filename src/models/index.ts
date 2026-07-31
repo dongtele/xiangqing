@@ -452,6 +452,96 @@ export interface Order {
 
 export type CustomerOrderTab = 'all' | 'ongoing' | 'toComment' | 'aftersale';
 
+/* ---------------- 取餐 / 评价 / 发票 / 客服 ---------------- */
+
+/** 25 自提取餐码 */
+export interface PickupCodeInfo {
+  code: string;
+  /** 二维码里编码的内容 */
+  qrData: string;
+  orderNo: string;
+  itemsText: string;
+  statusTitle: string;
+  statusSub: string;
+  waitText: string;
+  shopName: string;
+  shopAddress: string;
+  shopDistance: string;
+}
+
+/** 19 / 55 评价编辑 */
+export interface CommentOptions {
+  orderNo: string;
+  shopName: string;
+  shopLogo: string;
+  orderMetaText: string;
+  /** 5 → 非常满意 */
+  ratingLabels: string[];
+  tags: string[];
+  maxLength: number;
+  maxPhotos: number;
+  rewardText: string;
+}
+
+export type MyReviewTab = 'todo' | 'done';
+
+/** 60 我的评价 */
+export interface MyReview extends Review {
+  canAppend: boolean;
+}
+
+/** 58 发票抬头 */
+export interface InvoiceTitle {
+  id: string;
+  type: 'company' | 'personal';
+  typeText: string;
+  name: string;
+  taxNo: string;
+  isDefault: boolean;
+}
+
+/** 57 申请发票 */
+export interface InvoiceOptions {
+  orderNo: string;
+  /** 开票金额，分 */
+  amount: number;
+  invoiceTypeText: string;
+  email: string;
+  tip: string;
+}
+
+/** 41 在线客服的一条消息 */
+export interface SupportMessage {
+  id: string;
+  from: 'agent' | 'me';
+  /** text 普通气泡；order 订单卡片 */
+  kind: 'text' | 'order';
+  text: string;
+  timeText?: string;
+  order?: { orderNo: string; summary: string; image: string };
+}
+
+/** 77 帮助中心 */
+export interface HelpScene {
+  key: string;
+  label: string;
+  icon: string;
+}
+
+export interface HelpCenterInfo {
+  scenes: HelpScene[];
+  faqs: { id: string; question: string; answer: string }[];
+}
+
+/** 76 意见反馈 */
+export interface FeedbackOptions {
+  types: string[];
+  orderNo: string;
+  phoneMask: string;
+  maxLength: number;
+  minLength: number;
+}
+
 /* ---------------- 商家端 ---------------- */
 
 export interface DashboardMetric {

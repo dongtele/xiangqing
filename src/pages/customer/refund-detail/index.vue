@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import { cancelRefund, getRefund } from '@/services/api';
 import { fen2yuan2 } from '@/utils/money';
-import { toast, todo } from '@/utils/nav';
+import { push, toast } from '@/utils/nav';
 import type { Refund } from '@/models';
 
 /** 40 · 退款进度：状态时间轴 + 金额与流水号 */
@@ -93,7 +93,7 @@ function onCancel(): void {
       </view>
 
       <view class="rd__actions">
-        <view class="rd__btn tap" @tap="todo('41', '在线客服')">联系商家</view>
+        <view class="rd__btn tap" @tap="push('/pages/customer/support/index')">联系商家</view>
         <view v-if="canCancel" class="rd__btn tap" @tap="onCancel">撤销申请</view>
       </view>
 

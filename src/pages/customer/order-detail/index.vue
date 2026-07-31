@@ -4,7 +4,7 @@ import { onLoad, onShow } from '@dcloudio/uni-app';
 import { getOrder } from '@/services/api';
 import { chrome } from '@/utils/chrome';
 import { fen2yuan } from '@/utils/money';
-import { push, toast, todo } from '@/utils/nav';
+import { push, toast } from '@/utils/nav';
 import type { Order } from '@/models';
 
 /** 06 · 订单详情：状态时间轴、骑手、商品、金额、操作 */
@@ -101,7 +101,11 @@ function onAftersale(): void {
       </view>
 
       <!-- 自提取餐码 -->
-      <view v-if="order.pickupCode" class="card od__code">
+      <view
+        v-if="order.pickupCode"
+        class="card od__code tap"
+        @tap="push(`/pages/customer/pickup-code/index?id=${orderId}`)"
+      >
         <text class="od__code-label">取餐码</text>
         <text class="od__code-num">{{ order.pickupCode }}</text>
       </view>
@@ -173,7 +177,16 @@ function onAftersale(): void {
         @tap="push(`/pages/customer/delivery-track/index?id=${orderId}`)"
         >查看配送</view
       >
-      <view class="od__btn tap" @tap="todo('41', '在线客服')">联系商家</view>
+      <view
+        v-if="order.status === 'done'"
+        class="od__btn tap"
+        @tap="push(`/pages/customer/comment/index?id=${orderId}`)"
+        >去评价</view
+      >
+      <view class="od__btn tap" @tap="push('/pages/customer/support/index')">联系商家</view>
+      <view class="od__btn tap" @tap="push(`/pages/customer/invoice/index?id=${orderId}`)"
+        >申请发票</view
+      >
       <view class="od__btn tap" @tap="onAftersale">申请售后</view>
     </view>
   </view>

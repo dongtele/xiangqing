@@ -71,6 +71,17 @@ const ROUTES = [
   ['16-编辑地址', '/pages/customer/address-edit/index?id=addr_1'],
   ['52-地图选点', '/pages/customer/map-picker/index'],
   ['83-选择自提门店', '/pages/customer/pickup-stores/index'],
+  // 订单尾部：取餐 / 评价 / 发票
+  ['25-取餐码', '/pages/customer/pickup-code/index?id=ord_1019'],
+  ['19-评价订单', '/pages/customer/comment/index?id=ord_1019'],
+  ['55-评价晒单', '/pages/customer/comment-publish/index?id=ord_1019'],
+  ['60-我的评价', '/pages/customer/my-reviews/index'],
+  ['57-申请发票', '/pages/customer/invoice/index?id=ord_1019'],
+  ['58-发票抬头', '/pages/customer/invoice-titles/index'],
+  // 客服与帮助
+  ['41-在线客服', '/pages/customer/support/index'],
+  ['77-帮助中心', '/pages/customer/help/index'],
+  ['76-意见反馈', '/pages/customer/feedback/index'],
 ];
 
 const MIME = {

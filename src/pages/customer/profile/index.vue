@@ -19,7 +19,7 @@ const quick = [
 const cells = [
   { key: 'address', label: '地址管理', value: '', primary: false, screen: '38', url: '/pages/customer/addresses/index' },
   { key: 'coupon', label: '优惠券', value: '2张可用', primary: true, screen: '39', url: '' },
-  { key: 'contact', label: '联系商家', value: '', primary: false, screen: '41', url: '' },
+  { key: 'contact', label: '联系商家', value: '', primary: false, screen: '41', url: '/pages/customer/support/index' },
   { key: 'about', label: '关于小店', value: '', primary: false, screen: '78', url: '' },
 ];
 

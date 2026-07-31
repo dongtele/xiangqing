@@ -64,42 +64,6 @@
       }
     },
     {
-      "path": "pages/merchant/dashboard/index",
-      "style": {
-        "navigationBarTitleText": "工作台"
-      }
-    },
-    {
-      "path": "pages/merchant/orders/index",
-      "style": {
-        "navigationBarTitleText": "订单管理"
-      }
-    },
-    {
-      "path": "pages/merchant/goods/index",
-      "style": {
-        "navigationBarTitleText": "商品管理"
-      }
-    },
-    {
-      "path": "pages/merchant/shop/index",
-      "style": {
-        "navigationBarTitleText": "店铺中心"
-      }
-    },
-    {
-      "path": "pages/merchant/order-detail/index",
-      "style": {
-        "navigationBarTitleText": "商家订单详情"
-      }
-    },
-    {
-      "path": "pages/merchant/print/index",
-      "style": {
-        "navigationBarTitleText": "打印设置"
-      }
-    },
-    {
       "path": "pages/customer/delivery-track/index",
       "style": {
         "navigationBarTitleText": "配送追踪"
@@ -127,54 +91,6 @@
       "path": "pages/customer/refund-detail/index",
       "style": {
         "navigationBarTitleText": "退款详情"
-      }
-    },
-    {
-      "path": "pages/merchant/refund-review/index",
-      "style": {
-        "navigationBarTitleText": "退款审核"
-      }
-    },
-    {
-      "path": "pages/merchant/goods-edit/index",
-      "style": {
-        "navigationBarTitleText": "编辑商品"
-      }
-    },
-    {
-      "path": "pages/merchant/spec-edit/index",
-      "style": {
-        "navigationBarTitleText": "规格与价格"
-      }
-    },
-    {
-      "path": "pages/merchant/option-lib/index",
-      "style": {
-        "navigationBarTitleText": "选项库"
-      }
-    },
-    {
-      "path": "pages/merchant/image-crop/index",
-      "style": {
-        "navigationBarTitleText": "裁剪图片"
-      }
-    },
-    {
-      "path": "pages/merchant/categories/index",
-      "style": {
-        "navigationBarTitleText": "分类管理"
-      }
-    },
-    {
-      "path": "pages/merchant/stock/index",
-      "style": {
-        "navigationBarTitleText": "沽清管理"
-      }
-    },
-    {
-      "path": "pages/merchant/goods-bulk/index",
-      "style": {
-        "navigationBarTitleText": "批量管理"
       }
     },
     {
@@ -230,8 +146,161 @@
       "style": {
         "navigationBarTitleText": "选择自提门店"
       }
+    },
+    {
+      "path": "pages/customer/pickup-code/index",
+      "style": {
+        "navigationBarTitleText": "取餐码"
+      }
+    },
+    {
+      "path": "pages/customer/comment/index",
+      "style": {
+        "navigationBarTitleText": "评价订单"
+      }
+    },
+    {
+      "path": "pages/customer/comment-publish/index",
+      "style": {
+        "navigationBarTitleText": "评价晒单"
+      }
+    },
+    {
+      "path": "pages/customer/my-reviews/index",
+      "style": {
+        "navigationBarTitleText": "我的评价"
+      }
+    },
+    {
+      "path": "pages/customer/invoice/index",
+      "style": {
+        "navigationBarTitleText": "申请发票"
+      }
+    },
+    {
+      "path": "pages/customer/invoice-titles/index",
+      "style": {
+        "navigationBarTitleText": "发票抬头"
+      }
+    },
+    {
+      "path": "pages/customer/support/index",
+      "style": {
+        "navigationBarTitleText": "在线客服"
+      }
+    },
+    {
+      "path": "pages/customer/help/index",
+      "style": {
+        "navigationBarTitleText": "帮助中心"
+      }
+    },
+    {
+      "path": "pages/customer/feedback/index",
+      "style": {
+        "navigationBarTitleText": "意见反馈"
+      }
     }
   ],
+  "subPackages": [
+    {
+      "root": "pages/merchant",
+      "pages": [
+        {
+          "path": "dashboard/index",
+          "style": {
+            "navigationBarTitleText": "工作台"
+          }
+        },
+        {
+          "path": "orders/index",
+          "style": {
+            "navigationBarTitleText": "订单管理"
+          }
+        },
+        {
+          "path": "goods/index",
+          "style": {
+            "navigationBarTitleText": "商品管理"
+          }
+        },
+        {
+          "path": "shop/index",
+          "style": {
+            "navigationBarTitleText": "店铺中心"
+          }
+        },
+        {
+          "path": "order-detail/index",
+          "style": {
+            "navigationBarTitleText": "商家订单详情"
+          }
+        },
+        {
+          "path": "print/index",
+          "style": {
+            "navigationBarTitleText": "打印设置"
+          }
+        },
+        {
+          "path": "refund-review/index",
+          "style": {
+            "navigationBarTitleText": "退款审核"
+          }
+        },
+        {
+          "path": "goods-edit/index",
+          "style": {
+            "navigationBarTitleText": "编辑商品"
+          }
+        },
+        {
+          "path": "spec-edit/index",
+          "style": {
+            "navigationBarTitleText": "规格与价格"
+          }
+        },
+        {
+          "path": "option-lib/index",
+          "style": {
+            "navigationBarTitleText": "选项库"
+          }
+        },
+        {
+          "path": "image-crop/index",
+          "style": {
+            "navigationBarTitleText": "裁剪图片"
+          }
+        },
+        {
+          "path": "categories/index",
+          "style": {
+            "navigationBarTitleText": "分类管理"
+          }
+        },
+        {
+          "path": "stock/index",
+          "style": {
+            "navigationBarTitleText": "沽清管理"
+          }
+        },
+        {
+          "path": "goods-bulk/index",
+          "style": {
+            "navigationBarTitleText": "批量管理"
+          }
+        }
+      ]
+    }
+  ],
+  "preloadRule": {
+    "pages/login/index": {
+      "network": "all",
+      "packages": [
+        "pages/merchant"
+      ]
+    }
+  },
   "globalStyle": {
     "navigationStyle": "custom",
     "backgroundColor": "#F6F5F2",

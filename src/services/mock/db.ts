@@ -2,6 +2,13 @@ import { IMG } from './images';
 import type {
   Address,
   AddressFull,
+  CommentOptions,
+  FeedbackOptions,
+  HelpCenterInfo,
+  InvoiceOptions,
+  InvoiceTitle,
+  MyReview,
+  SupportMessage,
   BulkGoods,
   Category,
   CategoryRow,
@@ -401,6 +408,135 @@ export const licenseInfo: LicenseInfo = {
       validText: '2025.04.01 - 2030.03.31',
     },
   ],
+};
+
+/** 19 / 55 · 评价编辑 */
+export const commentOptions: CommentOptions = {
+  orderNo: 'DD20260711018',
+  shopName: '美味坊（文三路店）',
+  shopLogo: IMG.shopLogo,
+  orderMetaText: '7月26日 · 3 件商品',
+  ratingLabels: ['很不满意', '不满意', '一般', '满意', '非常满意'],
+  tags: ['份量足', '味道正宗', '包装好', '送达快', '性价比高'],
+  maxLength: 200,
+  maxPhotos: 9,
+  rewardText: '评价成功可得 1 张无门槛 ¥3 券',
+};
+
+/** 60 · 我的评价 */
+export const myReviews: MyReview[] = [
+  {
+    id: 'mr_1',
+    name: '我',
+    avatarText: '王',
+    anonymous: false,
+    stars: 5,
+    dateText: '7月26日',
+    text: '分量很足，宫保鸡丁花生米很脆，会回购。',
+    photos: ['', ''],
+    reply: '感谢支持，欢迎再来～',
+    canAppend: true,
+  },
+  {
+    id: 'mr_2',
+    name: '我',
+    avatarText: '王',
+    anonymous: false,
+    stars: 4,
+    dateText: '7月20日',
+    text: '味道不错，就是等得有点久。',
+    photos: [],
+    canAppend: false,
+  },
+];
+
+/** 58 · 发票抬头 */
+export const invoiceTitles: InvoiceTitle[] = [
+  {
+    id: 'it_1',
+    type: 'company',
+    typeText: '单位',
+    name: '杭州某某科技有限公司',
+    taxNo: '91330100MA2XXXXX',
+    isDefault: true,
+  },
+  { id: 'it_2', type: 'personal', typeText: '个人', name: '王女士', taxNo: '', isDefault: false },
+];
+
+/** 57 · 申请发票 */
+export const invoiceOptions: InvoiceOptions = {
+  orderNo: '#20260726018',
+  amount: 6800,
+  invoiceTypeText: '电子普通发票',
+  email: 'wang@example.com',
+  tip: '发票由商家开具，预计 1-3 个工作日发送至邮箱；开票后该订单不支持退款。',
+};
+
+/** 41 · 在线客服会话 */
+export const supportMessages: SupportMessage[] = [
+  {
+    id: 'sm_1',
+    from: 'agent',
+    kind: 'text',
+    text: '您好，美味坊客服为您服务，请问有什么可以帮您？',
+    timeText: '今天 12:44',
+  },
+  {
+    id: 'sm_2',
+    from: 'me',
+    kind: 'order',
+    text: '',
+    order: { orderNo: '#20260727039', summary: '宫保鸡丁 等 3 件 · ￥68.00', image: '' },
+  },
+  { id: 'sm_3', from: 'me', kind: 'text', text: '这单里的米饭没有送到' },
+];
+
+export const supportQuickReplies = ['菜品少送了', '催一下单', '怎么退款', '发票问题'];
+
+/** 77 · 帮助中心 */
+export const helpCenter: HelpCenterInfo = {
+  scenes: [
+    { key: 'order', label: '订单', icon: 'order' },
+    { key: 'delivery', label: '配送', icon: 'pin' },
+    { key: 'refund', label: '退款', icon: 'card' },
+    { key: 'account', label: '账号', icon: 'user' },
+  ],
+  faqs: [
+    {
+      id: 'faq_1',
+      question: '下单后多久可以取消？',
+      answer: '商家接单前可直接取消并原路退款；接单后需在订单详情申请售后，由商家确认。',
+    },
+    {
+      id: 'faq_2',
+      question: '退款多久到账？',
+      answer: '商家同意后原路退回微信零钱，一般 1–3 个工作日到账，节假日可能顺延。',
+    },
+    {
+      id: 'faq_3',
+      question: '配送超时可以赔付吗？',
+      answer: '超出承诺送达时间 15 分钟以上，可在订单详情申请超时赔付，审核通过后发放补偿券。',
+    },
+    {
+      id: 'faq_4',
+      question: '优惠券为什么用不了？',
+      answer: '请检查是否满足使用门槛、是否在有效期内、是否限定了适用商品或配送方式。',
+    },
+    {
+      id: 'faq_5',
+      question: '餐品少送 / 洒漏怎么处理？',
+      answer: '在订单详情点「申请售后」，选择对应商品并上传凭证图，商家 2 小时内处理。',
+    },
+  ],
+};
+
+/** 76 · 意见反馈 */
+export const feedbackOptions: FeedbackOptions = {
+  types: ['配送太慢', '商品问题', '功能建议', '小程序卡顿', '其他'],
+  orderNo: '#20260726018',
+  phoneMask: '138****8899',
+  maxLength: 500,
+  minLength: 10,
 };
 
 /** 18 · 搜索热词 */

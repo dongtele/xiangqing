@@ -4,16 +4,22 @@
 重新实现设计稿。HTML 设计稿只作为视觉与交互参考，DOM 结构没有照搬——交付文档里那套 375×812 固定画框、
 `dc-import` 手机状态栏、内联样式都是展示脚手架，不是产品结构。
 
-当前进度：**第 1–2 步已完成**，15 个页面 + 1 个半屏浮层 / 9 个组件。
+当前进度：**第 1–5 步 + 第 6 步顾客端已完成**，全稿 98 屏做完 **50 屏**
+（47 个页面 + 2 个半屏浮层 + 空状态 42 并入 05 / 11 个组件）。
 
 | 步骤 | 内容 | 屏号 | 状态 |
 |---|---|---|---|
 | 1 | 登录分流 + 顾客端 TabBar + 商家端 TabBar | 13 / 01 05 07 / 08 09 10 12 | ✅ |
-| 2 | 顾客下单闭环 | 01 → 02 → 30 → 03 → 85 → 43 → 04 → 06 | ✅ |
-| 3 | 商家履约链路（接单出餐） | 08 → 09 → 62 → 51 | 待做 |
-| 4 | 配送与售后（退款闭环） | 53 / 84 / 20 / 56 / 40 / 48 | 待做 |
-| 5 | 商品与菜单 | 10 / 11 / 36 / 64 / 22 / 49 / 93 | 待做 |
-| 6 | 营销、数据、结算、设置、入驻 | — | 待做 |
+| 2 | 顾客下单闭环 | 01 → 02 → 30 → 03 → 85 → 43 → 04 → 06（含 15 31 42） | ✅ |
+| 3 | 商家履约链路（接单出餐） | 08 → 09 → 62 → 51 | ✅ |
+| 4 | 配送与售后（退款闭环） | 53 / 84 / 20 / 56 / 40 / 48 | ✅ |
+| 5 | 商品与菜单 | 11 / 36 / 64 / 63 / 22 / 49 / 93 | ✅ |
+| 6a | 顾客端浏览选餐 + 结算二级页 | 18 32 54 82 61 / 16 38 52 83 | ✅ |
+| 6b | 顾客端订单尾部 + 售后客服 | 25 19 55 60 / 57 58 41 77 76 | ✅ |
+| 6c | 顾客端卡券会员 + 设置账号 | 73 37 86 39 17 59 79 80 81 / 44 74 75 78 | 待做 |
+| 6d | 商家端接单扩展 + 营销评价 | 45 92 91 21 96 97 / 94 23 65 66 95 47 90 | 待做 |
+| 6e | 商家端数据结算 + 店铺团队 | 46 87 89 34 67 88 68 / 71 50 33 70 35 69 72 98 | 待做 |
+| 6f | 商家入驻全流程 | 26 14 27 24 28 29 | 待做 |
 
 ## 快速开始
 
@@ -35,9 +41,11 @@ npm i -D playwright         # 仅截图用，没写进 devDependencies，避免�
 npm run build:h5 && npm run shots
 ```
 
-`scripts/shots.mjs` 会起一个本地静态服务托管 H5 产物，用无头 Chromium 按 375×812 真实点完
-「登录 → 加购 → 选规格 → 购物车 → 确认订单 → 支付方式 → 收银台失败 → 重试 → 支付成功 → 订单详情」
-和两端 TabBar，逐屏输出到 `shots/`。截图里的价格、状态、倒计时都是代码算出来的，不是静态图。
+`scripts/shots.mjs` 会起一个本地静态服务托管 H5 产物，用无头 Chromium 按 375×812 逐屏输出到 `shots/`。
+脚本分两段：**流程段**真实点完「登录 → 加购 → 选规格 → 购物车 → 确认订单 →（地址浮层 / 备注浮层）→
+支付方式 → 收银台失败 → 重试 → 支付成功 → 订单详情」，覆盖只能靠交互到达的屏；**路由表段**是
+`ROUTES` 里的 `[截图名, 路由]` 数组，新增页面在这里加一行即可。
+截图里的价格、状态、倒计时都是代码算出来的，不是静态图。
 
 ## 版本锁定
 
@@ -59,19 +67,29 @@ src/
 ├── styles/common.scss                # 卡片 / 主按钮 / 列表行 / 标签 / 骨架屏等复用类
 ├── config.ts                         # 店铺 id、支付超时等常量
 ├── models/index.ts                   # 领域模型（金额统一「分」）
-├── stores/                           # Pinia：user（角色持久化）+ cart（本地持久化）
+├── stores/                           # Pinia：user（角色持久化）+ cart（本地持久化）+ checkout + aftersale
 ├── services/
 │   ├── request.ts                    # 统一请求层：登录态注入、401 重授权、loading/错误收口
 │   ├── api.ts                        # 按域分组的接口函数（页面访问数据的唯一出口）
 │   └── mock/                         # 本地假后端：db / 路由表 / 开关
 ├── components/                       # wf-icon · wf-nav-bar · wf-tab-bar · wf-price · wf-qty-stepper
 │                                     # wf-toggle · wf-thumb · wf-cart-bar · wf-cart-sheet · wf-timeline
+│                                     # wf-remark-sheet(31) · wf-address-sheet(15)
 └── pages/
     ├── login/                        # 13 授权登录与角色分流
-    ├── customer/                     # menu(01) orders(05) profile(07) goods(02)
-    │                                 # checkout(03) pay-method(85) pay(43)
-    │                                 # pay-result(04) order-detail(06)
-    └── merchant/                     # dashboard(08) orders(09) goods(10) shop(12)
+    ├── customer/                     # 主包。下单链路 menu(01) goods(02) checkout(03) pay-method(85)
+    │                                 # pay(43) pay-result(04) order-detail(06) orders(05) profile(07)
+    │                                 # 浏览 search(18) shop(32) photo-view(54) reviews(82) license(61)
+    │                                 # 地址 addresses(38) address-edit(16) map-picker(52)
+    │                                 # 履约 delivery-track(53) rider-chat(84) pickup-stores(83) pickup-code(25)
+    │                                 # 售后 aftersale(20) refund-items(56) refund-detail(40)
+    │                                 # 评价发票 comment(19) comment-publish(55) my-reviews(60)
+    │                                 #        invoice(57) invoice-titles(58)
+    │                                 # 客服 support(41) help(77) feedback(76)
+    └── merchant/                     # 分包（subPackages）。dashboard(08) orders(09) goods(10) shop(12)
+                                      # order-detail(62) print(51) refund-review(48) goods-edit(11)
+                                      # spec-edit(36) option-lib(64) image-crop(63) categories(22)
+                                      # stock(49) goods-bulk(93)
 scripts/shots.mjs                     # H5 逐屏截图（不参与小程序构建）
 ```
 
@@ -114,6 +132,13 @@ scripts/shots.mjs                     # H5 逐屏截图（不参与小程序构�
 `<button open-type="getPhoneNumber">` 用 `#ifdef MP-WEIXIN` 包裹，非微信端走同一个 `login()`，
 所以 H5 里能完整走通下单链路（也是截图验收的基础）。
 
+**商家端走小程序分包。** 微信小程序主包有 2MB 上限，全稿 98 屏放一个包里必然超。
+`pages.json` 里把 `pages/merchant/**` 整体声明成 `subPackages`，主包只留登录与顾客端主链路
+（分包只改路由配置，页面代码与 `push()` 里的绝对路径都不用动）。
+`preloadRule` 在 `pages/login/index` 上预下载商家分包，商家登录后进工作台不会有加载空窗。
+量到的体积：主包 1.2M / 商家分包 284K，两边都留着足够余量；入驻流程（26 14 27 24 28 29）
+后续再拆一个 `pages/onboarding` 分包。
+
 **mock 后端可一键切换。** `services/mock/config.ts` 里 `USE_MOCK = true` 时，`request()` 走本地路由表；
 接真实后端只需把它置 false 并填 `BASE_URL`，`api.ts` 与页面代码不用改。
 `PAY_FAIL_FIRST_ATTEMPT = true` 是演示开关：首次支付故意失败一次，用来走通
@@ -129,17 +154,25 @@ scripts/shots.mjs                     # H5 逐屏截图（不参与小程序构�
    与设计稿 03 / 06 的数值一致）。
 3. **商品详情的「起」按规格判定。** 只有存在加价选项的商品才显示「起」，
    所以 `农家小炒肉拌饭`（单规格）不再显示「起」，与「多规格才显示选规格」的设计意图保持一致。
-4. **暂未落 `checkout` / `orders` store。** 交付文档 State Management 建议按域拆 store，但第 1–2 步里
-   结算试算结果每次都由服务端返回、订单详情每次进页面都按 id 拉取，落 store 只会引入一份会过期的副本；
-   订单轮询与配送追踪属第 3–4 步，到时再补 `orders` / `delivery` store。
-5. **未做的页面给出明确提示。** 设计稿里指向后续步骤的入口（店内搜索 18、店铺主页 32、地址 15/16、
-   优惠券 17、备注 31、商家订单详情 62、小票打印 51、退款审核 48 等）会 toast 说明所属屏号，
-   不做无声失效。
+4. **只对「跨页要带的草稿」落 store。** 交付文档 State Management 建议按域拆 store，但订单详情、
+   退款进度这类每次进页面都按 id 重拉的数据落 store 只会多一份会过期的副本，所以没做 `orders` store。
+   真正需要 store 的是跨页面攒出来的草稿：`checkout`（地址 / 备注 / 支付方式，15 31 85 都要写回 03）与
+   `aftersale`（退款商品 / 原因 / 说明，56 写回 20 再提交）。
+5. **15 选择收货地址、31 订单备注做成半屏浮层而不是独立页。** 设计稿把这两屏画成盖在
+   `确认订单(03)` 上的半屏卡片（顶部还能看到 03 的内容），所以实现为 `wf-address-sheet` /
+   `wf-remark-sheet` 两个组件挂在 03 里，不进 `pages.json`——独立页会丢掉「盖在订单上」的层次关系。
+6. **20 申请售后与 56 选择退款商品的先后按设计稿走。** 交付文档的顺序是 20 → 56，
+   但 56 的主按钮写的是「下一步 · 填写原因」，说明 56 在 20 之前。这里取两者的交集：
+   `订单详情(06) → 20`，20 里的「退款商品」行点开进 56 选商品，选完回到 20 填原因提交。
+7. **未做的页面给出明确提示。** 设计稿里指向尚未实现屏号的入口（卡券会员、商家营销与结算、入驻流程）
+   会 toast 说明所属屏号，不做无声失效。
 
 ## 待补齐的工程项
 
 - 真实接口联调（`USE_MOCK=false` + `BASE_URL`）与 `uni.requestPayment` 接入
 - 商品图 / 店铺头图接 CDN（1:1 与 16:9，WebP + 懒加载）
-- 地图相关页面（52 / 53 / 70 / 83）接腾讯位置服务
+- 地图相关页面（52 / 53 / 70 / 83）接腾讯位置服务：页面已按真实接入写好（`<map>` 组件 + 真实经纬度
+  数据结构），只差 `src/config.ts` 里的 `MAP_KEY`。填上 key 即渲染真实地图，留空则降级为设计稿那套
+  CSS 示意底图（H5 也能跑通、能截图），页面代码不用改
 - 进行中订单轮询与订阅消息、商家新单语音播报
 - 单元测试与 ESLint 配置

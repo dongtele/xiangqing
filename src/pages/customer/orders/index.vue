@@ -4,7 +4,7 @@ import { onLoad, onShow } from '@dcloudio/uni-app';
 import { getOrders } from '@/services/api';
 import { chrome } from '@/utils/chrome';
 import { fen2yuan } from '@/utils/money';
-import { push, relaunch, todo } from '@/utils/nav';
+import { push, relaunch } from '@/utils/nav';
 import type { CustomerOrderTab, Order } from '@/models';
 
 const TABS: { key: CustomerOrderTab; label: string }[] = [
@@ -65,7 +65,7 @@ function onAction(key: string, id: string): void {
       relaunch('/pages/customer/menu/index');
       break;
     case 'comment':
-      todo('55', '发布评价');
+      push(`/pages/customer/comment/index?id=${id}`);
       break;
     default:
       break;

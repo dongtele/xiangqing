@@ -4,7 +4,16 @@ import type {
   AftersaleItem,
   AftersaleOptions,
   AftersaleType,
+  CommentOptions,
+  FeedbackOptions,
+  HelpCenterInfo,
+  InvoiceOptions,
+  InvoiceTitle,
   LicenseInfo,
+  MyReview,
+  MyReviewTab,
+  PickupCodeInfo,
+  SupportMessage,
   PickupStore,
   PoiItem,
   RemarkOptions,
@@ -127,6 +136,62 @@ export const getOrders = (tab: CustomerOrderTab): Promise<Order[]> =>
   request<Order[]>('/order/list', { tab });
 
 export const getOrder = (id: string): Promise<Order> => request<Order>('/order/detail', { id });
+
+/* ---------------- 顾客端 · 取餐 / 评价 / 发票 / 客服 ---------------- */
+
+export const getPickupCode = (orderId: string): Promise<PickupCodeInfo | null> =>
+  request('/order/pickup-code', { id: orderId });
+
+export const getCommentOptions = (): Promise<CommentOptions> => request('/comment/options');
+
+export const submitComment = (payload: {
+  orderId: string;
+  stars: number;
+  tags: string[];
+  text: string;
+  photos: string[];
+  anonymous: boolean;
+}): Promise<{ ok: boolean }> =>
+  request('/comment/submit', payload as unknown as Record<string, unknown>, {
+    method: 'POST',
+    loading: true,
+  });
+
+export const getMyReviews = (): Promise<{
+  list: MyReview[];
+  counts: Record<MyReviewTab, number>;
+}> => request('/comment/mine');
+
+export const removeMyReview = (id: string): Promise<{ ok: boolean }> =>
+  request('/comment/remove', { id }, { method: 'POST' });
+
+export const getInvoiceOptions = (): Promise<InvoiceOptions> => request('/invoice/options');
+
+export const getInvoiceTitles = (): Promise<InvoiceTitle[]> => request('/invoice/titles');
+
+export const setDefaultInvoiceTitle = (id: string): Promise<{ ok: boolean }> =>
+  request('/invoice/title/default', { id }, { method: 'POST', silent: true });
+
+export const removeInvoiceTitle = (id: string): Promise<{ ok: boolean }> =>
+  request('/invoice/title/remove', { id }, { method: 'POST' });
+
+export const applyInvoice = (payload: Record<string, unknown>): Promise<{ ok: boolean }> =>
+  request('/invoice/apply', payload, { method: 'POST', loading: true });
+
+export const getSupportChat = (): Promise<{
+  messages: SupportMessage[];
+  quickReplies: string[];
+}> => request('/support/chat');
+
+export const sendSupportMessage = (text: string): Promise<{ messages: SupportMessage[] }> =>
+  request('/support/send', { text }, { method: 'POST' });
+
+export const getHelpCenter = (): Promise<HelpCenterInfo> => request('/help/center');
+
+export const getFeedbackOptions = (): Promise<FeedbackOptions> => request('/feedback/options');
+
+export const submitFeedback = (payload: Record<string, unknown>): Promise<{ ok: boolean }> =>
+  request('/feedback/submit', payload, { method: 'POST', loading: true });
 
 /* ---------------- 顾客端 · 配送与联系骑手 ---------------- */
 
