@@ -23,18 +23,28 @@ import type {
   Dashboard,
   DeliveryTrack,
   DeliveryType,
+  DeviceSettings,
+  ExceptionOrder,
+  ExceptionTab,
   FeedbackOptions,
   Goods,
   GoodsDraft,
   HelpCenterInfo,
+  HistoryFilter,
+  HistoryOrder,
+  HistorySummary,
   InvoiceOptions,
   InvoiceTitle,
   LicenseInfo,
+  MarketingCenter,
   MemberCenter,
   MenuGroup,
   MerchantGoods,
+  MerchantMessage,
   MerchantOrder,
   MerchantOrderTab,
+  MerchantReview,
+  MerchantReviewSummary,
   MessageDetail,
   MessageItem,
   MessageTab,
@@ -50,22 +60,31 @@ import type {
   PointsGoodsTab,
   PrintSettings,
   ProfileForm,
+  PromoGoods,
+  PromotionDraft,
+  PromotionItem,
   ReceiptPreview,
   ReceiptType,
   Refund,
   RefundTrial,
   RemarkOptions,
   Review,
+  ReviewReplyInfo,
   ReviewSummary,
   Rider,
   RiderMessage,
   SettingsInfo,
   Shop,
+  ShopCouponDraft,
   ShopProfile,
   StockGoods,
   StockTab,
   SupportMessage,
   UserProfile,
+  VerifyLogTab,
+  VerifyPreview,
+  VerifyRecord,
+  VerifyStats,
 } from '@/models';
 
 /** 按域分组的接口函数，是页面访问数据的唯一出口。 */
@@ -438,3 +457,106 @@ export const setNotifySwitch = (key: string, on: boolean): Promise<{ ok: boolean
   request('/customer/notify-settings', { key, on }, { method: 'POST', silent: true });
 
 export const getAbout = (): Promise<AboutInfo> => request('/customer/about');
+
+/* ---------------- 商家端 · 接单扩展与营销评价 ---------------- */
+
+export const getVerifyPreview = (code: string): Promise<VerifyPreview | null> =>
+  request('/merchant/verify/preview', { code }, { silent: true });
+
+export const verifyPickupCode = (code: string): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/verify', { code }, { method: 'POST', loading: true });
+
+export const getMerchantMessages = (): Promise<{ list: MerchantMessage[]; summary: string }> =>
+  request('/merchant/messages');
+
+export const ignoreMerchantMessage = (id: string): Promise<{ ok: boolean }> =>
+  request('/merchant/messages/ignore', { id }, { method: 'POST', silent: true });
+
+export const getHistoryOrders = (
+  keyword: string
+): Promise<{ list: HistoryOrder[]; filter: HistoryFilter; summary: HistorySummary }> =>
+  request('/merchant/orders/history', { keyword });
+
+export const getExceptionOrders = (
+  tab: ExceptionTab
+): Promise<{ list: ExceptionOrder[]; counts: Record<ExceptionTab, number> }> =>
+  request('/merchant/orders/exception', { tab });
+
+export const resolveException = (
+  tab: ExceptionTab,
+  id: string,
+  action: 'agree' | 'reject'
+): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/orders/exception/resolve', { tab, id, action }, { method: 'POST', loading: true });
+
+export const getVerifyLog = (
+  tab: VerifyLogTab
+): Promise<{ stats: VerifyStats; list: VerifyRecord[] }> => request('/merchant/verify/log', { tab });
+
+export const urgePickup = (id: string): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/verify/urge', { id }, { method: 'POST' });
+
+export const getDeviceSettings = (): Promise<DeviceSettings> => request('/merchant/devices');
+
+export const updateDeviceSettings = (patch: Partial<DeviceSettings>): Promise<{ ok: boolean }> =>
+  request('/merchant/devices/update', patch as Record<string, unknown>, {
+    method: 'POST',
+    silent: true,
+  });
+
+export const deviceAction = (id: string): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/devices/action', { id }, { method: 'POST', loading: true });
+
+export const getPromotions = (): Promise<PromotionItem[]> => request('/merchant/promotions');
+
+export const togglePromotion = (id: string): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/promotions/toggle', { id }, { method: 'POST' });
+
+export const getPromotionDraft = (): Promise<PromotionDraft> => request('/merchant/promotion/draft');
+
+export const savePromotion = (draft: PromotionDraft): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/promotion/save', draft as unknown as Record<string, unknown>, {
+    method: 'POST',
+    loading: true,
+  });
+
+export const getPromoGoods = (): Promise<{ list: PromoGoods[]; categories: string[] }> =>
+  request('/merchant/promotion/goods');
+
+export const savePromoGoods = (ids: string[]): Promise<{ ok: boolean }> =>
+  request('/merchant/promotion/goods', { ids } as unknown as Record<string, unknown>, {
+    method: 'POST',
+  });
+
+export const getMarketingCenter = (): Promise<MarketingCenter> => request('/merchant/marketing');
+
+export const toggleMarketingActivity = (id: string, on: boolean): Promise<{ ok: boolean }> =>
+  request('/merchant/marketing/toggle', { id, on }, { method: 'POST', silent: true });
+
+export const getShopCouponDraft = (): Promise<ShopCouponDraft> => request('/merchant/coupon/draft');
+
+export const saveShopCoupon = (
+  draft: ShopCouponDraft
+): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/coupon/save', draft as unknown as Record<string, unknown>, {
+    method: 'POST',
+    loading: true,
+  });
+
+export const getMerchantReviews = (
+  filter: 'all' | 'low'
+): Promise<{ summary: MerchantReviewSummary; list: MerchantReview[] }> =>
+  request('/merchant/reviews', { filter });
+
+export const getReviewReply = (id: string): Promise<ReviewReplyInfo | null> =>
+  request('/merchant/review/reply', { id });
+
+export const submitReviewReply = (
+  id: string,
+  text: string,
+  coupon: boolean
+): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/review/reply', { id, text, coupon }, { method: 'POST', loading: true });
+
+export const appealReview = (id: string): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/review/appeal', { id }, { method: 'POST', loading: true });

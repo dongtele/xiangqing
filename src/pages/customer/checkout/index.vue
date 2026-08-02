@@ -173,7 +173,7 @@ async function onSubmit(): Promise<void> {
           <text>¥{{ fen2yuan(trial.deliveryFee) }}</text>
         </view>
 
-        <view class="row--between tap" @tap="todo('17', '我的优惠券')">
+        <view class="row--between tap" @tap="push('/pages/customer/coupons/index')">
           <view class="co__coupon">
             <text class="co__coupon-tag">券</text>
             <text>{{ trial.couponName }}</text>

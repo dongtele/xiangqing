@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import { getShopSettings, updateShopSettings } from '@/services/api';
 import { chrome } from '@/utils/chrome';
-import { gotoRoleHome, toast, todo } from '@/utils/nav';
+import { gotoRoleHome, push, toast, todo } from '@/utils/nav';
 import { useUserStore } from '@/stores/user';
 import type { Shop } from '@/models';
 
@@ -73,10 +73,24 @@ function onSwitchToCustomer(): void {
             <text class="chevron">›</text>
           </view>
         </view>
-        <view class="cell tap" @tap="todo('23', '优惠活动设置')">
+        <view class="cell tap" @tap="push('/pages/merchant/promotions/index')">
           <text class="cell__label">优惠活动</text>
           <view class="cell__value">
             <text class="ms__primary">{{ shop.activityText }}</text>
+            <text class="chevron">›</text>
+          </view>
+        </view>
+        <view class="cell tap" @tap="push('/pages/merchant/marketing/index')">
+          <text class="cell__label">营销中心</text>
+          <view class="cell__value">
+            <text>满减 · 优惠券 · 新客立减</text>
+            <text class="chevron">›</text>
+          </view>
+        </view>
+        <view class="cell tap" @tap="push('/pages/merchant/reviews/index')">
+          <text class="cell__label">顾客评价</text>
+          <view class="cell__value">
+            <text class="ms__primary">4.7 分</text>
             <text class="chevron">›</text>
           </view>
         </view>

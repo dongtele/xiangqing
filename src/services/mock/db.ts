@@ -14,15 +14,25 @@ import type {
   CouponRule,
   CouponTab,
   Dashboard,
+  DeviceSettings,
+  ExceptionOrder,
+  ExceptionTab,
   FeedbackOptions,
   Goods,
   HelpCenterInfo,
+  HistoryFilter,
+  HistoryOrder,
+  HistorySummary,
   InvoiceOptions,
   InvoiceTitle,
   LicenseInfo,
+  MarketingCenter,
   MemberCenter,
   MerchantGoods,
+  MerchantMessage,
   MerchantOrder,
+  MerchantReview,
+  MerchantReviewSummary,
   MessageDetail,
   MessageItem,
   MyReview,
@@ -34,6 +44,9 @@ import type {
   PointsGoods,
   PrintSettings,
   ProfileForm,
+  PromoGoods,
+  PromotionDraft,
+  PromotionItem,
   Refund,
   RemarkOptions,
   Review,
@@ -41,10 +54,15 @@ import type {
   RiderMessage,
   SettingsInfo,
   Shop,
+  ShopCouponDraft,
   ShopProfile,
   StockGoods,
   SupportMessage,
   UserProfile,
+  VerifyLogTab,
+  VerifyPreview,
+  VerifyRecord,
+  VerifyStats,
 } from '@/models';
 
 /** 示例数据；文案沿用设计稿，接入真实数据源时整体替换。 */
@@ -1537,4 +1555,462 @@ export const aboutInfo: AboutInfo = {
   ],
   company: '杭州美味坊网络科技有限公司',
   icp: '浙ICP备2026XXXXXX号 · © 2026',
+};
+
+/* ================= 商家端 · 接单扩展与营销评价 ================= */
+
+/** 21 核销取餐码：按 4 位码匹配订单预览，防错核 */
+export const verifyPreviews: Record<string, VerifyPreview> = {
+  '8823': {
+    code: '8823',
+    orderNo: '#1023',
+    customer: '李女士',
+    itemsText: '农家小炒肉拌饭 x2',
+    amountText: '56.00',
+  },
+  '8Q4K': {
+    code: '8Q4K',
+    orderNo: '#20260726018',
+    customer: '王**',
+    itemsText: '宫保鸡丁 x1、番茄蛋汤 x1',
+    amountText: '68.00',
+  },
+};
+
+/** 45 商家消息中心 */
+export const merchantMessages: MerchantMessage[] = [
+  {
+    id: 'mm_1',
+    kind: 'order',
+    icon: 'order',
+    title: '新订单 #041',
+    timeText: '刚刚',
+    desc: '宫保鸡丁 等 2 件 · ￥46.00 · 请在 3 分钟内接单',
+    actionable: true,
+    urgent: true,
+  },
+  {
+    id: 'mm_1b',
+    kind: 'order',
+    icon: 'order',
+    title: '新订单 #042',
+    timeText: '2 分钟前',
+    desc: '水煮牛肉 等 3 件 · ￥96.00 · 请在 1 分钟内接单',
+    actionable: true,
+    urgent: true,
+  },
+  {
+    id: 'mm_2',
+    kind: 'refund',
+    icon: 'card',
+    title: '退款申请',
+    timeText: '8 分钟前',
+    desc: '#039 顾客申请退款 ￥28.00，理由：菜品与描述不符',
+    actionable: true,
+    urgent: true,
+  },
+  {
+    id: 'mm_3',
+    kind: 'review',
+    icon: 'star',
+    title: '新增评价',
+    timeText: '1 小时前',
+    desc: '顾客给出 3 星评价，建议及时回复',
+    actionable: false,
+    urgent: false,
+  },
+  {
+    id: 'mm_4',
+    kind: 'settle',
+    icon: 'chart',
+    title: '货款到账',
+    timeText: '今天 09:00',
+    desc: '7月26日货款 ￥2,318.40 已结算至对公账户',
+    actionable: false,
+    urgent: false,
+  },
+];
+
+/** 91 历史订单查询 */
+export const historyFilter: HistoryFilter = {
+  dateText: '07-20 至 07-26',
+  statusText: '全部状态',
+  channelText: '全渠道',
+};
+
+export const historySummary: HistorySummary = {
+  countText: '共 428 单',
+  incomeText: '实收 ￥18,642.50',
+  refundText: '退款 12 单',
+};
+
+export const historyOrders: HistoryOrder[] = [
+  {
+    id: 'h_1',
+    orderNo: '#20260726018',
+    statusText: '已完成',
+    statusTone: 'done',
+    metaText: '外卖 · 12:38 送达 · 王**',
+    amountText: '68.00',
+    refundText: '',
+    itemsText: '宫保鸡丁 ×1、红烧肉盖饭 ×1、番茄蛋汤 ×1',
+  },
+  {
+    id: 'h_2',
+    orderNo: '#20260726014',
+    statusText: '部分退款',
+    statusTone: 'partial',
+    metaText: '自提 · 12:10 核销 · 李**',
+    amountText: '42.00',
+    refundText: '-12',
+    itemsText: '酸辣土豆丝 ×1、红烧肉盖饭 ×1',
+  },
+  {
+    id: 'h_3',
+    orderNo: '#20260725220',
+    statusText: '已取消',
+    statusTone: 'cancelled',
+    metaText: '外卖 · 顾客支付前取消',
+    amountText: '0.00',
+    refundText: '',
+    itemsText: '',
+  },
+];
+
+/** 92 异常与取消订单 */
+export const exceptionOrders: Record<ExceptionTab, ExceptionOrder[]> = {
+  cancel: [
+    {
+      id: 'e_1',
+      orderNo: '#20260726031',
+      stageText: '待处理',
+      stageTone: 'pending',
+      countdownText: '剩 4 分钟自动同意',
+      reasonQuote: '点错了，想重新下单',
+      itemsText: '未出餐 · 宫保鸡丁 ×1 等 2 件',
+      amountText: '46.00',
+      needProof: false,
+      noteText: '',
+      resolved: false,
+      resolveText: '',
+    },
+    {
+      id: 'e_2',
+      orderNo: '#20260726029',
+      stageText: '已出餐',
+      stageTone: 'cooked',
+      countdownText: '12:41 申请',
+      reasonQuote: '等太久了',
+      itemsText: '已出餐可拒绝',
+      amountText: '38.00',
+      needProof: true,
+      noteText: '拒绝需上传出餐凭证，平台将在 2 小时内仲裁。',
+      resolved: false,
+      resolveText: '',
+    },
+    {
+      id: 'e_3',
+      orderNo: '#20260726022',
+      stageText: '已处理',
+      stageTone: 'done',
+      countdownText: '',
+      reasonQuote: '',
+      itemsText: '',
+      amountText: '38.00',
+      needProof: false,
+      noteText: '',
+      resolved: true,
+      resolveText: '12:20 同意取消 · 全额退款 ￥38.00',
+    },
+  ],
+  timeout: [
+    {
+      id: 'e_4',
+      orderNo: '#20260726027',
+      stageText: '出餐超时',
+      stageTone: 'pending',
+      countdownText: '已超时 8 分钟',
+      reasonQuote: '',
+      itemsText: '水煮牛肉 ×1 等 3 件',
+      amountText: '96.00',
+      needProof: false,
+      noteText: '超时超过 15 分钟顾客可一键取消并全额退款。',
+      resolved: false,
+      resolveText: '',
+    },
+    {
+      id: 'e_5',
+      orderNo: '#20260726025',
+      stageText: '出餐超时',
+      stageTone: 'pending',
+      countdownText: '已超时 3 分钟',
+      reasonQuote: '',
+      itemsText: '清蒸鲈鱼 ×1',
+      amountText: '68.00',
+      needProof: false,
+      noteText: '',
+      resolved: false,
+      resolveText: '',
+    },
+  ],
+  delivery: [
+    {
+      id: 'e_6',
+      orderNo: '#20260726019',
+      stageText: '配送异常',
+      stageTone: 'cooked',
+      countdownText: '骑手上报 12:52',
+      reasonQuote: '顾客电话无人接听',
+      itemsText: '已出餐 · 番茄蛋汤 ×1 等 2 件',
+      amountText: '52.00',
+      needProof: false,
+      noteText: '可联系顾客确认，或申请骑手二次配送。',
+      resolved: false,
+      resolveText: '',
+    },
+  ],
+};
+
+/** 96 核销记录 */
+export const verifyStats: VerifyStats = {
+  countText: '32 单',
+  amountText: '￥1,286',
+  pendingText: '4',
+};
+
+export const verifyRecords: Record<VerifyLogTab, VerifyRecord[]> = {
+  today: [
+    {
+      id: 'v_1',
+      code: '8Q4K',
+      title: '#20260726018 · 王**',
+      metaText: '12:36 核销 · 店员 小陈',
+      amountText: '68.00',
+      state: 'done',
+    },
+    {
+      id: 'v_2',
+      code: '3M7F',
+      title: '#20260726014 · 李**',
+      metaText: '12:10 核销 · 店员 小陈',
+      amountText: '42.00',
+      state: 'done',
+    },
+    {
+      id: 'v_3',
+      code: '已废',
+      title: '#20260726009 · 张**',
+      metaText: '11:52 顾客取消 · 码作废',
+      amountText: '0.00',
+      state: 'void',
+    },
+    {
+      id: 'v_4',
+      code: '6H2P',
+      title: '#20260726007 · 待核销（超时未取）',
+      metaText: '11:30 备餐完成 · 已超时 66 分钟',
+      amountText: '34.00',
+      state: 'pending',
+    },
+  ],
+  yesterday: [
+    {
+      id: 'v_5',
+      code: '4T9C',
+      title: '#20260725186 · 赵**',
+      metaText: '18:42 核销 · 店员 小林',
+      amountText: '58.00',
+      state: 'done',
+    },
+  ],
+  week: [
+    {
+      id: 'v_6',
+      code: '9K2D',
+      title: '#20260722104 · 周**',
+      metaText: '7月22日 12:18 核销 · 店员 小陈',
+      amountText: '46.00',
+      state: 'done',
+    },
+  ],
+};
+
+/** 97 打印机与设备 */
+export const deviceSettings: DeviceSettings = {
+  devices: [
+    {
+      id: 'dev_1',
+      name: '前台小票机（58mm）',
+      statusText: '蓝牙已连接 · 纸量充足',
+      online: true,
+      actionText: '测试打印',
+    },
+    {
+      id: 'dev_2',
+      name: '厨房打印机（80mm）',
+      statusText: '离线 · 请检查电源与网络',
+      online: false,
+      actionText: '重连',
+    },
+  ],
+  autoPrint: true,
+  copies: 2,
+  voiceOn: true,
+  voiceText: '「您有新订单，请及时处理」',
+  volumeText: '高',
+  scannerText: '未接入',
+  noteText: '设备离线超过 5 分钟将转为手机弹窗提醒，避免漏单。',
+};
+
+/** 23 优惠活动设置 */
+export const promotions: PromotionItem[] = [
+  {
+    id: 'pr_1',
+    kindText: '满减',
+    name: '满50减10',
+    statusText: '生效中',
+    status: 'running',
+    sub: '',
+    rangeText: '2026-07-01 至 2026-07-31',
+    stats: [
+      { label: '今日使用', value: '38 次' },
+      { label: '带动客单价', value: '+18%' },
+      { label: '让利金额', value: '¥380' },
+    ],
+  },
+  {
+    id: 'pr_2',
+    kindText: '返券',
+    name: '评价返 ¥3 无门槛券',
+    statusText: '已暂停',
+    status: 'paused',
+    sub: '顾客完成评价后自动发放，7 天有效',
+    rangeText: '',
+    stats: [],
+  },
+];
+
+/** 65 新建满减活动 */
+export const promotionDraft: PromotionDraft = {
+  id: 'new',
+  type: 'full',
+  tiers: [
+    { id: 't1', threshold: 3000, cut: 500 },
+    { id: 't2', threshold: 6000, cut: 1200 },
+  ],
+  dateText: '7月28日 - 8月31日',
+  timeText: '每天 10:30-21:30',
+  goodsText: '全部商品',
+  budgetText: '￥500',
+  estimateText: '预估：客单价 +￥6.2，日均多支出 ￥310。活动上线后顾客端菜单顶部与购物车条同步展示凑单提示。',
+};
+
+/** 66 选择适用商品 */
+export const promoGoods: PromoGoods[] = [
+  { id: 'pg1', name: '宫保鸡丁', priceText: '28.00', categoryName: '经典小炒', checked: true },
+  { id: 'pg2', name: '水煮牛肉', priceText: '49.00', categoryName: '招牌热菜', checked: true },
+  { id: 'pg3', name: '回锅肉', priceText: '32.00', categoryName: '经典小炒', checked: false },
+  { id: 'pg4', name: '麻婆豆腐', priceText: '22.00', categoryName: '经典小炒', checked: false },
+  { id: 'pg5', name: '辣子鸡', priceText: '38.00', categoryName: '招牌热菜', checked: false },
+  { id: 'pg6', name: '清蒸鲈鱼', priceText: '68.00', categoryName: '海鲜水产', checked: false },
+  { id: 'pg7', name: '农家小炒肉拌饭', priceText: '26.00', categoryName: '主食米饭', checked: false },
+  { id: 'pg8', name: '番茄蛋汤', priceText: '7.00', categoryName: '汤品饮品', checked: false },
+];
+
+/** 94 营销中心 */
+export const marketingCenter: MarketingCenter = {
+  rangeText: '7月1日 - 7月26日',
+  stats: [
+    { label: '带动订单', value: '312' },
+    { label: '优惠成本', value: '￥2,486' },
+    { label: '投产比', value: '5.4' },
+  ],
+  tools: [
+    { key: 'full', badge: '减', label: '满减' },
+    { key: 'coupon', badge: '券', label: '优惠券' },
+    { key: 'newbie', badge: '新', label: '新客立减' },
+    { key: 'discount', badge: '折', label: '折扣商品' },
+    { key: 'delivery', badge: '送', label: '配送费减免' },
+    { key: 'member', badge: '员', label: '会员日' },
+  ],
+  activities: [
+    { id: 'ma_1', name: '满 60 减 12', sub: '7月20日 - 7月31日 · 已用 186 次', on: true },
+    { id: 'ma_2', name: '新客立减 ￥5', sub: '长期有效 · 已用 62 次', on: true },
+    { id: 'ma_3', name: '午市 8.8 折', sub: '每日 11:00-14:00 · 已用 64 次', on: true },
+  ],
+};
+
+/** 95 创建店铺优惠券 */
+export const shopCouponDraft: ShopCouponDraft = {
+  kind: 'cash',
+  amount: 800,
+  threshold: 4000,
+  totalText: '500 张',
+  perUserText: '1 张',
+  validText: '领取后 7 天',
+  newOnly: false,
+  stackable: true,
+};
+
+/** 47 评价管理 */
+export const merchantReviewSummary: MerchantReviewSummary = {
+  score: '4.7',
+  dist: [
+    { label: '5 星', percent: 78 },
+    { label: '4 星', percent: 14 },
+    { label: '≤3 星', percent: 8 },
+  ],
+};
+
+export const merchantReviews: MerchantReview[] = [
+  {
+    id: 'mr_1',
+    user: '吃*王',
+    stars: 3,
+    timeText: '1 小时前',
+    content: '菜品味道不错，但配送有点慢，米饭到手已经凉了。',
+    goodsText: '宫保鸡丁 · 米饭',
+    reply: '',
+    lowScore: true,
+  },
+  {
+    id: 'mr_2',
+    user: '李*',
+    stars: 5,
+    timeText: '昨天',
+    content: '水煮牛肉分量足，会回购！',
+    goodsText: '水煮牛肉',
+    reply: '谢谢支持，欢迎再来～',
+    lowScore: false,
+  },
+  {
+    id: 'mr_3',
+    user: '匿名用户',
+    stars: 2,
+    timeText: '7月26日 13:02',
+    content: '土豆丝有点咸，而且送到时汤洒了一半，包装能不能再稳一点。',
+    goodsText: '酸辣土豆丝 · 番茄蛋汤',
+    reply: '',
+    lowScore: true,
+  },
+];
+
+/** 90 评价回复 */
+export const reviewReplyTemplates = [
+  {
+    key: 'sorry',
+    label: '致歉 + 补偿券',
+    text: '非常抱歉给您带来不好的体验！汤品我们已改用双层密封盒，咸度也会重新校准。已为您补一张 ￥10 无门槛券，期待再次为您服务。',
+  },
+  { key: 'thanks', label: '感谢建议', text: '感谢您的反馈！我们已记录并会持续改进，期待下次为您服务。' },
+  {
+    key: 'fixed',
+    label: '已改进说明',
+    text: '您反馈的问题我们已经改进：包装换成双层密封盒，出餐前会二次检查。欢迎再来体验～',
+  },
+];
+
+export const reviewReplyTags: Record<string, string[]> = {
+  mr_1: ['配送慢', '米饭凉了'],
+  mr_3: ['口味偏咸', '包装洒漏'],
 };

@@ -17,6 +17,9 @@ import type {
   CustomerOrderTab,
   DeliveryTrack,
   DeliveryType,
+  DeviceSettings,
+  ExceptionOrder,
+  ExceptionTab,
   Goods,
   GoodsDraft,
   InvoiceTitle,
@@ -27,13 +30,18 @@ import type {
   Order,
   PrintSettings,
   ProfileForm,
+  PromotionDraft,
   ReceiptPreview,
   ReceiptType,
   Refund,
   RefundTrial,
   RiderMessage,
   Shop,
+  ShopCouponDraft,
   SupportMessage,
+  VerifyLogTab,
+  VerifyPreview,
+  VerifyRecord,
 } from '@/models';
 
 /**
@@ -71,6 +79,30 @@ const state = {
   couponOffers: db.couponOffers.map((o) => ({ ...o })),
   memberCenter: { ...db.memberCenter, tasks: db.memberCenter.tasks.map((t) => ({ ...t })) },
   notifySwitches: db.notifySwitches.map((n) => ({ ...n })),
+  merchantMessages: db.merchantMessages.map((m) => ({ ...m })),
+  historyOrders: db.historyOrders.map((o) => ({ ...o })),
+  exceptionOrders: {
+    cancel: db.exceptionOrders.cancel.map((o) => ({ ...o })),
+    timeout: db.exceptionOrders.timeout.map((o) => ({ ...o })),
+    delivery: db.exceptionOrders.delivery.map((o) => ({ ...o })),
+  } as Record<ExceptionTab, ExceptionOrder[]>,
+  verifyRecords: {
+    today: db.verifyRecords.today.map((r) => ({ ...r })),
+    yesterday: db.verifyRecords.yesterday.map((r) => ({ ...r })),
+    week: db.verifyRecords.week.map((r) => ({ ...r })),
+  } as Record<VerifyLogTab, VerifyRecord[]>,
+  deviceSettings: {
+    ...db.deviceSettings,
+    devices: db.deviceSettings.devices.map((d) => ({ ...d })),
+  },
+  promotions: db.promotions.map((p) => ({ ...p })),
+  promoGoods: db.promoGoods.map((g) => ({ ...g })),
+  promoGoodsText: '全部商品',
+  marketingCenter: {
+    ...db.marketingCenter,
+    activities: db.marketingCenter.activities.map((a) => ({ ...a })),
+  },
+  merchantReviews: db.merchantReviews.map((r) => ({ ...r })),
   goodsDrafts: {} as Record<string, GoodsDraft>,
   payAttempts: {} as Record<string, number>,
   orderSeq: 1025,
@@ -284,7 +316,7 @@ const routes: Record<string, (p: Payload) => unknown> = {
         : key === 'bad'
           ? state.reviews.filter((r) => r.stars <= 3)
           : state.reviews;
-    return { summary: db.reviewSummary, list };
+    return { summary: db.merchantReviewSummary, list };
   },
 
   'GET /shop/license': () => db.licenseInfo,
@@ -1075,6 +1107,217 @@ const routes: Record<string, (p: Payload) => unknown> = {
   },
 
   'GET /customer/about': () => db.aboutInfo,
+
+  /* ---------------- 商家端接单扩展与营销评价：21 45 91 92 96 97 23 65 66 94 95 47 90 ---------------- */
+
+  'GET /merchant/verify/preview': (p) => {
+    const code = String(p.code || '').toUpperCase();
+    return (db.verifyPreviews[code] as VerifyPreview) || null;
+  },
+
+  'POST /merchant/verify': (p) => {
+    const code = String(p.code || '').toUpperCase();
+    if (!db.verifyPreviews[code]) return { ok: false, message: '取餐码不存在或已核销' };
+    state.verifyRecords.today = [
+      {
+        id: `v_${Date.now()}`,
+        code,
+        title: `${db.verifyPreviews[code].orderNo} · ${db.verifyPreviews[code].customer}`,
+        metaText: '刚刚核销 · 店员 小陈',
+        amountText: db.verifyPreviews[code].amountText,
+        state: 'done',
+      },
+      ...state.verifyRecords.today,
+    ];
+    return { ok: true, message: `核销成功 · ${db.verifyPreviews[code].orderNo}` };
+  },
+
+  'GET /merchant/messages': () => {
+    const pending = state.merchantMessages.filter((m) => m.actionable);
+    const orders = pending.filter((m) => m.kind === 'order').length;
+    const refunds = pending.filter((m) => m.kind === 'refund').length;
+    return {
+      list: state.merchantMessages,
+      summary: pending.length
+        ? `${pending.length} 条待处理：${orders} 个新订单 · ${refunds} 个退款申请`
+        : '暂无待处理消息',
+    };
+  },
+
+  'POST /merchant/messages/ignore': (p) => {
+    state.merchantMessages = state.merchantMessages.filter((m) => m.id !== p.id);
+    return { ok: true };
+  },
+
+  'GET /merchant/orders/history': (p) => {
+    const kw = String(p.keyword || '').trim();
+    const list = kw
+      ? state.historyOrders.filter(
+          (o) => o.orderNo.indexOf(kw) >= 0 || o.itemsText.indexOf(kw) >= 0
+        )
+      : state.historyOrders;
+    return { list, filter: db.historyFilter, summary: db.historySummary };
+  },
+
+  'GET /merchant/orders/exception': (p) => {
+    const tab = (p.tab || 'cancel') as ExceptionTab;
+    return {
+      list: state.exceptionOrders[tab] || [],
+      counts: {
+        cancel: state.exceptionOrders.cancel.filter((o) => !o.resolved).length,
+        timeout: state.exceptionOrders.timeout.filter((o) => !o.resolved).length,
+        delivery: state.exceptionOrders.delivery.filter((o) => !o.resolved).length,
+      },
+    };
+  },
+
+  'POST /merchant/orders/exception/resolve': (p) => {
+    const tab = (p.tab || 'cancel') as ExceptionTab;
+    const order = state.exceptionOrders[tab].find((o) => o.id === p.id);
+    if (!order) return { ok: false, message: '订单不存在' };
+    const agree = p.action === 'agree';
+    order.resolved = true;
+    order.stageText = '已处理';
+    order.stageTone = 'done';
+    order.resolveText = agree
+      ? `刚刚同意取消 · 全额退款 ￥${order.amountText}`
+      : '刚刚拒绝取消 · 已提交凭证，平台仲裁中';
+    return { ok: true, message: agree ? '已同意取消' : '已提交凭证，等待平台仲裁' };
+  },
+
+  'GET /merchant/verify/log': (p) => {
+    const tab = (p.tab || 'today') as VerifyLogTab;
+    return { stats: db.verifyStats, list: state.verifyRecords[tab] || [] };
+  },
+
+  'POST /merchant/verify/urge': (p) => {
+    const record = state.verifyRecords.today.find((r) => r.id === p.id);
+    return record
+      ? { ok: true, message: `已提醒顾客取餐（${record.code}）` }
+      : { ok: false, message: '记录不存在' };
+  },
+
+  'GET /merchant/devices': () => state.deviceSettings,
+
+  'POST /merchant/devices/update': (p) => {
+    state.deviceSettings = { ...state.deviceSettings, ...(p as Partial<DeviceSettings>) };
+    return { ok: true };
+  },
+
+  'POST /merchant/devices/action': (p) => {
+    const device = state.deviceSettings.devices.find((d) => d.id === p.id);
+    if (!device) return { ok: false, message: '设备不存在' };
+    if (device.online) return { ok: true, message: `已向${device.name}发送测试小票` };
+    device.online = true;
+    device.statusText = '已重连 · 纸量充足';
+    device.actionText = '测试打印';
+    return { ok: true, message: `${device.name}已重连` };
+  },
+
+  'GET /merchant/promotions': () => state.promotions,
+
+  'POST /merchant/promotions/toggle': (p) => {
+    const item = state.promotions.find((x) => x.id === p.id);
+    if (!item) return { ok: false, message: '活动不存在' };
+    item.status = item.status === 'running' ? 'paused' : 'running';
+    item.statusText = item.status === 'running' ? '生效中' : '已暂停';
+    return { ok: true, message: item.status === 'running' ? '活动已开启' : '活动已暂停' };
+  },
+
+  'GET /merchant/promotion/draft': () => ({
+    ...db.promotionDraft,
+    tiers: db.promotionDraft.tiers.map((t) => ({ ...t })),
+    goodsText: state.promoGoodsText,
+  }),
+
+  'POST /merchant/promotion/save': (p) => {
+    const draft = p as unknown as PromotionDraft;
+    const tierText = draft.tiers
+      .map((t) => `满${t.threshold / 100}减${t.cut / 100}`)
+      .join('、');
+    state.promotions = [
+      {
+        id: `pr_${Date.now()}`,
+        kindText: draft.type === 'full' ? '满减' : draft.type === 'discount' ? '折扣' : '第二份半价',
+        name: tierText || '新建活动',
+        statusText: '生效中',
+        status: 'running',
+        sub: '',
+        rangeText: draft.dateText,
+        stats: [
+          { label: '今日使用', value: '0 次' },
+          { label: '带动客单价', value: '—' },
+          { label: '让利金额', value: '¥0' },
+        ],
+      },
+      ...state.promotions,
+    ];
+    return { ok: true, message: '活动已创建并生效' };
+  },
+
+  'GET /merchant/promotion/goods': () => ({
+    list: state.promoGoods,
+    categories: [...new Set(db.promoGoods.map((g) => g.categoryName))],
+  }),
+
+  'POST /merchant/promotion/goods': (p) => {
+    const ids = (p.ids || []) as string[];
+    state.promoGoods.forEach((g) => {
+      g.checked = ids.indexOf(g.id) >= 0;
+    });
+    state.promoGoodsText = ids.length === state.promoGoods.length
+      ? '全部商品'
+      : `已选 ${ids.length} 个商品`;
+    return { ok: true };
+  },
+
+  'GET /merchant/marketing': () => state.marketingCenter,
+
+  'POST /merchant/marketing/toggle': (p) => {
+    const act = state.marketingCenter.activities.find((a) => a.id === p.id);
+    if (act) act.on = p.on as boolean;
+    return { ok: true };
+  },
+
+  'GET /merchant/coupon/draft': () => ({ ...db.shopCouponDraft }),
+
+  'POST /merchant/coupon/save': (p) => {
+    const draft = p as unknown as ShopCouponDraft;
+    if (draft.kind === 'cash' && draft.amount >= draft.threshold && draft.threshold > 0) {
+      return { ok: false, message: '优惠金额需小于使用门槛' };
+    }
+    return { ok: true, message: '优惠券已创建并开始发放' };
+  },
+
+  'GET /merchant/reviews': (p) => {
+    const filter = String(p.filter || 'all');
+    const list =
+      filter === 'low' ? state.merchantReviews.filter((r) => r.lowScore) : state.merchantReviews;
+    return { summary: db.merchantReviewSummary, list };
+  },
+
+  'GET /merchant/review/reply': (p) => {
+    const review = state.merchantReviews.find((r) => r.id === p.id);
+    if (!review) return null;
+    return {
+      review,
+      tags: db.reviewReplyTags[review.id] || [],
+      orderNo: '#20260726004',
+      templates: db.reviewReplyTemplates,
+      couponText: '￥10 无门槛 · 7 天有效',
+    };
+  },
+
+  'POST /merchant/review/reply': (p) => {
+    const review = state.merchantReviews.find((r) => r.id === p.id);
+    if (!review) return { ok: false, message: '评价不存在' };
+    const text = String(p.text || '').trim();
+    if (!text) return { ok: false, message: '请填写回复内容' };
+    review.reply = text;
+    return { ok: true, message: '回复已发布，顾客可见' };
+  },
+
+  'POST /merchant/review/appeal': () => ({ ok: true, message: '申诉已提交，平台将在 24 小时内处理' }),
 
   'GET /merchant/shop': (): Shop => state.shop,
 

@@ -4,7 +4,7 @@ import { onLoad } from '@dcloudio/uni-app';
 import { getOrder } from '@/services/api';
 import { chrome } from '@/utils/chrome';
 import { fen2yuan } from '@/utils/money';
-import { push, relaunch, toast, todo } from '@/utils/nav';
+import { push, relaunch, toast } from '@/utils/nav';
 import type { Order } from '@/models';
 
 /** 04 · 支付成功：结果页 + 后续引导 */
@@ -73,7 +73,7 @@ function onCopyNo(): void {
           <text class="pr__pickup-label">取餐码</text>
           <text class="pr__pickup-code">{{ order.pickupCode }}</text>
         </view>
-        <view class="pill pill--outline-primary tap" @tap="todo('83', '门店导航')">门店导航</view>
+        <view class="pill pill--outline-primary tap" @tap="push('/pages/customer/pickup-stores/index')">门店导航</view>
       </view>
 
       <view class="pr__actions">

@@ -7,7 +7,7 @@ import {
   printReceipt,
   updatePrintSettings,
 } from '@/services/api';
-import { toast, todo } from '@/utils/nav';
+import { push, toast } from '@/utils/nav';
 import type { PrintSettings, ReceiptPreview, ReceiptType } from '@/models';
 
 const COPY_OPTIONS = [
@@ -113,7 +113,7 @@ async function onReprint(): Promise<void> {
     <scroll-view class="pt__body" scroll-y>
       <!-- 设备 -->
       <view class="card">
-        <view class="pt__device tap" @tap="todo('97', '打印机与设备')">
+        <view class="pt__device tap" @tap="push('/pages/merchant/devices/index')">
           <view class="pt__device-icon">
             <wf-icon name="printer" :size="40" color="#FF4A17" />
           </view>

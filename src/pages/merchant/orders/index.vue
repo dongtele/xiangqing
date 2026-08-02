@@ -11,7 +11,7 @@ import {
 import { chrome } from '@/utils/chrome';
 import { fen2yuan2 } from '@/utils/money';
 import { mmss } from '@/utils/time';
-import { push, toast, todo } from '@/utils/nav';
+import { push, toast } from '@/utils/nav';
 import type { MerchantOrder, MerchantOrderTab } from '@/models';
 
 const TABS: { key: MerchantOrderTab; label: string }[] = [
@@ -145,9 +145,13 @@ async function onPrint(id: string): Promise<void> {
     <view class="mo__header" :style="{ paddingTop: headPad + 'px' }">
       <view class="row--between">
         <text class="mo__title">订单管理</text>
-        <view class="mo__scan tap" @tap="todo('21', '核销取餐码')">
-          <wf-icon name="scan" :size="28" color="#FF4A17" :weight="2" />
-          <text>核销取餐码</text>
+        <view class="row mo__ops">
+          <text class="mo__op tap-sm" @tap="push('/pages/merchant/order-history/index')">历史</text>
+          <text class="mo__op tap-sm" @tap="push('/pages/merchant/order-exception/index')">异常</text>
+          <view class="mo__scan tap" @tap="push('/pages/merchant/verify/index')">
+            <wf-icon name="scan" :size="28" color="#FF4A17" :weight="2" />
+            <text>核销</text>
+          </view>
         </view>
       </view>
       <scroll-view class="mo__tabs" scroll-x>
@@ -279,6 +283,16 @@ async function onPrint(id: string): Promise<void> {
 .mo__title {
   font-size: 40rpx;
   font-weight: 800;
+}
+
+.mo__ops {
+  gap: 20rpx;
+}
+
+.mo__op {
+  font-size: 23rpx;
+  font-weight: 700;
+  color: var(--c-text-weak);
 }
 
 .mo__scan {

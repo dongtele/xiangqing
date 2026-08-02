@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { getPickupCode } from '@/services/api';
 import { chrome } from '@/utils/chrome';
-import { back, push, toast, todo } from '@/utils/nav';
+import { back, push, toast } from '@/utils/nav';
 import type { PickupCodeInfo } from '@/models';
 
 /** 25 · 自提取餐码：取餐码 + 二维码 + 门店信息 */
@@ -75,7 +75,7 @@ onLoad(async (o) => {
       </view>
 
       <view class="pc__actions">
-        <view class="pc__btn tap" @tap="todo('41', '在线客服')">联系商家</view>
+        <view class="pc__btn tap" @tap="push('/pages/customer/support/index')">联系商家</view>
         <view class="pc__btn tap" @tap="push(`/pages/customer/order-detail/index?id=${orderId}`)"
           >查看订单详情</view
         >

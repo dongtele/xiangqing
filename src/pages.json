@@ -355,6 +355,84 @@
           "style": {
             "navigationBarTitleText": "批量管理"
           }
+        },
+        {
+          "path": "verify/index",
+          "style": {
+            "navigationBarTitleText": "核销取餐码"
+          }
+        },
+        {
+          "path": "messages/index",
+          "style": {
+            "navigationBarTitleText": "通知"
+          }
+        },
+        {
+          "path": "order-history/index",
+          "style": {
+            "navigationBarTitleText": "历史订单"
+          }
+        },
+        {
+          "path": "order-exception/index",
+          "style": {
+            "navigationBarTitleText": "异常订单"
+          }
+        },
+        {
+          "path": "verify-log/index",
+          "style": {
+            "navigationBarTitleText": "核销记录"
+          }
+        },
+        {
+          "path": "devices/index",
+          "style": {
+            "navigationBarTitleText": "设备管理"
+          }
+        },
+        {
+          "path": "promotions/index",
+          "style": {
+            "navigationBarTitleText": "优惠活动"
+          }
+        },
+        {
+          "path": "promotion-edit/index",
+          "style": {
+            "navigationBarTitleText": "新建活动"
+          }
+        },
+        {
+          "path": "promotion-goods/index",
+          "style": {
+            "navigationBarTitleText": "选择商品"
+          }
+        },
+        {
+          "path": "marketing/index",
+          "style": {
+            "navigationBarTitleText": "营销中心"
+          }
+        },
+        {
+          "path": "coupon-edit/index",
+          "style": {
+            "navigationBarTitleText": "创建优惠券"
+          }
+        },
+        {
+          "path": "reviews/index",
+          "style": {
+            "navigationBarTitleText": "顾客评价"
+          }
+        },
+        {
+          "path": "review-reply/index",
+          "style": {
+            "navigationBarTitleText": "回复评价"
+          }
         }
       ]
     }

@@ -894,3 +894,220 @@ export interface AboutInfo {
   company: string;
   icp: string;
 }
+
+/* ================= 商家端 · 接单扩展与营销评价（21 45 91 92 96 97 23 65 66 94 95 47 90） ================= */
+
+/** 21 核销取餐码 */
+export interface VerifyPreview {
+  code: string;
+  orderNo: string;
+  customer: string;
+  itemsText: string;
+  amountText: string;
+}
+
+/** 45 商家消息中心 */
+export interface MerchantMessage {
+  id: string;
+  /** order = 新订单，refund = 退款申请，review = 新增评价，settle = 货款到账 */
+  kind: 'order' | 'refund' | 'review' | 'settle';
+  icon: string;
+  title: string;
+  timeText: string;
+  desc: string;
+  /** 只有待处理的消息带按钮 */
+  actionable: boolean;
+  urgent: boolean;
+}
+
+/** 91 历史订单查询 */
+export interface HistoryOrder {
+  id: string;
+  orderNo: string;
+  statusText: string;
+  statusTone: 'done' | 'partial' | 'cancelled';
+  metaText: string;
+  amountText: string;
+  /** 部分退款时显示的 -12 */
+  refundText: string;
+  itemsText: string;
+}
+
+export interface HistoryFilter {
+  dateText: string;
+  statusText: string;
+  channelText: string;
+}
+
+export interface HistorySummary {
+  countText: string;
+  incomeText: string;
+  refundText: string;
+}
+
+/** 92 异常与取消订单 */
+export type ExceptionTab = 'cancel' | 'timeout' | 'delivery';
+
+export interface ExceptionOrder {
+  id: string;
+  orderNo: string;
+  stageText: string;
+  stageTone: 'pending' | 'cooked' | 'done';
+  /** 剩 4 分钟自动同意 */
+  countdownText: string;
+  reasonQuote: string;
+  itemsText: string;
+  amountText: string;
+  /** 已出餐的单拒绝需要上传凭证 */
+  needProof: boolean;
+  noteText: string;
+  /** 已处理的单只展示结论 */
+  resolved: boolean;
+  resolveText: string;
+}
+
+/** 96 核销记录 */
+export type VerifyLogTab = 'today' | 'yesterday' | 'week';
+
+export interface VerifyStats {
+  countText: string;
+  amountText: string;
+  pendingText: string;
+}
+
+export interface VerifyRecord {
+  id: string;
+  code: string;
+  title: string;
+  metaText: string;
+  amountText: string;
+  /** done = 已核销，void = 已废，pending = 待核销（超时未取） */
+  state: 'done' | 'void' | 'pending';
+}
+
+/** 97 打印机与设备 */
+export interface PrintDevice {
+  id: string;
+  name: string;
+  statusText: string;
+  online: boolean;
+  actionText: string;
+}
+
+export interface DeviceSettings {
+  devices: PrintDevice[];
+  autoPrint: boolean;
+  copies: number;
+  voiceOn: boolean;
+  voiceText: string;
+  volumeText: string;
+  scannerText: string;
+  noteText: string;
+}
+
+/** 23 优惠活动设置 */
+export interface PromotionItem {
+  id: string;
+  kindText: string;
+  name: string;
+  statusText: string;
+  /** running = 生效中，paused = 已暂停 */
+  status: 'running' | 'paused';
+  sub: string;
+  rangeText: string;
+  /** 生效中的活动带三列效果数据 */
+  stats: { label: string; value: string }[];
+}
+
+/** 65 新建满减活动 */
+export type PromotionType = 'full' | 'discount' | 'second';
+
+export interface PromotionTier {
+  id: string;
+  /** 单位：分 */
+  threshold: number;
+  cut: number;
+}
+
+export interface PromotionDraft {
+  id: string;
+  type: PromotionType;
+  tiers: PromotionTier[];
+  dateText: string;
+  timeText: string;
+  goodsText: string;
+  budgetText: string;
+  estimateText: string;
+}
+
+/** 66 选择适用商品 */
+export interface PromoGoods {
+  id: string;
+  name: string;
+  priceText: string;
+  categoryName: string;
+  checked: boolean;
+}
+
+/** 94 营销中心 */
+export interface MarketingTool {
+  key: string;
+  badge: string;
+  label: string;
+}
+
+export interface MarketingActivity {
+  id: string;
+  name: string;
+  sub: string;
+  on: boolean;
+}
+
+export interface MarketingCenter {
+  rangeText: string;
+  stats: { label: string; value: string }[];
+  tools: MarketingTool[];
+  activities: MarketingActivity[];
+}
+
+/** 95 创建店铺优惠券 */
+export type ShopCouponKind = 'cash' | 'discount' | 'delivery';
+
+export interface ShopCouponDraft {
+  kind: ShopCouponKind;
+  /** 分 */
+  amount: number;
+  threshold: number;
+  totalText: string;
+  perUserText: string;
+  validText: string;
+  newOnly: boolean;
+  stackable: boolean;
+}
+
+/** 47 评价管理（商家侧汇总，与顾客端 82 的 ReviewSummary 不是同一个） */
+export interface MerchantReviewSummary {
+  score: string;
+  dist: { label: string; percent: number }[];
+}
+
+export interface MerchantReview {
+  id: string;
+  user: string;
+  stars: number;
+  timeText: string;
+  content: string;
+  goodsText: string;
+  reply: string;
+  /** ≤3 星，需要 24 小时内回复 */
+  lowScore: boolean;
+}
+
+/** 90 评价回复 */
+export interface ReviewReplyInfo {
+  review: MerchantReview;
+  tags: string[];
+  orderNo: string;
+  templates: { key: string; label: string; text: string }[];
+  couponText: string;
+}

@@ -96,6 +96,20 @@ const ROUTES = [
   ['74-账号与安全', '/pages/customer/account/index'],
   ['75-通知设置', '/pages/customer/notify-settings/index'],
   ['78-关于美味坊', '/pages/customer/about/index'],
+  // 商家端 接单扩展（21 要先输码才出订单预览，放在下面的交互段）
+  ['45-商家消息中心', '/pages/merchant/messages/index'],
+  ['91-历史订单查询', '/pages/merchant/order-history/index'],
+  ['92-异常与取消订单', '/pages/merchant/order-exception/index'],
+  ['96-核销记录', '/pages/merchant/verify-log/index'],
+  ['97-打印机与设备', '/pages/merchant/devices/index'],
+  // 商家端 营销与评价
+  ['23-优惠活动设置', '/pages/merchant/promotions/index'],
+  ['65-新建满减活动', '/pages/merchant/promotion-edit/index'],
+  ['66-选择适用商品', '/pages/merchant/promotion-goods/index'],
+  ['94-营销中心', '/pages/merchant/marketing/index'],
+  ['95-创建店铺优惠券', '/pages/merchant/coupon-edit/index'],
+  ['47-评价管理', '/pages/merchant/reviews/index'],
+  ['90-评价回复', '/pages/merchant/review-reply/index?id=mr_3'],
 ];
 
 const MIME = {
@@ -232,6 +246,14 @@ async function main() {
   await go('/pages/customer/coupons/index');
   await tap('.cp__rule');
   await shot('59-优惠券使用规则');
+
+  /* ---------- 21 核销取餐码：输满 4 位才拉出订单预览 ---------- */
+
+  // uni-app H5 把 <input class="x"> 渲染成 <uni-input class="x"><input>，要填里层那个
+  await go('/pages/merchant/verify/index');
+  await page.locator('.vf__input input').fill('8823');
+  await wait(700);
+  await shot('21-核销取餐码');
 
   await browser.close();
   server.close();

@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import { getDashboard } from '@/services/api';
 import { chrome } from '@/utils/chrome';
-import { relaunch, todo } from '@/utils/nav';
+import { push, relaunch, todo } from '@/utils/nav';
 import type { Dashboard } from '@/models';
 
 const RANK_COLORS = ['#FF3800', '#FF7B1C', '#FFB08F'];
@@ -37,9 +37,15 @@ onShow(async () => {
             <text class="dash__shop-name">{{ dash.shopName }}</text>
             <text class="dash__shop-meta">{{ dash.scoreText }}</text>
           </view>
-          <view class="dash__open" :class="{ 'dash__open--off': !dash.open }">
-            <view class="dash__open-dot" />
-            <text>{{ dash.open ? '营业中' : '休息中' }}</text>
+          <view class="row dash__top-ops">
+            <view class="dash__open" :class="{ 'dash__open--off': !dash.open }">
+              <view class="dash__open-dot" />
+              <text>{{ dash.open ? '营业中' : '休息中' }}</text>
+            </view>
+            <!-- 45 商家消息中心：新单 / 退款 / 差评 / 结算提醒的收口 -->
+            <view class="dash__bell tap-sm" @tap="push('/pages/merchant/messages/index')">
+              <wf-icon name="chat" :size="34" color="#FF4A17" :weight="1.9" />
+            </view>
           </view>
         </view>
 
@@ -142,6 +148,21 @@ onShow(async () => {
 .dash__shop-meta {
   font-size: 22rpx;
   color: var(--c-text-weaker);
+}
+
+.dash__top-ops {
+  gap: 20rpx;
+}
+
+.dash__bell {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: var(--c-primary-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .dash__open {
