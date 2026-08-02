@@ -4,9 +4,9 @@
 重新实现设计稿。HTML 设计稿只作为视觉与交互参考，DOM 结构没有照搬——交付文档里那套 375×812 固定画框、
 `dc-import` 手机状态栏、内联样式都是展示脚手架，不是产品结构。
 
-当前进度：**顾客端与商家端全部完成**，全稿 98 屏做完 **92 屏**
-（86 个页面 + 4 个半屏浮层 + 空状态 42 并入 05 + 卡券 39 与 17 合并 / 15 个组件）。
-剩余 6 屏：商家入驻全流程（26 14 27 24 28 29）。
+**全稿 98 屏已全部实现。** 落地为 92 个页面路由 + 4 个半屏浮层组件，
+另有 2 屏并入已有页面（空状态 42 并入 05、卡券 39 与 17 合并）；共 16 个通用组件。
+`shots/` 下有 98 张逐屏截图，与设计稿一一对应。
 
 | 步骤 | 内容 | 屏号 | 状态 |
 |---|---|---|---|
@@ -20,7 +20,7 @@
 | 6c | 顾客端卡券会员 + 设置账号 | 73 37 86 39 17 59 79 80 81 / 44 74 75 78 | ✅ |
 | 6d | 商家端接单扩展 + 营销评价 | 21 45 91 92 96 97 / 23 65 66 94 95 47 90 | ✅ |
 | 6e | 商家端数据结算 + 店铺团队 | 46 87 89 34 67 88 68 / 50 33 70 71 35 69 72 98 | ✅ |
-| 6f | 商家入驻全流程 | 26 14 27 24 28 29 | 待做 |
+| 6f | 商家入驻全流程 | 26 → 14 → 27 → 24 →（驳回）28 → 29 | ✅ |
 
 > 设计稿的 98 屏分散在两份文件里：`screens.js` 只含 72 屏，**73–98 只存在于
 > `美味坊全页面原型.dc.html` 的 `id="sNN"` 锚点**。取设计稿时别只看 `screens.js`。
@@ -78,7 +78,8 @@ src/
 │   └── mock/                         # 本地假后端：db / 路由表 / 开关
 ├── components/                       # wf-icon · wf-nav-bar · wf-tab-bar · wf-price · wf-qty-stepper
 │                                     # wf-toggle · wf-thumb · wf-cart-bar · wf-cart-sheet · wf-timeline
-│                                     # wf-bar-chart（08 / 46 / 89 共用的柱状图）
+│                                     # wf-bar-chart（08/46/89）· wf-steps（14/27）
+│                                     # wf-uploader（14/27/71/72 的资质图上传位）
 │                                     # 半屏浮层：wf-cart-sheet(30) wf-address-sheet(15)
 │                                     #           wf-remark-sheet(31) wf-coupon-rule-sheet(59)
 └── pages/
@@ -110,6 +111,8 @@ src/
                                       # 店铺团队 business-hours(50) delivery(33) delivery-area(70)
                                       #          shop-edit(71) staff(35) staff-permission(69)
                                       #          licenses(72) help(98)
+    └── onboarding/                   # 分包。入驻流程 intro(26) apply(14) license(27)
+                                      #              audit(24) rejected(28) done(29)
 scripts/shots.mjs                     # H5 逐屏截图（不参与小程序构建）
 ```
 
@@ -152,12 +155,13 @@ scripts/shots.mjs                     # H5 逐屏截图（不参与小程序构�
 `<button open-type="getPhoneNumber">` 用 `#ifdef MP-WEIXIN` 包裹，非微信端走同一个 `login()`，
 所以 H5 里能完整走通下单链路（也是截图验收的基础）。
 
-**商家端走小程序分包。** 微信小程序主包有 2MB 上限，全稿 98 屏放一个包里必然超。
-`pages.json` 里把 `pages/merchant/**` 整体声明成 `subPackages`，主包只留登录与顾客端主链路
-（分包只改路由配置，页面代码与 `push()` 里的绝对路径都不用动）。
-`preloadRule` 在 `pages/login/index` 上预下载商家分包，商家登录后进工作台不会有加载空窗。
-量到的体积：主包 1.5M / 商家分包 844K，两边都留着足够余量；顾客端与商家端都已完成、不再增长，
-入驻流程（26 14 27 24 28 29）会再拆一个 `pages/onboarding` 分包。
+**分成三个小程序包。** 微信小程序主包有 2MB 上限，全稿 98 屏放一个包里必然超。
+`pages.json` 里把 `pages/merchant/**` 与 `pages/onboarding/**` 各声明成一个 `subPackages`，
+主包只留登录与顾客端（分包只改路由配置，页面代码与 `push()` 里的绝对路径都不用动）。
+`preloadRule` 在 `pages/login/index` 上预下载商家分包，商家登录后进工作台不会有加载空窗；
+入驻分包不预下载——只有未入驻用户点「成为商家」才会用到。
+
+量到的体积：**主包 1.5M / 商家分包 844K / 入驻分包 124K**，三者都在 2MB 上限内。
 
 **mock 后端可一键切换。** `services/mock/config.ts` 里 `USE_MOCK = true` 时，`request()` 走本地路由表；
 接真实后端只需把它置 false 并填 `BASE_URL`，`api.ts` 与页面代码不用改。
@@ -188,8 +192,35 @@ scripts/shots.mjs                     # H5 逐屏截图（不参与小程序构�
 7. **20 申请售后与 56 选择退款商品的先后按设计稿走。** 交付文档的顺序是 20 → 56，
    但 56 的主按钮写的是「下一步 · 填写原因」，说明 56 在 20 之前。这里取两者的交集：
    `订单详情(06) → 20`，20 里的「退款商品」行点开进 56 选商品，选完回到 20 填原因提交。
-8. **未做的页面给出明确提示。** 设计稿里指向尚未实现屏号的入口（仅剩入驻流程）
-   会 toast 说明所属屏号，不做无声失效。
+8. **两处页内功能保留 toast 占位。** `03` 的「期望送达时间选择」与 `85` 的「找人代付分享卡片」
+   在设计稿里不是独立屏，也没有画出交互细节，接后端后再补，目前 toast 说明。
+   其余入口全部是真实跳转，没有无声失效的死链。
+
+## 98 屏 → 实现对照
+
+| 屏号 | 页面路由 |
+|---|---|
+| 13 | `pages/login/index` |
+| 01 02 03 85 43 04 06 05 07 | `pages/customer/{menu,goods,checkout,pay-method,pay,pay-result,order-detail,orders,profile}/index` |
+| 18 32 54 82 61 | `pages/customer/{search,shop,photo-view,reviews,license}/index` |
+| 38 16 52 | `pages/customer/{addresses,address-edit,map-picker}/index` |
+| 53 84 83 25 | `pages/customer/{delivery-track,rider-chat,pickup-stores,pickup-code}/index` |
+| 20 56 40 | `pages/customer/{aftersale,refund-items,refund-detail}/index` |
+| 19 55 60 57 58 | `pages/customer/{comment,comment-publish,my-reviews,invoice,invoice-titles}/index` |
+| 41 77 76 | `pages/customer/{support,help,feedback}/index` |
+| 73 37 86 | `pages/customer/{profile-edit,messages,message-detail}/index` |
+| 17 79 80 81 | `pages/customer/{coupons,coupon-center,points,points-mall}/index` |
+| 44 74 75 78 | `pages/customer/{settings,account,notify-settings,about}/index` |
+| 08 09 10 12 62 51 48 | `pages/merchant/{dashboard,orders,goods,shop,order-detail,print,refund-review}/index` |
+| 11 36 64 63 22 49 93 | `pages/merchant/{goods-edit,spec-edit,option-lib,image-crop,categories,stock,goods-bulk}/index` |
+| 21 96 45 91 92 97 | `pages/merchant/{verify,verify-log,messages,order-history,order-exception,devices}/index` |
+| 23 65 66 94 95 47 90 | `pages/merchant/{promotions,promotion-edit,promotion-goods,marketing,coupon-edit,reviews,review-reply}/index` |
+| 46 87 89 34 67 88 68 | `pages/merchant/{stats,stats-goods,stats-customer,settlement,settlement-detail,bills,payout-account}/index` |
+| 50 33 70 71 35 69 72 98 | `pages/merchant/{business-hours,delivery,delivery-area,shop-edit,staff,staff-permission,licenses,help}/index` |
+| 26 14 27 24 28 29 | `pages/onboarding/{intro,apply,license,audit,rejected,done}/index` |
+| **30 15 31 59** | 半屏浮层组件 `wf-cart-sheet` / `wf-address-sheet` / `wf-remark-sheet` / `wf-coupon-rule-sheet` |
+| **42** | 05 我的订单的空状态（「售后」Tab 无数据时） |
+| **39** | 与 17 合并为 `pages/customer/coupons/index` |
 
 ## 待补齐的工程项
 

@@ -525,6 +525,47 @@
           }
         }
       ]
+    },
+    {
+      "root": "pages/onboarding",
+      "pages": [
+        {
+          "path": "intro/index",
+          "style": {
+            "navigationBarTitleText": "入驻引导"
+          }
+        },
+        {
+          "path": "apply/index",
+          "style": {
+            "navigationBarTitleText": "商家入驻"
+          }
+        },
+        {
+          "path": "license/index",
+          "style": {
+            "navigationBarTitleText": "上传资质"
+          }
+        },
+        {
+          "path": "audit/index",
+          "style": {
+            "navigationBarTitleText": "审核进度"
+          }
+        },
+        {
+          "path": "rejected/index",
+          "style": {
+            "navigationBarTitleText": "审核结果"
+          }
+        },
+        {
+          "path": "done/index",
+          "style": {
+            "navigationBarTitleText": "开通成功"
+          }
+        }
+      ]
     }
   ],
   "preloadRule": {

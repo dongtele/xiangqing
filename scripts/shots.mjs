@@ -127,6 +127,13 @@ const ROUTES = [
   ['69-员工权限设置', '/pages/merchant/staff-permission/index?id=st_3'],
   ['72-资质更新与年审', '/pages/merchant/licenses/index'],
   ['98-商家帮助与客服', '/pages/merchant/help/index'],
+  // 商家入驻全流程
+  ['26-入驻引导', '/pages/onboarding/intro/index'],
+  ['14-商家入驻申请', '/pages/onboarding/apply/index'],
+  ['27-上传资质', '/pages/onboarding/license/index'],
+  ['24-入驻审核状态', '/pages/onboarding/audit/index'],
+  ['28-审核驳回', '/pages/onboarding/rejected/index'],
+  ['29-开通成功', '/pages/onboarding/done/index'],
 ];
 
 const MIME = {
@@ -263,6 +270,12 @@ async function main() {
   await go('/pages/customer/coupons/index');
   await tap('.cp__rule');
   await shot('59-优惠券使用规则');
+
+  /* ---------- 42 订单空状态：05 的「售后」Tab 下没有数据时的样子 ---------- */
+
+  await go('/pages/customer/orders/index');
+  await tap('.orders__seg-item', { hasText: '售后' });
+  await shot('42-订单空状态');
 
   /* ---------- 21 核销取餐码：输满 4 位才拉出订单预览 ---------- */
 

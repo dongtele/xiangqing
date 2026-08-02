@@ -7,6 +7,7 @@ import type {
   AftersaleOptions,
   AftersaleType,
   AreaShape,
+  AuditState,
   BillTab,
   Bills,
   BulkGoods,
@@ -62,6 +63,11 @@ import type {
   MyReview,
   MyReviewTab,
   NotifySwitch,
+  OnboardAudit,
+  OnboardDone,
+  OnboardForm,
+  OnboardIntro,
+  OnboardLicense,
   OptionLibGroup,
   Order,
   PayoutAccount,
@@ -669,3 +675,42 @@ export const uploadLicense = (id: string): Promise<{ ok: boolean; message: strin
   request('/merchant/licenses/upload', { id }, { method: 'POST', loading: true });
 
 export const getMerchantHelp = (): Promise<MerchantHelp> => request('/merchant/help');
+
+/* ---------------- 商家入驻 ---------------- */
+
+export const getOnboardIntro = (): Promise<OnboardIntro> => request('/onboard/intro');
+
+export const getOnboardForm = (): Promise<OnboardForm> => request('/onboard/form');
+
+export const saveOnboardForm = (
+  rows: OnboardForm['rows']
+): Promise<{ ok: boolean; message: string }> =>
+  request('/onboard/form', { rows } as unknown as Record<string, unknown>, {
+    method: 'POST',
+    loading: true,
+  });
+
+export const getOnboardLicense = (): Promise<OnboardLicense> => request('/onboard/license');
+
+export const uploadOnboardSlot = (
+  key: string,
+  path: string
+): Promise<{ ok: boolean; message: string }> =>
+  request('/onboard/license/upload', { key, path }, { method: 'POST', loading: true });
+
+export const submitOnboard = (): Promise<{ ok: boolean; message: string }> =>
+  request('/onboard/submit', {}, { method: 'POST', loading: true });
+
+export const getOnboardAudit = (state?: AuditState): Promise<OnboardAudit> =>
+  request('/onboard/audit', { state });
+
+export const resubmitOnboard = (): Promise<{ ok: boolean; message: string }> =>
+  request('/onboard/resubmit', {}, { method: 'POST', loading: true });
+
+export const withdrawOnboard = (): Promise<{ ok: boolean; message: string }> =>
+  request('/onboard/withdraw', {}, { method: 'POST', loading: true });
+
+export const getOnboardDone = (): Promise<OnboardDone> => request('/onboard/done');
+
+export const activateShop = (): Promise<{ ok: boolean; message: string }> =>
+  request('/onboard/activate', {}, { method: 'POST', loading: true });

@@ -7,6 +7,7 @@ import type {
   AftersaleOptions,
   AftersaleType,
   AreaShape,
+  AuditState,
   BulkGoods,
   BulkTab,
   BusinessSettings,
@@ -30,6 +31,7 @@ import type {
   MerchantOrder,
   MerchantOrderTab,
   MessageDetail,
+  OnboardForm,
   Order,
   PrintSettings,
   ProfileForm,
@@ -133,6 +135,12 @@ const state = {
     ...db.licenseCenter,
     docs: db.licenseCenter.docs.map((d) => ({ ...d })),
   },
+  onboardForm: { ...db.onboardForm, rows: db.onboardForm.rows.map((r) => ({ ...r })), slots: db.onboardForm.slots.map((x) => ({ ...x })) },
+  onboardLicense: {
+    ...db.onboardLicense,
+    slots: db.onboardLicense.slots.map((x) => ({ ...x })),
+  },
+  auditState: 'reviewing' as AuditState,
   goodsDrafts: {} as Record<string, GoodsDraft>,
   payAttempts: {} as Record<string, number>,
   orderSeq: 1025,
@@ -1481,6 +1489,64 @@ const routes: Record<string, (p: Payload) => unknown> = {
   },
 
   'GET /merchant/help': () => db.merchantHelp,
+
+  /* ---------------- 商家入驻：26 14 27 24 28 29 ---------------- */
+
+  'GET /onboard/intro': () => db.onboardIntro,
+
+  'GET /onboard/form': () => state.onboardForm,
+
+  'POST /onboard/form': (p) => {
+    const rows = (p.rows || []) as OnboardForm['rows'];
+    const missing = rows.find((r) => !r.value);
+    if (missing) return { ok: false, message: `请填写${missing.label}` };
+    state.onboardForm.rows = rows;
+    return { ok: true, message: '资料已保存' };
+  },
+
+  'GET /onboard/license': () => state.onboardLicense,
+
+  'POST /onboard/license/upload': (p) => {
+    const slot = state.onboardLicense.slots.find((x) => x.key === p.key);
+    if (!slot) return { ok: false, message: '上传位不存在' };
+    slot.path = String(p.path || 'uploaded');
+    // 营业执照走 OCR，识别成功后回填公司名与信用代码
+    if (slot.key === 'license') {
+      slot.ocrText = '美味坊餐饮管理有限公司 · 91440300MA5XXXXXX';
+      slot.hint = '识别有误可点击修改';
+    }
+    return { ok: true, message: slot.key === 'license' ? '识别成功' : '已上传' };
+  },
+
+  'POST /onboard/submit': () => {
+    const missing = state.onboardLicense.slots.filter((x) => x.required && !x.path);
+    if (missing.length) return { ok: false, message: '还有必传资质未上传' };
+    state.auditState = 'reviewing';
+    return { ok: true, message: '已提交审核' };
+  },
+
+  'GET /onboard/audit': (p) => {
+    const forced = p.state as AuditState | undefined;
+    return db.onboardAudits[forced || state.auditState];
+  },
+
+  'POST /onboard/resubmit': () => {
+    state.auditState = 'reviewing';
+    return { ok: true, message: '已重新提交，1–3 个工作日内出结果' };
+  },
+
+  'POST /onboard/withdraw': () => {
+    state.auditState = 'reviewing';
+    return { ok: true, message: '已撤回，可修改后重新提交' };
+  },
+
+  'GET /onboard/done': () => db.onboardDone,
+
+  /** 开通成功后把当前账号标记为已认证商家，07 立刻出现「商家管理」 */
+  'POST /onboard/activate': () => {
+    state.auditState = 'passed';
+    return { ok: true, message: '店铺已开通' };
+  },
 
   'GET /merchant/shop': (): Shop => state.shop,
 

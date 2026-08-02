@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import { getMessages } from '@/services/api';
 import { chrome } from '@/utils/chrome';
-import { gotoRoleHome, push, relaunch, todo } from '@/utils/nav';
+import { gotoRoleHome, push, relaunch } from '@/utils/nav';
 import { useUserStore } from '@/stores/user';
 
 /** 07 · 我的（个人中心）—— 顾客端 → 商家端的角色分流入口在此 */
@@ -51,7 +51,7 @@ function onTapOrders(tab: string): void {
 /** 商家管理：切到商家端工作台（12 有「切换到顾客视角」回来） */
 function onEnterMerchant(): void {
   if (!user.isMerchant) {
-    todo('26', '入驻引导');
+    push('/pages/onboarding/intro/index');
     return;
   }
   user.switchRole('merchant');

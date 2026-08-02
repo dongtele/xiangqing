@@ -1329,3 +1329,89 @@ export interface MerchantHelp {
   courses: { id: string; title: string; metaText: string }[];
   contacts: { key: string; label: string; value: string }[];
 }
+
+/* ================= 商家入驻全流程（26 14 27 24 28 29） ================= */
+
+/** 26 入驻引导 */
+export interface OnboardIntro {
+  titleLines: string[];
+  subText: string;
+  stats: { value: string; label: string }[];
+  steps: { no: number; title: string; desc: string }[];
+  prepare: string[];
+  agreementText: string;
+}
+
+/** 14 / 27 顶部三步步骤条 */
+export interface OnboardStep {
+  no: number;
+  label: string;
+  /** done 已完成打勾、active 当前、todo 未到 */
+  state: 'done' | 'active' | 'todo';
+}
+
+/** 上传位：14 / 27 / 72 共用 wf-uploader */
+export interface UploadSlot {
+  key: string;
+  label: string;
+  /** 必传项未齐时提交按钮置灰 */
+  required: boolean;
+  /** 已选图片本地路径，空串表示未上传 */
+  path: string;
+  /** OCR 识别结果，只有营业执照有 */
+  ocrText: string;
+  hint: string;
+}
+
+/** 14 商家入驻申请 */
+export interface OnboardForm {
+  steps: OnboardStep[];
+  rows: { key: string; label: string; value: string; placeholder: string }[];
+  slots: UploadSlot[];
+  noteText: string;
+}
+
+/** 27 上传资质 */
+export interface OnboardLicense {
+  steps: OnboardStep[];
+  slots: UploadSlot[];
+  noteText: string;
+}
+
+/** 24 入驻审核状态 / 28 审核驳回 */
+export type AuditState = 'reviewing' | 'rejected' | 'passed';
+
+export interface AuditNode {
+  title: string;
+  desc: string;
+  state: 'done' | 'active' | 'todo';
+}
+
+export interface RejectItem {
+  key: string;
+  kindText: string;
+  title: string;
+  desc: string;
+}
+
+export interface OnboardAudit {
+  state: AuditState;
+  statusTitle: string;
+  statusSub: string;
+  etaText: string;
+  nodes: AuditNode[];
+  /** 驳回时才有 */
+  rejects: RejectItem[];
+  passedText: string;
+  noteText: string;
+}
+
+/** 29 开通成功 */
+export interface OnboardDone {
+  shopName: string;
+  title: string;
+  subText: string;
+  steps: { no: number; title: string; desc: string; btnText: string; primary: boolean; key: string }[];
+  guideTitle: string;
+  guideSub: string;
+}

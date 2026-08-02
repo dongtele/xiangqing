@@ -4,6 +4,7 @@ import type {
   AccountSecurity,
   Address,
   AddressFull,
+  AuditState,
   Bills,
   BulkGoods,
   BusinessSettings,
@@ -46,6 +47,12 @@ import type {
   MessageItem,
   MyReview,
   NotifySwitch,
+  OnboardAudit,
+  OnboardDone,
+  OnboardForm,
+  OnboardIntro,
+  OnboardLicense,
+  OnboardStep,
   OptionLibGroup,
   Order,
   PayoutAccount,
@@ -2394,4 +2401,192 @@ export const merchantHelp: MerchantHelp = {
     { key: 'phone', label: '商家专线', value: '400-820-5678 · 09:00-22:00' },
     { key: 'ticket', label: '我的工单', value: '1 个处理中 · 结算差异申诉' },
   ],
+};
+
+/* ================= 商家入驻全流程 ================= */
+
+/** 26 入驻引导 */
+export const onboardIntro: OnboardIntro = {
+  titleLines: ['开一家自己的', '线上小店'],
+  subText: '0 元入驻 · 最快 1 个工作日开张 · 微信生态直达顾客',
+  stats: [
+    { value: '0元', label: '入驻费用' },
+    { value: '1天', label: '最快开张' },
+    { value: 'T+1', label: '货款结算' },
+  ],
+  steps: [
+    { no: 1, title: '填写店铺资料', desc: '店名、品类、联系方式、门店定位（约 3 分钟）' },
+    { no: 2, title: '上传经营资质', desc: '营业执照、食品经营许可证，拍照即传' },
+    { no: 3, title: '平台审核开通', desc: '1–3 个工作日，通过即可上架商品接单' },
+  ],
+  prepare: ['营业执照原件照片', '食品经营许可证', '法人身份证', '收款银行卡'],
+  agreementText: '点击即代表同意《商家入驻协议》',
+};
+
+const ONBOARD_STEP_LABELS = ['填写资料', '上传资质', '平台审核'];
+
+function onboardSteps(active: number): OnboardStep[] {
+  return ONBOARD_STEP_LABELS.map((label, i) => ({
+    no: i + 1,
+    label,
+    state: i + 1 < active ? 'done' : i + 1 === active ? 'active' : 'todo',
+  }));
+}
+
+/** 14 商家入驻申请（第 1 步） */
+export const onboardForm: OnboardForm = {
+  steps: onboardSteps(1),
+  rows: [
+    { key: 'name', label: '店铺名称', value: '美味坊（中心店）', placeholder: '与营业执照一致' },
+    { key: 'category', label: '经营品类', value: '中式快餐', placeholder: '请选择' },
+    { key: 'contact', label: '联系人', value: '王老板', placeholder: '请填写' },
+    { key: 'phone', label: '手机号', value: '138****8888', placeholder: '请填写' },
+    { key: 'address', label: '店铺地址', value: '', placeholder: '定位选择' },
+  ],
+  slots: [
+    {
+      key: 'license',
+      label: '营业执照',
+      required: true,
+      path: '',
+      ocrText: '',
+      hint: '点击上传',
+    },
+    {
+      key: 'food',
+      label: '食品经营许可证',
+      required: true,
+      path: '',
+      ocrText: '',
+      hint: '点击上传',
+    },
+  ],
+  noteText: '审核约 1–3 个工作日，结果将通过「服务通知」推送；审核中可随时在「我的」查看进度。',
+};
+
+/** 27 上传资质（第 2 步） */
+export const onboardLicense: OnboardLicense = {
+  steps: onboardSteps(2),
+  slots: [
+    {
+      key: 'license',
+      label: '营业执照',
+      required: true,
+      path: 'ocr',
+      ocrText: '美味坊餐饮管理有限公司 · 91440300MA5XXXXXX',
+      hint: '识别有误可点击修改',
+    },
+    {
+      key: 'food',
+      label: '食品经营许可证',
+      required: true,
+      path: '',
+      ocrText: '',
+      hint: '拍照或从相册上传',
+    },
+    {
+      // 身份证两面共用卡片上的一个标题，槽位自身不再重复 label，两个框才对得齐
+      key: 'idFront',
+      label: '',
+      required: true,
+      path: '',
+      ocrText: '',
+      hint: '人像面',
+    },
+    {
+      key: 'idBack',
+      label: '',
+      required: true,
+      path: '',
+      ocrText: '',
+      hint: '国徽面',
+    },
+  ],
+  noteText: 'OCR 自动识别执照信息减少手填；必传项未齐时提交按钮置灰。提交后进入审核中状态。',
+};
+
+/** 24 审核中 / 28 审核驳回 */
+export const onboardAudits: Record<AuditState, OnboardAudit> = {
+  reviewing: {
+    state: 'reviewing',
+    statusTitle: '平台审核中',
+    statusSub: '资料已提交，预计',
+    etaText: '1–3 个工作日',
+    nodes: [
+      { title: '资料提交成功', desc: '7月17日 10:22 · 店铺信息 + 2 项资质', state: 'done' },
+      { title: '平台资质审核中', desc: '营业执照 · 食品经营许可证核验', state: 'active' },
+      { title: '开通商家工作台', desc: '通过后「我的」页自动出现商家管理入口', state: 'todo' },
+    ],
+    rejects: [],
+    passedText: '',
+    noteText: '结果将通过微信「服务通知」推送',
+  },
+  rejected: {
+    state: 'rejected',
+    statusTitle: '审核未通过',
+    statusSub: '7月18日 14:20 · 请按以下提示修改后重新提交',
+    etaText: '',
+    nodes: [],
+    rejects: [
+      {
+        key: 'food',
+        kindText: '资质',
+        title: '食品经营许可证照片模糊',
+        desc: '证件号码无法辨认，请在光线充足处平整拍摄原件',
+      },
+      {
+        key: 'address',
+        kindText: '资料',
+        title: '店铺地址与执照注册地址不一致',
+        desc: '如为分店经营，请补充说明或上传分支机构执照',
+      },
+    ],
+    passedText: '已通过项（营业执照、法人身份证）无需重复上传；重新提交后重新计算 1–3 个工作日。',
+    noteText: '',
+  },
+  passed: {
+    state: 'passed',
+    statusTitle: '审核已通过',
+    statusSub: '店铺已开通，快去上架商品',
+    etaText: '',
+    nodes: [],
+    rejects: [],
+    passedText: '',
+    noteText: '',
+  },
+};
+
+/** 29 开通成功 */
+export const onboardDone: OnboardDone = {
+  shopName: '美味坊（中心店）',
+  title: '恭喜，店铺开通成功！',
+  subText: '「美味坊（中心店）」已通过审核，快去开张吧',
+  steps: [
+    {
+      no: 1,
+      key: 'goods',
+      title: '上架第一个商品',
+      desc: '商品管理 → 发布商品，配好规格与图片',
+      btnText: '去上架',
+      primary: true,
+    },
+    {
+      no: 2,
+      key: 'shop',
+      title: '设置营业时间与配送',
+      desc: '店铺中心 → 营业时间 / 配送范围与运费',
+      btnText: '去设置',
+      primary: false,
+    },
+    {
+      no: 3,
+      key: 'payout',
+      title: '绑定收款账户',
+      desc: '货款 T+1 自动结算到银行卡',
+      btnText: '去绑定',
+      primary: false,
+    },
+  ],
+  guideTitle: '新手开店指南',
+  guideSub: '5 分钟读懂接单、出餐、结算全流程',
 };
