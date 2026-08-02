@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import { getShopSettings, updateShopSettings } from '@/services/api';
 import { chrome } from '@/utils/chrome';
-import { gotoRoleHome, push, toast, todo } from '@/utils/nav';
+import { gotoRoleHome, push, toast } from '@/utils/nav';
 import { useUserStore } from '@/stores/user';
 import type { Shop } from '@/models';
 
@@ -47,7 +47,7 @@ function onSwitchToCustomer(): void {
           <text v-if="shop.certified" class="ms__badge">✓ 企业资质已认证</text>
         </view>
       </view>
-      <text class="ms__arrow" @tap="todo('71', '店铺信息编辑')">›</text>
+      <text class="ms__arrow" @tap="push('/pages/merchant/shop-edit/index')">›</text>
     </view>
 
     <scroll-view class="ms__body" scroll-y>
@@ -59,14 +59,14 @@ function onSwitchToCustomer(): void {
             <wf-toggle :on="shop.open" @change="onToggleOpen" />
           </view>
         </view>
-        <view class="cell tap" @tap="todo('50', '营业设置')">
+        <view class="cell tap" @tap="push('/pages/merchant/business-hours/index')">
           <text class="cell__label">营业时间</text>
           <view class="cell__value">
             <text>{{ shop.businessHours }}</text>
             <text class="chevron">›</text>
           </view>
         </view>
-        <view class="cell tap" @tap="todo('33', '配送范围与运费')">
+        <view class="cell tap" @tap="push('/pages/merchant/delivery/index')">
           <text class="cell__label">配送范围与运费</text>
           <view class="cell__value">
             <text>{{ shop.deliveryText }}</text>
@@ -97,14 +97,14 @@ function onSwitchToCustomer(): void {
       </view>
 
       <view class="card card--lg card--flat ms__group">
-        <view class="cell tap" @tap="todo('72', '资质更新与年审')">
+        <view class="cell tap" @tap="push('/pages/merchant/licenses/index')">
           <text class="cell__label">资质证照</text>
           <view class="cell__value">
             <text class="ms__on">✓ 已认证</text>
             <text class="chevron">›</text>
           </view>
         </view>
-        <view class="cell tap" @tap="todo('35', '员工账号')">
+        <view class="cell tap" @tap="push('/pages/merchant/staff/index')">
           <text class="cell__label">员工账号</text>
           <view class="cell__value">
             <text>{{ shop.staffCount }}人</text>
@@ -114,6 +114,20 @@ function onSwitchToCustomer(): void {
         <view class="cell">
           <text class="cell__label">新订单提醒</text>
           <wf-toggle :on="shop.newOrderAlert" @change="onToggleAlert" />
+        </view>
+        <view class="cell tap" @tap="push('/pages/merchant/settlement/index')">
+          <text class="cell__label">货款结算</text>
+          <view class="cell__value">
+            <text class="ms__primary">余额 ¥12,486</text>
+            <text class="chevron">›</text>
+          </view>
+        </view>
+        <view class="cell tap" @tap="push('/pages/merchant/help/index')">
+          <text class="cell__label">帮助与客服</text>
+          <view class="cell__value">
+            <text>7×24 小时</text>
+            <text class="chevron">›</text>
+          </view>
         </view>
       </view>
 

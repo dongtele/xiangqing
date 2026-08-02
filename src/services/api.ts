@@ -6,8 +6,13 @@ import type {
   AftersaleItem,
   AftersaleOptions,
   AftersaleType,
+  AreaShape,
+  BillTab,
+  Bills,
   BulkGoods,
   BulkTab,
+  BusinessSettings,
+  BusinessStats,
   CartItem,
   Category,
   CategoryRow,
@@ -19,8 +24,11 @@ import type {
   CouponPack,
   CouponRule,
   CouponTab,
+  CustomerAnalysis,
   CustomerOrderTab,
   Dashboard,
+  DeliveryArea,
+  DeliverySettings,
   DeliveryTrack,
   DeliveryType,
   DeviceSettings,
@@ -29,17 +37,20 @@ import type {
   FeedbackOptions,
   Goods,
   GoodsDraft,
+  GoodsRank,
   HelpCenterInfo,
   HistoryFilter,
   HistoryOrder,
   HistorySummary,
   InvoiceOptions,
   InvoiceTitle,
+  LicenseCenter,
   LicenseInfo,
   MarketingCenter,
   MemberCenter,
   MenuGroup,
   MerchantGoods,
+  MerchantHelp,
   MerchantMessage,
   MerchantOrder,
   MerchantOrderTab,
@@ -53,6 +64,7 @@ import type {
   NotifySwitch,
   OptionLibGroup,
   Order,
+  PayoutAccount,
   PickupCodeInfo,
   PickupStore,
   PoiItem,
@@ -63,6 +75,7 @@ import type {
   PromoGoods,
   PromotionDraft,
   PromotionItem,
+  RankRange,
   ReceiptPreview,
   ReceiptType,
   Refund,
@@ -74,9 +87,16 @@ import type {
   Rider,
   RiderMessage,
   SettingsInfo,
+  Settlement,
+  SettlementDetail,
   Shop,
   ShopCouponDraft,
   ShopProfile,
+  ShopProfileForm,
+  Staff,
+  StaffPermission,
+  StaffRole,
+  StaffRoleDoc,
   StockGoods,
   StockTab,
   SupportMessage,
@@ -560,3 +580,92 @@ export const submitReviewReply = (
 
 export const appealReview = (id: string): Promise<{ ok: boolean; message: string }> =>
   request('/merchant/review/appeal', { id }, { method: 'POST', loading: true });
+
+/* ---------------- 商家端 · 数据结算与店铺团队 ---------------- */
+
+export const getBusinessStats = (): Promise<BusinessStats> => request('/merchant/stats');
+
+export const getGoodsRank = (range: RankRange): Promise<GoodsRank> =>
+  request('/merchant/stats/goods', { range });
+
+export const getCustomerAnalysis = (): Promise<CustomerAnalysis> =>
+  request('/merchant/stats/customer');
+
+export const getSettlement = (): Promise<Settlement> => request('/merchant/settlement');
+
+export const withdraw = (amount: number): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/settlement/withdraw', { amount }, { method: 'POST', loading: true });
+
+export const getSettlementDetail = (id: string): Promise<SettlementDetail> =>
+  request('/merchant/settlement/detail', { id });
+
+export const getBills = (tab: BillTab): Promise<Bills> => request('/merchant/bills', { tab });
+
+export const getPayoutAccount = (): Promise<PayoutAccount> => request('/merchant/payout-account');
+
+export const getBusinessSettings = (): Promise<BusinessSettings> =>
+  request('/merchant/business-settings');
+
+export const saveBusinessSettings = (
+  patch: Partial<BusinessSettings>
+): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/business-settings', patch as Record<string, unknown>, {
+    method: 'POST',
+    loading: true,
+  });
+
+export const getDeliverySettings = (): Promise<DeliverySettings> =>
+  request('/merchant/delivery-settings');
+
+export const saveDeliverySettings = (
+  patch: Partial<DeliverySettings>
+): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/delivery-settings', patch as Record<string, unknown>, {
+    method: 'POST',
+    loading: true,
+  });
+
+export const getDeliveryArea = (): Promise<DeliveryArea> => request('/merchant/delivery-area');
+
+export const saveDeliveryArea = (shape: AreaShape): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/delivery-area', { shape }, { method: 'POST', loading: true });
+
+export const getShopProfileForm = (): Promise<ShopProfileForm> => request('/merchant/shop-profile');
+
+export const saveShopProfileForm = (
+  patch: Partial<ShopProfileForm>
+): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/shop-profile', patch as Record<string, unknown>, {
+    method: 'POST',
+    loading: true,
+  });
+
+export const getStaff = (): Promise<{ list: Staff[]; roleDocs: StaffRoleDoc[] }> =>
+  request('/merchant/staff');
+
+export const inviteStaff = (): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/staff/invite', {}, { method: 'POST', loading: true });
+
+export const getStaffPermission = (id: string): Promise<StaffPermission | null> =>
+  request('/merchant/staff/permission', { id });
+
+export const saveStaffPermission = (
+  id: string,
+  role: StaffRole,
+  permissions: StaffPermission['permissions']
+): Promise<{ ok: boolean; message: string }> =>
+  request(
+    '/merchant/staff/permission',
+    { id, role, permissions } as unknown as Record<string, unknown>,
+    { method: 'POST', loading: true }
+  );
+
+export const removeStaff = (id: string): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/staff/remove', { id }, { method: 'POST', loading: true });
+
+export const getLicenseCenter = (): Promise<LicenseCenter> => request('/merchant/licenses');
+
+export const uploadLicense = (id: string): Promise<{ ok: boolean; message: string }> =>
+  request('/merchant/licenses/upload', { id }, { method: 'POST', loading: true });
+
+export const getMerchantHelp = (): Promise<MerchantHelp> => request('/merchant/help');

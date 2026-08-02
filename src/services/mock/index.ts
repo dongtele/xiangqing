@@ -6,8 +6,10 @@ import type {
   AftersaleItem,
   AftersaleOptions,
   AftersaleType,
+  AreaShape,
   BulkGoods,
   BulkTab,
+  BusinessSettings,
   CartItem,
   CategoryRow,
   CheckoutTrial,
@@ -15,6 +17,7 @@ import type {
   CouponRule,
   CouponTab,
   CustomerOrderTab,
+  DeliverySettings,
   DeliveryTrack,
   DeliveryType,
   DeviceSettings,
@@ -31,6 +34,7 @@ import type {
   PrintSettings,
   ProfileForm,
   PromotionDraft,
+  RankRange,
   ReceiptPreview,
   ReceiptType,
   Refund,
@@ -38,6 +42,9 @@ import type {
   RiderMessage,
   Shop,
   ShopCouponDraft,
+  ShopProfileForm,
+  StaffPermission,
+  StaffRole,
   SupportMessage,
   VerifyLogTab,
   VerifyPreview,
@@ -103,6 +110,29 @@ const state = {
     activities: db.marketingCenter.activities.map((a) => ({ ...a })),
   },
   merchantReviews: db.merchantReviews.map((r) => ({ ...r })),
+  settlement: { ...db.settlement, rows: db.settlement.rows.map((r) => ({ ...r })) },
+  businessSettings: {
+    ...db.businessSettings,
+    slots: db.businessSettings.slots.map((x) => ({ ...x })),
+    restDays: [...db.businessSettings.restDays],
+  },
+  deliverySettings: { ...db.deliverySettings },
+  deliveryArea: { ...db.deliveryArea, tiers: db.deliveryArea.tiers.map((t) => ({ ...t })) },
+  shopProfileForm: {
+    ...db.shopProfileForm,
+    rows: db.shopProfileForm.rows.map((r) => ({ ...r })),
+  },
+  staffList: db.staffList.map((x) => ({ ...x })),
+  staffPermissions: {
+    st_3: {
+      ...db.staffPermissions.st_3,
+      permissions: db.staffPermissions.st_3.permissions.map((x) => ({ ...x })),
+    },
+  } as Record<string, StaffPermission>,
+  licenseCenter: {
+    ...db.licenseCenter,
+    docs: db.licenseCenter.docs.map((d) => ({ ...d })),
+  },
   goodsDrafts: {} as Record<string, GoodsDraft>,
   payAttempts: {} as Record<string, number>,
   orderSeq: 1025,
@@ -1318,6 +1348,139 @@ const routes: Record<string, (p: Payload) => unknown> = {
   },
 
   'POST /merchant/review/appeal': () => ({ ok: true, message: '申诉已提交，平台将在 24 小时内处理' }),
+
+  /* ---------------- 商家端数据结算与店铺团队：46 87 89 34 67 88 68 50 33 70 71 35 69 72 98 ---------------- */
+
+  'GET /merchant/stats': () => db.businessStats,
+
+  'GET /merchant/stats/goods': (p) => {
+    const range = (p.range || 'week') as RankRange;
+    return db.goodsRank[range] || db.goodsRank.week;
+  },
+
+  'GET /merchant/stats/customer': () => db.customerAnalysis,
+
+  'GET /merchant/settlement': () => state.settlement,
+
+  'POST /merchant/settlement/withdraw': (p) => {
+    const amount = Number(p.amount) || 0;
+    const balance = Number(state.settlement.balanceText.replace(/,/g, ''));
+    if (amount < 100) return { ok: false, message: '单笔提现最低 ￥100' };
+    if (amount > balance) return { ok: false, message: '超出可提现余额' };
+    const left = balance - amount;
+    state.settlement.balanceText = left.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    state.settlement.rows = [
+      {
+        id: `s_${Date.now()}`,
+        title: '提现到银行卡',
+        metaText: '刚刚 · 处理中',
+        amountText: amount.toFixed(2),
+        income: false,
+      },
+      ...state.settlement.rows,
+    ];
+    return { ok: true, message: '提现申请已提交，预计 2 小时内到账' };
+  },
+
+  'GET /merchant/settlement/detail': () => db.settlementDetail,
+
+  'GET /merchant/bills': (p) => {
+    const tab = String(p.tab || 'all');
+    return {
+      ...db.bills,
+      rows: tab === 'all' ? db.bills.rows : db.bills.rows.filter((r) => r.tab === tab),
+    };
+  },
+
+  'GET /merchant/payout-account': () => db.payoutAccount,
+
+  'GET /merchant/business-settings': () => state.businessSettings,
+
+  'POST /merchant/business-settings': (p) => {
+    state.businessSettings = {
+      ...state.businessSettings,
+      ...(p as Partial<BusinessSettings>),
+    };
+    return { ok: true, message: '营业设置已保存' };
+  },
+
+  'GET /merchant/delivery-settings': () => state.deliverySettings,
+
+  'POST /merchant/delivery-settings': (p) => {
+    state.deliverySettings = {
+      ...state.deliverySettings,
+      ...(p as Partial<DeliverySettings>),
+    };
+    state.shop.deliveryText = `${state.deliverySettings.radiusKm}km · 起送 ${state.deliverySettings.minOrderText}`;
+    return { ok: true, message: '配送设置已保存' };
+  },
+
+  'GET /merchant/delivery-area': () => state.deliveryArea,
+
+  'POST /merchant/delivery-area': (p) => {
+    state.deliveryArea.shape = (p.shape || 'circle') as AreaShape;
+    return { ok: true, message: '配送范围已保存' };
+  },
+
+  'GET /merchant/shop-profile': () => state.shopProfileForm,
+
+  'POST /merchant/shop-profile': (p) => {
+    state.shopProfileForm = {
+      ...state.shopProfileForm,
+      ...(p as Partial<ShopProfileForm>),
+    };
+    const name = state.shopProfileForm.rows.find((r) => r.key === 'name');
+    if (name) state.shop.name = name.value;
+    return { ok: true, message: '店铺信息已保存' };
+  },
+
+  'GET /merchant/staff': () => ({ list: state.staffList, roleDocs: db.staffRoleDocs }),
+
+  'POST /merchant/staff/invite': () => ({
+    ok: true,
+    message: '邀请链接已生成，转发给员工用微信打开即可加入',
+  }),
+
+  'GET /merchant/staff/permission': (p) => {
+    const id = String(p.id);
+    const cached = state.staffPermissions[id];
+    if (cached) return cached;
+    const staff = state.staffList.find((s2) => s2.id === id);
+    if (!staff) return null;
+    // 没有单独配过的员工按角色模板给一份默认权限
+    const base = db.staffPermissions.st_3;
+    return { ...base, staff, joinedText: staff.metaText };
+  },
+
+  'POST /merchant/staff/permission': (p) => {
+    const id = String(p.id);
+    const current = state.staffPermissions[id];
+    if (current) {
+      current.permissions = (p.permissions || current.permissions) as StaffPermission['permissions'];
+      const role = p.role as StaffRole | undefined;
+      if (role) {
+        current.staff = { ...current.staff, role };
+      }
+    }
+    return { ok: true, message: '权限已保存' };
+  },
+
+  'POST /merchant/staff/remove': (p) => {
+    state.staffList = state.staffList.filter((s2) => s2.id !== p.id);
+    return { ok: true, message: '已移除该员工' };
+  },
+
+  'GET /merchant/licenses': () => db.licenseCenter,
+
+  'POST /merchant/licenses/upload': (p) => {
+    const doc = state.licenseCenter.docs.find((d) => d.id === p.id);
+    if (!doc) return { ok: false, message: '证照不存在' };
+    doc.status = 'normal';
+    doc.statusText = '审核中';
+    return { ok: true, message: '已提交，平台将在 1 个工作日内审核' };
+  },
+
+  'GET /merchant/help': () => db.merchantHelp,
 
   'GET /merchant/shop': (): Shop => state.shop,
 

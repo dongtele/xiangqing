@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import { getDashboard } from '@/services/api';
 import { chrome } from '@/utils/chrome';
-import { push, relaunch, todo } from '@/utils/nav';
+import { push, relaunch } from '@/utils/nav';
 import type { Dashboard } from '@/models';
 
 const RANK_COLORS = ['#FF3800', '#FF7B1C', '#FFB08F'];
@@ -67,7 +67,7 @@ onShow(async () => {
         <view class="card card--lg">
           <view class="row--between">
             <text class="t-section">今日实时</text>
-            <text class="dash__range tap" @tap="todo('46', '营业数据')">今日 ▾</text>
+            <text class="dash__range tap" @tap="push('/pages/merchant/stats/index')">今日 ▾</text>
           </view>
           <view class="dash__metrics">
             <view v-for="m in dash.metrics" :key="m.label" class="dash__metric">
@@ -83,18 +83,11 @@ onShow(async () => {
         <!-- 近 7 天营业额 -->
         <view class="card card--lg">
           <text class="t-section">近7天营业额</text>
-          <view class="dash__chart">
-            <view v-for="b in dash.trend" :key="b.label" class="dash__bar-col">
-              <view class="dash__bar" :class="`dash__bar--${b.tone}`" :style="{ height: b.percent + '%' }" />
-              <text class="dash__bar-label" :class="{ 'dash__bar-label--today': b.tone === 'today' }">{{
-                b.label
-              }}</text>
-            </view>
-          </view>
+          <wf-bar-chart :bars="dash.trend" :height="184" />
         </view>
 
         <!-- 今日热销 -->
-        <view class="card card--lg tap" @tap="todo('87', '商品销售排行')">
+        <view class="card card--lg tap" @tap="push('/pages/merchant/stats-goods/index')">
           <text class="t-section">今日热销</text>
           <view v-for="h in hotRows" :key="h.rank" class="dash__hot">
             <text class="dash__hot-rank" :style="{ background: h.color }">{{ h.rank }}</text>

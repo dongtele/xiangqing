@@ -433,6 +433,96 @@
           "style": {
             "navigationBarTitleText": "回复评价"
           }
+        },
+        {
+          "path": "stats/index",
+          "style": {
+            "navigationBarTitleText": "营业数据"
+          }
+        },
+        {
+          "path": "stats-goods/index",
+          "style": {
+            "navigationBarTitleText": "商品销售排行"
+          }
+        },
+        {
+          "path": "stats-customer/index",
+          "style": {
+            "navigationBarTitleText": "顾客分析"
+          }
+        },
+        {
+          "path": "settlement/index",
+          "style": {
+            "navigationBarTitleText": "货款结算"
+          }
+        },
+        {
+          "path": "settlement-detail/index",
+          "style": {
+            "navigationBarTitleText": "结算单详情"
+          }
+        },
+        {
+          "path": "bills/index",
+          "style": {
+            "navigationBarTitleText": "账单流水"
+          }
+        },
+        {
+          "path": "payout-account/index",
+          "style": {
+            "navigationBarTitleText": "收款账户"
+          }
+        },
+        {
+          "path": "business-hours/index",
+          "style": {
+            "navigationBarTitleText": "营业设置"
+          }
+        },
+        {
+          "path": "delivery/index",
+          "style": {
+            "navigationBarTitleText": "配送设置"
+          }
+        },
+        {
+          "path": "delivery-area/index",
+          "style": {
+            "navigationBarTitleText": "配送范围"
+          }
+        },
+        {
+          "path": "shop-edit/index",
+          "style": {
+            "navigationBarTitleText": "店铺信息"
+          }
+        },
+        {
+          "path": "staff/index",
+          "style": {
+            "navigationBarTitleText": "员工账号"
+          }
+        },
+        {
+          "path": "staff-permission/index",
+          "style": {
+            "navigationBarTitleText": "员工权限"
+          }
+        },
+        {
+          "path": "licenses/index",
+          "style": {
+            "navigationBarTitleText": "经营资质"
+          }
+        },
+        {
+          "path": "help/index",
+          "style": {
+            "navigationBarTitleText": "帮助与客服"
+          }
         }
       ]
     }

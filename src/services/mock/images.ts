@@ -21,4 +21,5 @@ export const IMG = {
   pointsCola: '',
   pointsCash: '',
   pointsBag: '',
+  shopCover: '',
 };

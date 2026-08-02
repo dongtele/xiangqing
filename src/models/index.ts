@@ -557,11 +557,20 @@ export interface DashboardTodo {
   highlight: boolean;
 }
 
-export interface TrendBar {
+/** @deprecated 用 ChartBar，08 / 46 / 89 已统一走 wf-bar-chart */
+export type TrendBar = ChartBar;
+
+/**
+ * 柱状图的一根柱，wf-bar-chart 复用（08 工作台 / 46 营业数据 / 89 顾客分析）。
+ * tone 决定配色：weak/normal 浅橙、mid 中橙、strong 深橙渐变、today 主渐变。
+ */
+export interface ChartBar {
   label: string;
-  /** 0–100 百分比高度 */
+  /** 柱高百分比 0–100 */
   percent: number;
-  tone: 'weak' | 'mid' | 'today';
+  /** 柱顶数值文案，只有 89 展示 */
+  valueText?: string;
+  tone: 'weak' | 'normal' | 'mid' | 'strong' | 'today';
 }
 
 export interface HotGoods {
@@ -1110,4 +1119,213 @@ export interface ReviewReplyInfo {
   orderNo: string;
   templates: { key: string; label: string; text: string }[];
   couponText: string;
+}
+
+/* ================= 商家端 · 数据结算与店铺团队（46 87 89 34 67 88 68 50 33 70 71 35 69 72 98） ================= */
+
+
+
+/** 46 营业数据 */
+export interface BusinessStats {
+  monthText: string;
+  todayAmountText: string;
+  todayDeltaText: string;
+  metrics: { label: string; value: string }[];
+  trend: ChartBar[];
+  hot: { rank: number; name: string; countText: string; amountText: string }[];
+}
+
+/** 87 商品销售排行 */
+export type RankRange = 'today' | 'week' | 'month' | 'custom';
+
+export interface GoodsRankRow {
+  rank: number;
+  name: string;
+  countText: string;
+  amountText: string;
+  /** 条形长度百分比 */
+  percent: number;
+}
+
+export interface GoodsRank {
+  totalText: string;
+  rows: GoodsRankRow[];
+  tips: string[];
+}
+
+/** 89 顾客与复购分析 */
+export interface CustomerAnalysis {
+  metrics: { label: string; value: string; delta: string; deltaTone: 'up' | 'down' | 'flat' }[];
+  distribution: ChartBar[];
+  vips: { id: string; name: string; sub: string; amountText: string }[];
+}
+
+/** 34 货款结算 */
+export interface SettlementRow {
+  id: string;
+  title: string;
+  metaText: string;
+  amountText: string;
+  /** 入账为正、提现与退款为负 */
+  income: boolean;
+}
+
+export interface Settlement {
+  balanceText: string;
+  pendingText: string;
+  monthTotalText: string;
+  accountText: string;
+  rows: SettlementRow[];
+  noteText: string;
+}
+
+/** 67 结算单详情 */
+export interface SettlementDetail {
+  id: string;
+  dateText: string;
+  amountText: string;
+  statusText: string;
+  breakdown: { label: string; value: string; negative: boolean }[];
+  rows: { label: string; value: string; link: boolean }[];
+}
+
+/** 88 账单流水与提现 */
+export type BillTab = 'all' | 'income' | 'expense' | 'withdraw';
+
+export interface BillRow {
+  id: string;
+  tab: Exclude<BillTab, 'all'>;
+  title: string;
+  metaText: string;
+  amountText: string;
+  income: boolean;
+}
+
+export interface Bills {
+  balanceText: string;
+  onTheWayText: string;
+  monthWithdrawText: string;
+  rows: BillRow[];
+  noteText: string;
+}
+
+/** 68 收款账户管理 */
+export interface PayoutAccount {
+  typeText: string;
+  verified: boolean;
+  cardMask: string;
+  bankText: string;
+  holderText: string;
+  rows: { label: string; value: string }[];
+  changeTitle: string;
+  changeText: string;
+  noteText: string;
+}
+
+/** 50 营业设置 */
+export interface BusinessHourSlot {
+  id: string;
+  name: string;
+  start: string;
+  end: string;
+}
+
+export interface BusinessSettings {
+  open: boolean;
+  openText: string;
+  openSub: string;
+  slots: BusinessHourSlot[];
+  /** 每周休息日，0=周一 … 6=周日 */
+  restDays: number[];
+  autoAcceptText: string;
+  cookMinutesText: string;
+  noteText: string;
+}
+
+/** 33 配送范围与运费 */
+export interface DeliverySettings {
+  radiusKm: number;
+  radiusOptions: number[];
+  minOrderText: string;
+  baseFeeText: string;
+  freeOverText: string;
+  autoAccept: boolean;
+  pickupOn: boolean;
+  noteText: string;
+}
+
+/** 70 配送范围绘制 */
+export type AreaShape = 'circle' | 'custom';
+
+export interface DeliveryTier {
+  id: string;
+  rangeText: string;
+  ruleText: string;
+}
+
+export interface DeliveryArea {
+  shape: AreaShape;
+  /** 有 MAP_KEY 时用来画 <map> 的圆心 */
+  latitude: number;
+  longitude: number;
+  tiers: DeliveryTier[];
+}
+
+/** 71 店铺信息编辑 */
+export interface ShopProfileForm {
+  cover: string;
+  rows: { key: string; label: string; value: string }[];
+  notice: string;
+  noticeMax: number;
+  noticeHint: string;
+}
+
+/** 35 员工账号 */
+export type StaffRole = 'owner' | 'cashier' | 'kitchen';
+
+export interface Staff {
+  id: string;
+  name: string;
+  roleText: string;
+  role: StaffRole;
+  /** 138****8888 · 全部权限 */
+  metaText: string;
+  self: boolean;
+}
+
+export interface StaffRoleDoc {
+  role: StaffRole;
+  label: string;
+  desc: string;
+}
+
+/** 69 员工权限设置 */
+export interface StaffPermission {
+  staff: Staff;
+  joinedText: string;
+  roles: { key: StaffRole; label: string }[];
+  permissions: { key: string; label: string; on: boolean }[];
+}
+
+/** 72 资质更新与年审（商家侧证照，与顾客端 61 公示用的 LicenseDoc 不是同一个） */
+export interface LicenseCert {
+  id: string;
+  name: string;
+  statusText: string;
+  /** normal = 正常，soon = 即将到期，expired = 已过期 */
+  status: 'normal' | 'soon' | 'expired';
+  validText: string;
+}
+
+export interface LicenseCenter {
+  warnText: string;
+  docs: LicenseCert[];
+  noteText: string;
+}
+
+/** 98 商家帮助与客服 */
+export interface MerchantHelp {
+  questions: { id: string; title: string }[];
+  courses: { id: string; title: string; metaText: string }[];
+  contacts: { key: string; label: string; value: string }[];
 }

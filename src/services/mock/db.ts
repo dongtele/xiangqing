@@ -4,7 +4,10 @@ import type {
   AccountSecurity,
   Address,
   AddressFull,
+  Bills,
   BulkGoods,
+  BusinessSettings,
+  BusinessStats,
   Category,
   CategoryRow,
   CommentOptions,
@@ -13,22 +16,28 @@ import type {
   CouponPack,
   CouponRule,
   CouponTab,
+  CustomerAnalysis,
   Dashboard,
+  DeliveryArea,
+  DeliverySettings,
   DeviceSettings,
   ExceptionOrder,
   ExceptionTab,
   FeedbackOptions,
   Goods,
+  GoodsRank,
   HelpCenterInfo,
   HistoryFilter,
   HistoryOrder,
   HistorySummary,
   InvoiceOptions,
   InvoiceTitle,
+  LicenseCenter,
   LicenseInfo,
   MarketingCenter,
   MemberCenter,
   MerchantGoods,
+  MerchantHelp,
   MerchantMessage,
   MerchantOrder,
   MerchantReview,
@@ -39,6 +48,7 @@ import type {
   NotifySwitch,
   OptionLibGroup,
   Order,
+  PayoutAccount,
   PickupStore,
   PoiItem,
   PointsGoods,
@@ -47,15 +57,22 @@ import type {
   PromoGoods,
   PromotionDraft,
   PromotionItem,
+  RankRange,
   Refund,
   RemarkOptions,
   Review,
   ReviewSummary,
   RiderMessage,
   SettingsInfo,
+  Settlement,
+  SettlementDetail,
   Shop,
   ShopCouponDraft,
   ShopProfile,
+  ShopProfileForm,
+  Staff,
+  StaffPermission,
+  StaffRoleDoc,
   StockGoods,
   SupportMessage,
   UserProfile,
@@ -2013,4 +2030,368 @@ export const reviewReplyTemplates = [
 export const reviewReplyTags: Record<string, string[]> = {
   mr_1: ['配送慢', '米饭凉了'],
   mr_3: ['口味偏咸', '包装洒漏'],
+};
+
+/* ================= 商家端 · 数据结算与店铺团队 ================= */
+
+/** 46 营业数据 */
+export const businessStats: BusinessStats = {
+  monthText: '7月',
+  todayAmountText: '3,842',
+  todayDeltaText: '较昨日 +12.4%',
+  metrics: [
+    { label: '订单数', value: '86' },
+    { label: '客单价', value: '￥44.7' },
+    { label: '退款率', value: '1.2%' },
+  ],
+  trend: [
+    { label: '21', percent: 46, valueText: '2,810', tone: 'normal' },
+    { label: '22', percent: 62, valueText: '3,120', tone: 'normal' },
+    { label: '23', percent: 55, valueText: '2,960', tone: 'normal' },
+    { label: '24', percent: 74, valueText: '3,480', tone: 'normal' },
+    { label: '25', percent: 68, valueText: '3,290', tone: 'normal' },
+    { label: '26', percent: 82, valueText: '3,660', tone: 'normal' },
+    { label: '今', percent: 100, valueText: '3,842', tone: 'today' },
+  ],
+  hot: [
+    { rank: 1, name: '宫保鸡丁', countText: '38 份', amountText: '￥1,064' },
+    { rank: 2, name: '水煮牛肉', countText: '25 份', amountText: '￥1,225' },
+    { rank: 3, name: '红烧肉盖饭', countText: '22 份', amountText: '￥638' },
+  ],
+};
+
+/** 87 商品销售排行 */
+export const goodsRank: Record<RankRange, GoodsRank> = {
+  week: {
+    totalText: '共售 862 份',
+    rows: [
+      { rank: 1, name: '宫保鸡丁', countText: '186 份', amountText: '￥5,208', percent: 100 },
+      { rank: 2, name: '红烧肉盖饭', countText: '154 份', amountText: '￥4,466', percent: 83 },
+      { rank: 3, name: '酸辣土豆丝', countText: '121 份', amountText: '￥1,452', percent: 65 },
+      { rank: 4, name: '番茄蛋汤', countText: '98 份', amountText: '￥686', percent: 53 },
+      { rank: 5, name: '水煮牛肉', countText: '76 份', amountText: '￥3,724', percent: 41 },
+    ],
+    tips: [
+      '干锅花菜 7 天仅售 3 份，建议下架或调价',
+      '宫保鸡丁常在 12:30 沽清，建议增加备货',
+    ],
+  },
+  today: {
+    totalText: '共售 128 份',
+    rows: [
+      { rank: 1, name: '宫保鸡丁', countText: '38 份', amountText: '￥1,064', percent: 100 },
+      { rank: 2, name: '水煮牛肉', countText: '25 份', amountText: '￥1,225', percent: 66 },
+      { rank: 3, name: '红烧肉盖饭', countText: '22 份', amountText: '￥638', percent: 58 },
+    ],
+    tips: ['今日午市 12:30 后宫保鸡丁售罄，建议增加备货'],
+  },
+  month: {
+    totalText: '共售 3,486 份',
+    rows: [
+      { rank: 1, name: '宫保鸡丁', countText: '742 份', amountText: '￥20,776', percent: 100 },
+      { rank: 2, name: '红烧肉盖饭', countText: '638 份', amountText: '￥18,502', percent: 86 },
+      { rank: 3, name: '酸辣土豆丝', countText: '512 份', amountText: '￥6,144', percent: 69 },
+    ],
+    tips: ['月度 TOP 3 贡献了 54% 的营业额，建议围绕它们做套餐'],
+  },
+  custom: {
+    totalText: '请选择日期区间',
+    rows: [],
+    tips: [],
+  },
+};
+
+/** 89 顾客与复购分析 */
+export const customerAnalysis: CustomerAnalysis = {
+  metrics: [
+    { label: '近 30 天下单顾客', value: '1,082', delta: '↑ 12.4% 环比', deltaTone: 'up' },
+    { label: '复购率', value: '38.6%', delta: '↑ 3.1pt', deltaTone: 'up' },
+    { label: '客单价', value: '￥43.6', delta: '↓ 1.8%', deltaTone: 'down' },
+    { label: '新客占比', value: '61.4%', delta: '664 人', deltaTone: 'flat' },
+  ],
+  distribution: [
+    { label: '1 次', percent: 82, valueText: '664', tone: 'strong' },
+    { label: '2-3 次', percent: 34, valueText: '228', tone: 'strong' },
+    { label: '4-6 次', percent: 19, valueText: '126', tone: 'strong' },
+    { label: '7 次+', percent: 10, valueText: '64', tone: 'strong' },
+  ],
+  vips: [
+    { id: 'vip_1', name: '李**（回头客 18 次）', sub: '近 30 天消费 ￥862', amountText: '862' },
+    { id: 'vip_2', name: '张**（回头客 12 次）', sub: '近 30 天消费 ￥596', amountText: '596' },
+    { id: 'vip_3', name: '王**（回头客 9 次）', sub: '近 30 天消费 ￥438', amountText: '438' },
+  ],
+};
+
+/** 34 货款结算 */
+export const settlement: Settlement = {
+  balanceText: '12,486.20',
+  pendingText: '¥4,280.50',
+  monthTotalText: '¥68,420',
+  accountText: '招商银行储蓄卡（尾号 6688）',
+  rows: [
+    {
+      id: 's_1',
+      title: '7月16日营业额结算',
+      metaText: '今天 06:00 · 已到账',
+      amountText: '3,862.00',
+      income: true,
+    },
+    {
+      id: 's_2',
+      title: '7月15日营业额结算',
+      metaText: '昨天 06:00 · 已到账',
+      amountText: '3,120.50',
+      income: true,
+    },
+    {
+      id: 's_3',
+      title: '提现到银行卡',
+      metaText: '7月14日 15:22 · 已到账',
+      amountText: '10,000.00',
+      income: false,
+    },
+    {
+      id: 's_4',
+      title: '订单退款（#0987 售后）',
+      metaText: '7月14日 12:08',
+      amountText: '64.00',
+      income: false,
+    },
+  ],
+  noteText: '每日 06:00 自动结算前一日营业额（扣除退款与 0.6% 支付手续费），T+1 到账。',
+};
+
+/** 67 结算单详情 */
+export const settlementDetail: SettlementDetail = {
+  id: 's_1',
+  dateText: '7月26日',
+  amountText: '2,318.40',
+  statusText: '已到账 · 今天 09:00',
+  breakdown: [
+    { label: '订单总额', value: '￥2,684.00', negative: false },
+    { label: '商家优惠', value: '-￥186.00', negative: true },
+    { label: '平台服务费 5%', value: '-￥124.90', negative: true },
+    { label: '配送费分成', value: '-￥54.70', negative: true },
+  ],
+  rows: [
+    { label: '结算周期', value: '7月26日 00:00 - 24:00', link: false },
+    { label: '订单笔数', value: '86 笔', link: true },
+    { label: '退款笔数', value: '2 笔 · ￥46.00', link: true },
+    { label: '收款账户', value: '招商银行 ****8821', link: true },
+  ],
+};
+
+/** 88 账单流水与提现 */
+export const bills: Bills = {
+  balanceText: '12,486.30',
+  onTheWayText: '￥3,240.00',
+  monthWithdrawText: '￥28,600.00',
+  rows: [
+    {
+      id: 'b_1',
+      tab: 'income',
+      title: '订单结算 · 7月26日',
+      metaText: '98 单 · 已到账',
+      amountText: '4,102.50',
+      income: true,
+    },
+    {
+      id: 'b_2',
+      tab: 'expense',
+      title: '平台服务费',
+      metaText: '费率 5% · 自动扣除',
+      amountText: '205.13',
+      income: false,
+    },
+    {
+      id: 'b_3',
+      tab: 'expense',
+      title: '用户退款',
+      metaText: '#20260726018 · 少送一份',
+      amountText: '28.00',
+      income: false,
+    },
+    {
+      id: 'b_4',
+      tab: 'withdraw',
+      title: '提现到招商银行(6688)',
+      metaText: '7月25日 16:20 · 已完成',
+      amountText: '8,000.00',
+      income: false,
+    },
+  ],
+  noteText: 'T+1 结算，节假日顺延；单笔提现最低 ￥100，每日 3 次。',
+};
+
+/** 68 收款账户管理 */
+export const payoutAccount: PayoutAccount = {
+  typeText: '对公账户 · 默认',
+  verified: true,
+  cardMask: '**** **** **** 8821',
+  bankText: '招商银行 杭州分行',
+  holderText: '杭州美味坊餐饮有限公司',
+  rows: [
+    { label: '结算周期', value: 'T+1 日结' },
+    { label: '单日限额', value: '￥50,000' },
+    { label: '账户状态', value: '正常' },
+  ],
+  changeTitle: '变更账户需重新验证',
+  changeText: '上传开户许可证 + 法人人脸核验，1 个工作日审核',
+  noteText: '为保障资金安全，变更账户后 24 小时内暂停结算。',
+};
+
+/** 50 营业设置 */
+export const businessSettings: BusinessSettings = {
+  open: true,
+  openText: '当前状态 · 营业中',
+  openSub: '顾客可正常下单',
+  slots: [
+    { id: 'sl_1', name: '午市', start: '10:30', end: '14:00' },
+    { id: 'sl_2', name: '晚市', start: '16:30', end: '21:30' },
+  ],
+  restDays: [],
+  autoAcceptText: '自动接单',
+  cookMinutesText: '20 分钟',
+  noteText: '休息日顾客端展示「今日休息」并关闭下单',
+};
+
+/** 33 配送范围与运费 */
+export const deliverySettings: DeliverySettings = {
+  radiusKm: 3,
+  radiusOptions: [1, 3, 6],
+  minOrderText: '¥20',
+  baseFeeText: '¥3',
+  freeOverText: '满 ¥88 免运费',
+  autoAccept: true,
+  pickupOn: true,
+  noteText: '超出范围的顾客地址在其结算页自动置灰（见 15 屏），避免下单后被迫取消。',
+};
+
+/** 70 配送范围绘制 */
+export const deliveryArea: DeliveryArea = {
+  shape: 'circle',
+  latitude: 30.2875,
+  longitude: 120.1163,
+  tiers: [
+    { id: 'ti_1', rangeText: '0 - 2 km', ruleText: '起送 ￥20 · 运费 ￥3' },
+    { id: 'ti_2', rangeText: '2 - 4 km', ruleText: '起送 ￥30 · 运费 ￥5' },
+  ],
+};
+
+/** 71 店铺信息编辑 */
+export const shopProfileForm: ShopProfileForm = {
+  cover: IMG.shopCover,
+  rows: [
+    { key: 'name', label: '店铺名称', value: '美味坊（文三路店）' },
+    { key: 'phone', label: '店铺电话', value: '0571-8888 8888' },
+    { key: 'address', label: '详细地址', value: '西湖区文三路 100 号 1 层' },
+    { key: 'avg', label: '人均消费', value: '￥45' },
+    { key: 'tags', label: '店铺标签', value: '川菜 · 家常菜' },
+  ],
+  notice: '本店坚持每日现杀现炒，满 60 减 12，欢迎光临～',
+  noticeMax: 60,
+  noticeHint: '公告将展示在顾客端菜单顶部，限 60 字',
+};
+
+/** 35 员工账号 */
+export const staffList: Staff[] = [
+  {
+    id: 'st_1',
+    name: '王老板',
+    roleText: '店长 · 本人',
+    role: 'owner',
+    metaText: '138****8888 · 全部权限',
+    self: true,
+  },
+  {
+    id: 'st_2',
+    name: '李姐',
+    roleText: '收银',
+    role: 'cashier',
+    metaText: '139****5678 · 接单 / 核销 / 打印小票',
+    self: false,
+  },
+  {
+    id: 'st_3',
+    name: '张师傅',
+    roleText: '后厨',
+    role: 'kitchen',
+    metaText: '137****2211 · 查看订单 / 标记出餐',
+    self: false,
+  },
+];
+
+export const staffRoleDocs: StaffRoleDoc[] = [
+  { role: 'owner', label: '店长', desc: '全部功能，含退款审批、商品价格、结算提现' },
+  { role: 'cashier', label: '收银', desc: '接单、核销取餐码、打印小票，不可改价' },
+  { role: 'kitchen', label: '后厨', desc: '仅查看订单餐品与备注、标记出餐完成' },
+];
+
+/** 69 员工权限设置 */
+export const staffPermissions: Record<string, StaffPermission> = {
+  st_3: {
+    staff: staffList[2],
+    joinedText: '138****2311 · 7月10日加入',
+    roles: [
+      { key: 'owner', label: '店长' },
+      { key: 'cashier', label: '收银' },
+      { key: 'kitchen', label: '后厨' },
+    ],
+    permissions: [
+      { key: 'accept', label: '接单与出餐', on: true },
+      { key: 'stock', label: '沽清管理', on: true },
+      { key: 'goods', label: '商品编辑', on: false },
+      { key: 'promo', label: '活动与优惠', on: false },
+      { key: 'stats', label: '查看营业数据', on: false },
+      { key: 'settle', label: '货款结算', on: false },
+    ],
+  },
+};
+
+/** 72 资质更新与年审 */
+export const licenseCenter: LicenseCenter = {
+  warnText: '食品经营许可证将于 30 天后到期，请及时更新',
+  docs: [
+    {
+      id: 'lc_1',
+      name: '营业执照',
+      statusText: '正常',
+      status: 'normal',
+      validText: '有效期至 2035.03.11',
+    },
+    {
+      id: 'lc_2',
+      name: '食品经营许可证',
+      statusText: '即将到期',
+      status: 'soon',
+      validText: '有效期至 2026.08.26',
+    },
+    {
+      id: 'lc_3',
+      name: '法人身份证',
+      statusText: '正常',
+      status: 'normal',
+      validText: '有效期至 2031.06.30',
+    },
+  ],
+  noteText: '证照到期后 7 日内未更新，店铺将被强制下线，顾客端不可下单。',
+};
+
+/** 98 商家帮助与客服 */
+export const merchantHelp: MerchantHelp = {
+  questions: [
+    { id: 'q1', title: '货款什么时候到账？' },
+    { id: 'q2', title: '顾客申请退款，我不同意怎么办？' },
+    { id: 'q3', title: '如何提高店铺曝光？' },
+    { id: 'q4', title: '营业执照到期怎么更新？' },
+  ],
+  courses: [
+    { id: 'c1', title: '菜单结构怎么排更好卖', metaText: '6 分钟 · 1.2 万人学过' },
+    { id: 'c2', title: '差评回复的 3 个模板', metaText: '4 分钟 · 8,600 人学过' },
+  ],
+  contacts: [
+    { key: 'online', label: '在线客服', value: '7×24 小时 · 平均 30 秒响应' },
+    { key: 'phone', label: '商家专线', value: '400-820-5678 · 09:00-22:00' },
+    { key: 'ticket', label: '我的工单', value: '1 个处理中 · 结算差异申诉' },
+  ],
 };

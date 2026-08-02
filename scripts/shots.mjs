@@ -110,6 +110,23 @@ const ROUTES = [
   ['95-创建店铺优惠券', '/pages/merchant/coupon-edit/index'],
   ['47-评价管理', '/pages/merchant/reviews/index'],
   ['90-评价回复', '/pages/merchant/review-reply/index?id=mr_3'],
+  // 商家端 数据与结算
+  ['46-营业数据', '/pages/merchant/stats/index'],
+  ['87-商品销售排行', '/pages/merchant/stats-goods/index'],
+  ['89-顾客与复购分析', '/pages/merchant/stats-customer/index'],
+  ['34-货款结算', '/pages/merchant/settlement/index'],
+  ['67-结算单详情', '/pages/merchant/settlement-detail/index?id=s_1'],
+  ['88-账单流水与提现', '/pages/merchant/bills/index'],
+  ['68-收款账户管理', '/pages/merchant/payout-account/index'],
+  // 商家端 店铺与团队
+  ['50-营业设置', '/pages/merchant/business-hours/index'],
+  ['33-配送范围与运费', '/pages/merchant/delivery/index'],
+  ['70-配送范围绘制', '/pages/merchant/delivery-area/index'],
+  ['71-店铺信息编辑', '/pages/merchant/shop-edit/index'],
+  ['35-员工账号', '/pages/merchant/staff/index'],
+  ['69-员工权限设置', '/pages/merchant/staff-permission/index?id=st_3'],
+  ['72-资质更新与年审', '/pages/merchant/licenses/index'],
+  ['98-商家帮助与客服', '/pages/merchant/help/index'],
 ];
 
 const MIME = {
