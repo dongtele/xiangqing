@@ -200,6 +200,72 @@
       "style": {
         "navigationBarTitleText": "意见反馈"
       }
+    },
+    {
+      "path": "pages/customer/profile-edit/index",
+      "style": {
+        "navigationBarTitleText": "个人资料"
+      }
+    },
+    {
+      "path": "pages/customer/messages/index",
+      "style": {
+        "navigationBarTitleText": "消息"
+      }
+    },
+    {
+      "path": "pages/customer/message-detail/index",
+      "style": {
+        "navigationBarTitleText": "消息详情"
+      }
+    },
+    {
+      "path": "pages/customer/coupons/index",
+      "style": {
+        "navigationBarTitleText": "优惠券"
+      }
+    },
+    {
+      "path": "pages/customer/coupon-center/index",
+      "style": {
+        "navigationBarTitleText": "领券中心"
+      }
+    },
+    {
+      "path": "pages/customer/points/index",
+      "style": {
+        "navigationBarTitleText": "会员中心"
+      }
+    },
+    {
+      "path": "pages/customer/points-mall/index",
+      "style": {
+        "navigationBarTitleText": "积分兑换"
+      }
+    },
+    {
+      "path": "pages/customer/settings/index",
+      "style": {
+        "navigationBarTitleText": "设置"
+      }
+    },
+    {
+      "path": "pages/customer/account/index",
+      "style": {
+        "navigationBarTitleText": "账号与安全"
+      }
+    },
+    {
+      "path": "pages/customer/notify-settings/index",
+      "style": {
+        "navigationBarTitleText": "通知设置"
+      }
+    },
+    {
+      "path": "pages/customer/about/index",
+      "style": {
+        "navigationBarTitleText": "关于"
+      }
     }
   ],
   "subPackages": [

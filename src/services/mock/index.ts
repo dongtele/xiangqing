@@ -2,33 +2,38 @@ import * as db from './db';
 import { HOT_CATEGORY_ID } from './db';
 import { MOCK_LATENCY, PAY_FAIL_FIRST_ATTEMPT } from './config';
 import type {
+  AddressFull,
   AftersaleItem,
   AftersaleOptions,
-  AddressFull,
   AftersaleType,
-  InvoiceTitle,
-  SupportMessage,
   BulkGoods,
   BulkTab,
   CartItem,
   CategoryRow,
-  GoodsDraft,
   CheckoutTrial,
+  Coupon,
+  CouponRule,
+  CouponTab,
   CustomerOrderTab,
   DeliveryTrack,
   DeliveryType,
   Goods,
+  GoodsDraft,
+  InvoiceTitle,
   MenuGroup,
   MerchantOrder,
   MerchantOrderTab,
+  MessageDetail,
   Order,
   PrintSettings,
+  ProfileForm,
   ReceiptPreview,
   ReceiptType,
   Refund,
   RefundTrial,
   RiderMessage,
   Shop,
+  SupportMessage,
 } from '@/models';
 
 /**
@@ -56,6 +61,16 @@ const state = {
   stockGoods: db.stockGoods.map((g) => ({ ...g })),
   bulkGoods: db.bulkGoods.map((g) => ({ ...g })),
   /** 11 编辑商品的草稿副本，保存后写回 goodsList / merchantGoods */
+  profileForm: { ...db.profileForm, tastes: db.profileForm.tastes.map((t) => ({ ...t })) },
+  messages: db.messages.map((m) => ({ ...m })),
+  coupons: {
+    usable: db.coupons.usable.map((c) => ({ ...c })),
+    used: db.coupons.used.map((c) => ({ ...c })),
+    expired: db.coupons.expired.map((c) => ({ ...c })),
+  } as Record<CouponTab, Coupon[]>,
+  couponOffers: db.couponOffers.map((o) => ({ ...o })),
+  memberCenter: { ...db.memberCenter, tasks: db.memberCenter.tasks.map((t) => ({ ...t })) },
+  notifySwitches: db.notifySwitches.map((n) => ({ ...n })),
   goodsDrafts: {} as Record<string, GoodsDraft>,
   payAttempts: {} as Record<string, number>,
   orderSeq: 1025,
@@ -898,6 +913,168 @@ const routes: Record<string, (p: Payload) => unknown> = {
     }
     return { ok: true };
   },
+
+  /* ---------------- 卡券会员与设置账号：73 37 86 17/39 59 79 80 81 44 74 75 78 ---------------- */
+
+  'GET /customer/profile-form': () => state.profileForm,
+
+  'POST /customer/profile-form': (p) => {
+    state.profileForm = { ...state.profileForm, ...(p as Partial<ProfileForm>) };
+    return { ok: true };
+  },
+
+  'POST /customer/profile-form/taste': (p) => {
+    const taste = state.profileForm.tastes.find((t) => t.key === p.key);
+    if (taste) taste.on = !taste.on;
+    return { ok: true };
+  },
+
+  'GET /customer/messages': (p) => {
+    const tab = String(p.tab || 'all');
+    const list = tab === 'all' ? state.messages : state.messages.filter((m) => m.tab === tab);
+    return {
+      list,
+      counts: {
+        all: state.messages.length,
+        order: state.messages.filter((m) => m.tab === 'order').length,
+        promo: state.messages.filter((m) => m.tab === 'promo').length,
+      },
+      unread: state.messages.filter((m) => m.unread).length,
+    };
+  },
+
+  'POST /customer/messages/read-all': () => {
+    state.messages.forEach((m) => {
+      m.unread = false;
+    });
+    return { ok: true };
+  },
+
+  'GET /customer/message-detail': (p) => {
+    const msg = state.messages.find((m) => m.id === p.id);
+    if (msg) msg.unread = false;
+    return (db.messageDetails[String(p.id)] as MessageDetail) || null;
+  },
+
+  'GET /customer/coupons': (p) => {
+    const tab = (p.tab || 'usable') as CouponTab;
+    return {
+      list: state.coupons[tab] || [],
+      counts: {
+        usable: state.coupons.usable.length,
+        used: state.coupons.used.length,
+        expired: state.coupons.expired.length,
+      },
+    };
+  },
+
+  'GET /customer/coupon-rule': (p) => (db.couponRules[String(p.id)] as CouponRule) || null,
+
+  'POST /customer/coupons/redeem': (p) => {
+    const code = String(p.code || '').trim();
+    if (!code) return { ok: false, message: '请输入兑换码' };
+    if (code.toUpperCase() !== 'MWF2026') return { ok: false, message: '兑换码无效或已被使用' };
+    state.coupons.usable = [
+      {
+        id: `cp_redeem_${Date.now()}`,
+        kind: 'cash',
+        amount: 800,
+        amountText: '8',
+        thresholdText: '满 40 元可用',
+        name: '兑换码专享券',
+        validText: '全店通用 · 领取后 7 天内有效',
+        note: '兑换成功',
+        noteTone: 'primary',
+        tone: 'main',
+      },
+      ...state.coupons.usable,
+    ];
+    return { ok: true, message: '兑换成功，已存入卡券包' };
+  },
+
+  'GET /customer/coupon-center': (p) => {
+    const tab = String(p.tab || 'shop');
+    return {
+      pack: db.couponPack,
+      list: state.couponOffers.filter((o) => o.tab === tab),
+    };
+  },
+
+  'POST /customer/coupon-center/take': (p) => {
+    const offer = state.couponOffers.find((o) => o.id === p.id);
+    if (!offer) return { ok: false, message: '优惠券不存在' };
+    if (offer.state === 'soldout') return { ok: false, message: '今日已领完' };
+    if (offer.state === 'taken') return { ok: false, message: '已领取过该券' };
+    offer.state = 'taken';
+    state.coupons.usable = [
+      ...state.coupons.usable,
+      {
+        id: `cp_${offer.id}`,
+        kind: offer.amountText.indexOf('折') >= 0 ? 'discount' : 'cash',
+        amount: 0,
+        amountText: offer.amountText,
+        thresholdText: offer.thresholdText,
+        name: offer.name,
+        validText: offer.desc,
+        note: '刚刚领取',
+        noteTone: 'primary',
+        tone: offer.tone === 'grey' ? 'light' : 'main',
+      },
+    ];
+    return { ok: true, message: '领取成功，已存入卡券包' };
+  },
+
+  'POST /customer/coupon-center/take-pack': () => {
+    let taken = 0;
+    state.couponOffers.forEach((o) => {
+      if (o.tab === 'shop' && o.state === 'take') {
+        o.state = 'taken';
+        taken += 1;
+      }
+    });
+    return taken
+      ? { ok: true, message: `已领取 ${taken} 张券` }
+      : { ok: false, message: '礼包已领完' };
+  },
+
+  'GET /customer/member': () => state.memberCenter,
+
+  'POST /customer/member/signin': () => {
+    const task = state.memberCenter.tasks.find((t) => t.key === 'signin');
+    if (!task || task.done) return { ok: false, message: '今日已签到' };
+    task.done = true;
+    task.btnText = '已签到';
+    return { ok: true, message: '签到成功 +8 积分' };
+  },
+
+  'GET /customer/points-goods': (p) => {
+    const tab = String(p.tab || 'all');
+    return {
+      points: state.memberCenter.pointsText,
+      list: tab === 'all' ? db.pointsGoods : db.pointsGoods.filter((g) => g.tab === tab),
+    };
+  },
+
+  'POST /customer/points-goods/redeem': (p) => {
+    const goods = db.pointsGoods.find((g) => g.id === p.id);
+    if (!goods) return { ok: false, message: '商品不存在' };
+    if (!goods.affordable) return { ok: false, message: '积分不足' };
+    return { ok: true, message: `已兑换「${goods.name}」` };
+  },
+
+  'GET /customer/settings': () => db.settingsInfo,
+
+  'GET /customer/account-security': () => db.accountSecurity,
+
+  'GET /customer/notify-settings': () => state.notifySwitches,
+
+  'POST /customer/notify-settings': (p) => {
+    const item = state.notifySwitches.find((n) => n.key === p.key);
+    if (item) item.on = p.on as boolean;
+    return { ok: true };
+  },
+
+  'GET /customer/about': () => db.aboutInfo,
 
   'GET /merchant/shop': (): Shop => state.shop,
 

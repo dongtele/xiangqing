@@ -16,4 +16,9 @@ export const IMG = {
   friedPork: '',
   steamedFish: '',
   salad: '',
+  avatar: '',
+  pointsShip: '',
+  pointsCola: '',
+  pointsCash: '',
+  pointsBag: '',
 };

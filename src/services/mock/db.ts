@@ -1,35 +1,49 @@
 import { IMG } from './images';
 import type {
+  AboutInfo,
+  AccountSecurity,
   Address,
   AddressFull,
-  CommentOptions,
-  FeedbackOptions,
-  HelpCenterInfo,
-  InvoiceOptions,
-  InvoiceTitle,
-  MyReview,
-  SupportMessage,
   BulkGoods,
   Category,
   CategoryRow,
+  CommentOptions,
+  Coupon,
+  CouponOffer,
+  CouponPack,
+  CouponRule,
+  CouponTab,
   Dashboard,
+  FeedbackOptions,
   Goods,
+  HelpCenterInfo,
+  InvoiceOptions,
+  InvoiceTitle,
   LicenseInfo,
+  MemberCenter,
+  MerchantGoods,
+  MerchantOrder,
+  MessageDetail,
+  MessageItem,
+  MyReview,
+  NotifySwitch,
   OptionLibGroup,
+  Order,
   PickupStore,
   PoiItem,
+  PointsGoods,
+  PrintSettings,
+  ProfileForm,
+  Refund,
   RemarkOptions,
   Review,
   ReviewSummary,
+  RiderMessage,
+  SettingsInfo,
+  Shop,
   ShopProfile,
   StockGoods,
-  MerchantGoods,
-  MerchantOrder,
-  Order,
-  PrintSettings,
-  Refund,
-  RiderMessage,
-  Shop,
+  SupportMessage,
   UserProfile,
 } from '@/models';
 
@@ -1081,3 +1095,446 @@ export const merchantGoods: MerchantGoods[] = [
     stockLevel: 'normal',
   },
 ];
+
+/* ================= 顾客端 · 卡券会员与设置账号 ================= */
+
+/** 73 个人资料 */
+export const profileForm: ProfileForm = {
+  avatar: IMG.avatar,
+  nickname: '王小明',
+  gender: 'male',
+  genderText: '男',
+  birthday: '1995-06-12',
+  phoneMask: '138****8899',
+  tastes: [
+    { key: 'mild', label: '少辣', on: true },
+    { key: 'noCilantro', label: '不吃香菜', on: true },
+    { key: 'lessOil', label: '少油少盐', on: false },
+    { key: 'noScallion', label: '不要葱', on: false },
+  ],
+};
+
+/** 37 消息通知 */
+export const messages: MessageItem[] = [
+  {
+    id: 'msg_1',
+    tab: 'order',
+    icon: 'order',
+    tone: 'primary',
+    title: '订单已出餐',
+    desc: '#20260727039 骑手王师傅已取餐，预计 12:38 送达',
+    timeText: '刚刚',
+    unread: true,
+  },
+  {
+    id: 'msg_2',
+    tab: 'promo',
+    icon: 'ticket',
+    tone: 'primary',
+    title: '新券到账',
+    desc: '满 60 减 12 元券，7 天内有效',
+    timeText: '昨天',
+    unread: false,
+  },
+  {
+    id: 'msg_3',
+    tab: 'order',
+    icon: 'check',
+    tone: 'success',
+    title: '退款已到账',
+    desc: '￥18.00 已原路退回微信零钱',
+    timeText: '7月25日',
+    unread: false,
+  },
+];
+
+/** 86 通知详情 */
+export const messageDetails: Record<string, MessageDetail> = {
+  msg_3: {
+    id: 'msg_3',
+    categoryText: '订单通知',
+    title: '你的退款 ￥28.00 已到账',
+    timeText: '2026-07-26 12:58',
+    paragraphs: [
+      '订单 #20260726018 的售后申请已通过，退款 ￥28.00 已退回原微信支付账户，通常 1-3 个工作日内到账，具体以银行为准。',
+      '如超时未收到，可在「订单详情 › 退款进度」查看流水编号，或联系在线客服协助查询。',
+    ],
+    order: {
+      id: 'ord_1019',
+      shopName: '美味坊（文三路店）',
+      summary: '宫保鸡丁 等 3 件 · 实付 ￥68.00',
+      image: IMG.riceBowl,
+    },
+    actions: [
+      { key: 'support', text: '联系客服', style: 'ghost' },
+      { key: 'refund', text: '查看退款进度', style: 'primary' },
+    ],
+    footText: '通知将保留 30 天',
+  },
+  msg_1: {
+    id: 'msg_1',
+    categoryText: '订单通知',
+    title: '订单已出餐，骑手正在赶来',
+    timeText: '2026-07-27 12:16',
+    paragraphs: [
+      '订单 #20260727039 已出餐，骑手王师傅已取餐，预计 12:38 送达，请保持手机畅通。',
+      '如需修改收货信息或联系骑手，可在「配送追踪」页操作。',
+    ],
+    order: {
+      id: 'ord_1024',
+      shopName: '美味坊（文三路店）',
+      summary: '招牌红烧肉套餐 等 2 件 · 实付 ￥64.00',
+      image: IMG.braisedPork,
+    },
+    actions: [
+      { key: 'support', text: '联系客服', style: 'ghost' },
+      { key: 'track', text: '查看配送进度', style: 'primary' },
+    ],
+    footText: '通知将保留 30 天',
+  },
+  msg_2: {
+    id: 'msg_2',
+    categoryText: '优惠通知',
+    title: '满 60 减 12 元券已到账',
+    timeText: '2026-07-26 09:02',
+    paragraphs: [
+      '你获得「新客立减券」1 张，满 60 元可用，全店通用，有效期至 2026-07-31。',
+      '结算时系统会自动为你选择最优券组合，无需手动选择。',
+    ],
+    order: null,
+    actions: [
+      { key: 'coupons', text: '查看卡券', style: 'ghost' },
+      { key: 'menu', text: '去点餐', style: 'primary' },
+    ],
+    footText: '通知将保留 30 天',
+  },
+};
+
+/**
+ * 17 / 39 我的优惠券。
+ * 设计稿把同一个卡券包画了两遍（17「我的优惠券」、39「我的卡券」），
+ * 这里按并集实现一份数据：17 的券种类 + 39 的即将过期标记。
+ */
+export const coupons: Record<CouponTab, Coupon[]> = {
+  usable: [
+    {
+      id: 'cp_60_12',
+      kind: 'cash',
+      amount: 1200,
+      amountText: '12',
+      thresholdText: '满 60 元可用',
+      name: '新客立减券',
+      validText: '全店通用 · 有效期至 2026-07-31',
+      note: '即将过期',
+      noteTone: 'danger',
+      tone: 'main',
+    },
+    {
+      id: 'cp_50_10',
+      kind: 'cash',
+      amount: 1000,
+      amountText: '10',
+      thresholdText: '满 50 元可用',
+      name: '全场通用券',
+      validText: '全店通用 · 有效期至 2026-08-10',
+      note: '还差 ¥0 可用 · 结算自动抵扣',
+      noteTone: 'primary',
+      tone: 'main',
+    },
+    {
+      id: 'cp_ship_3',
+      kind: 'cash',
+      amount: 300,
+      amountText: '3',
+      thresholdText: '无门槛',
+      name: '配送费抵扣券',
+      validText: '有效期至 2026-08-20',
+      note: '仅限外卖配送订单',
+      noteTone: 'warn',
+      tone: 'light',
+    },
+  ],
+  used: [
+    {
+      id: 'cp_used_1',
+      kind: 'cash',
+      amount: 500,
+      amountText: '5',
+      thresholdText: '满 30 元可用',
+      name: '日常满减券',
+      validText: '已用于订单 #20260720011',
+      note: '2026-07-20 使用',
+      noteTone: 'weak',
+      tone: 'grey',
+    },
+  ],
+  expired: [
+    {
+      id: 'cp_exp_1',
+      kind: 'discount',
+      amount: 88,
+      amountText: '8.8折',
+      thresholdText: '上限 ¥15',
+      name: '会员日折扣券',
+      validText: '有效期至 2026-06-30',
+      note: '已过期',
+      noteTone: 'weak',
+      tone: 'grey',
+    },
+  ],
+};
+
+/** 59 优惠券使用规则 */
+export const couponRules: Record<string, CouponRule> = {
+  cp_60_12: {
+    couponId: 'cp_60_12',
+    rangeText: '2026.07.20 - 07.31',
+    rows: [
+      { label: '适用门店', value: '美味坊（文三路店）' },
+      { label: '适用商品', value: '全部商品' },
+      { label: '叠加规则', value: '不可与满减同享' },
+      { label: '每单限用', value: '1 张' },
+    ],
+    terms: [
+      '实付金额满 60 元（不含配送费与包装费）方可使用；',
+      '退款时优惠不予退还，按实付比例退款；',
+      '最终解释权归商家所有。',
+    ],
+  },
+  cp_50_10: {
+    couponId: 'cp_50_10',
+    rangeText: '2026.07.01 - 08.10',
+    rows: [
+      { label: '适用门店', value: '全部门店' },
+      { label: '适用商品', value: '全部商品' },
+      { label: '叠加规则', value: '可与店铺满减同享' },
+      { label: '每单限用', value: '1 张' },
+    ],
+    terms: [
+      '实付金额满 50 元（不含配送费与包装费）方可使用；',
+      '退款时优惠不予退还，按实付比例退款；',
+      '最终解释权归商家所有。',
+    ],
+  },
+  cp_ship_3: {
+    couponId: 'cp_ship_3',
+    rangeText: '2026.07.10 - 08.20',
+    rows: [
+      { label: '适用门店', value: '美味坊（文三路店）' },
+      { label: '适用商品', value: '仅抵扣配送费' },
+      { label: '叠加规则', value: '可与优惠券同享' },
+      { label: '每单限用', value: '1 张' },
+    ],
+    terms: [
+      '仅限外卖配送订单，自提订单不可用；',
+      '抵扣金额不超过实际配送费；',
+      '最终解释权归商家所有。',
+    ],
+  },
+};
+
+/** 79 领券中心 */
+export const couponPack: CouponPack = {
+  title: '新客礼包 · 3 张',
+  sub: '最高立减 ¥25，仅限首单使用',
+};
+
+export const couponOffers: CouponOffer[] = [
+  {
+    id: 'of_60_12',
+    tab: 'shop',
+    amountText: '12',
+    thresholdText: '满 60 可用',
+    name: '新客立减券',
+    desc: '领取后 7 天内有效',
+    tone: 'main',
+    state: 'take',
+  },
+  {
+    id: 'of_30_5',
+    tab: 'shop',
+    amountText: '5',
+    thresholdText: '满 30 可用',
+    name: '午市专享券',
+    desc: '每日 11:00-14:00 可用',
+    tone: 'gold',
+    state: 'take',
+  },
+  {
+    id: 'of_ship_3',
+    tab: 'shop',
+    amountText: '3',
+    thresholdText: '无门槛',
+    name: '配送费减免券',
+    desc: '今日已领完，明日 10:00 再来',
+    tone: 'grey',
+    state: 'soldout',
+  },
+  {
+    id: 'of_disc_88',
+    tab: 'shop',
+    amountText: '8.8折',
+    thresholdText: '上限 ¥15',
+    name: '会员日折扣券',
+    desc: '每月 18 日可用',
+    tone: 'green',
+    state: 'taken',
+  },
+  {
+    id: 'of_plat_8',
+    tab: 'platform',
+    amountText: '8',
+    thresholdText: '满 40 可用',
+    name: '平台通用补贴券',
+    desc: '平台补贴 · 全城门店通用',
+    tone: 'main',
+    state: 'take',
+  },
+  {
+    id: 'of_plat_15',
+    tab: 'platform',
+    amountText: '15',
+    thresholdText: '满 99 可用',
+    name: '大额聚餐券',
+    desc: '周末与节假日可用',
+    tone: 'gold',
+    state: 'take',
+  },
+  {
+    id: 'of_pt_200',
+    tab: 'points',
+    amountText: '3',
+    thresholdText: '无门槛',
+    name: '200 积分兑配送券',
+    desc: '兑换后 7 天内有效',
+    tone: 'green',
+    state: 'take',
+  },
+];
+
+/** 80 会员积分中心 */
+export const memberCenter: MemberCenter = {
+  levelName: '黄金食客',
+  levelText: 'LV.3',
+  pointsText: '1,280',
+  progress: 64,
+  upgradeText: '再消费 ¥320 升级铂金食客，配送费全免',
+  todayText: '今日可得 30 分',
+  tasks: [
+    { key: 'signin', name: '每日签到', sub: '连续 6 天 · 明日 +8', btnText: '已签到', done: true },
+    { key: 'order', name: '完成一单', sub: '+10 积分', btnText: '去点餐', done: false },
+    { key: 'comment', name: '带图评价', sub: '+15 积分 · 每日 1 次', btnText: '去评价', done: false },
+  ],
+  rows: [
+    { key: 'mall', label: '积分兑换', value: '12 件好物', tone: 'weak' },
+    { key: 'log', label: '积分明细', value: '近 30 天 +260', tone: 'weak' },
+    { key: 'expiring', label: '即将过期', value: '120 分 · 7月31日', tone: 'primary' },
+  ],
+};
+
+/** 81 积分兑换 */
+export const pointsGoods: PointsGoods[] = [
+  {
+    id: 'pg_1',
+    tab: 'coupon',
+    name: '配送费全免券',
+    image: IMG.pointsShip,
+    sub: '剩余 240 张',
+    costText: '200 分',
+    affordable: true,
+    shortText: '',
+  },
+  {
+    id: 'pg_2',
+    tab: 'dish',
+    name: '可乐（罐装）',
+    image: IMG.pointsCola,
+    sub: '随单赠送',
+    costText: '300 分',
+    affordable: true,
+    shortText: '',
+  },
+  {
+    id: 'pg_3',
+    tab: 'coupon',
+    name: '￥15 无门槛券',
+    image: IMG.pointsCash,
+    sub: '每月限兑 1 次',
+    costText: '1,200 分',
+    affordable: true,
+    shortText: '',
+  },
+  {
+    id: 'pg_4',
+    tab: 'gift',
+    name: '美味坊保温袋',
+    image: IMG.pointsBag,
+    sub: '积分不足 720 分',
+    costText: '2,000 分',
+    affordable: false,
+    shortText: '差一点',
+  },
+];
+
+/** 44 设置与关于 */
+export const settingsInfo: SettingsInfo = {
+  rows: [
+    [
+      { key: 'phone', label: '手机号', value: '138****8899' },
+      { key: 'wechat', label: '微信授权', value: '已授权' },
+      { key: 'push', label: '消息推送', value: '订单通知已开' },
+    ],
+    [
+      { key: 'privacy', label: '隐私政策', value: '' },
+      { key: 'terms', label: '用户协议', value: '' },
+      { key: 'feedback', label: '意见反馈', value: '' },
+      { key: 'version', label: '当前版本', value: 'v2.4.0' },
+    ],
+  ],
+  version: 'v2.4.0',
+  company: '杭州美味坊餐饮有限公司',
+};
+
+/** 74 账号与安全 */
+export const accountSecurity: AccountSecurity = {
+  rows: [
+    [
+      { key: 'wechat', label: '微信账号', value: '已绑定', tone: 'success' },
+      { key: 'phone', label: '手机号', value: '138****8899 · 更换', tone: 'weak' },
+      { key: 'realname', label: '实名认证', value: '王* · 已认证', tone: 'weak' },
+    ],
+    [
+      { key: 'payless', label: '免密支付', value: '微信支付分 · 已开通', tone: 'weak' },
+      { key: 'limit', label: '单笔免密上限', value: '¥200', tone: 'weak' },
+      { key: 'devices', label: '登录设备管理', value: '2 台设备', tone: 'weak' },
+    ],
+  ],
+  warnText: '账号注销后订单记录、优惠券与积分将被清空且不可恢复，请谨慎操作。',
+};
+
+/** 75 通知设置 */
+export const notifySwitches: NotifySwitch[] = [
+  { key: 'orderStatus', name: '订单状态通知', sub: '接单、出餐、送达实时提醒', on: true, group: 'push' },
+  { key: 'riderNear', name: '骑手即将到达', sub: '距离 500m 时提醒', on: true, group: 'push' },
+  { key: 'promo', name: '优惠活动推送', sub: '新券到账与限时折扣', on: false, group: 'push' },
+  { key: 'comment', name: '评价提醒', sub: '订单完成 2 小时后提醒', on: true, group: 'push' },
+  { key: 'quiet', name: '夜间免打扰', sub: '22:00 - 08:00 只保留订单通知', on: true, group: 'quiet' },
+];
+
+/** 78 关于美味坊 */
+export const aboutInfo: AboutInfo = {
+  appName: '美味坊点餐',
+  versionText: '版本 2.4.0（基础库 3.5.7）',
+  docs: [
+    { key: 'terms', label: '用户服务协议' },
+    { key: 'privacy', label: '隐私政策' },
+    { key: 'collect', label: '个人信息收集清单' },
+    { key: 'share', label: '第三方信息共享清单' },
+  ],
+  license: [
+    { key: 'license', label: '营业执照与资质', value: '' },
+    { key: 'complaint', label: '投诉与举报', value: '400-820-1234' },
+  ],
+  company: '杭州美味坊网络科技有限公司',
+  icp: '浙ICP备2026XXXXXX号 · © 2026',
+};

@@ -49,6 +49,13 @@ export const useUserStore = defineStore('user', () => {
     persist();
   }
 
+  /** 73 个人资料保存后回写，让 07 的头像与昵称立刻跟上 */
+  function updateProfile(patch: Partial<UserProfile>): void {
+    if (!profile.value) return;
+    profile.value = { ...profile.value, ...patch };
+    persist();
+  }
+
   function logout(): void {
     logged.value = false;
     profile.value = null;
@@ -56,5 +63,5 @@ export const useUserStore = defineStore('user', () => {
     uni.removeStorageSync(STORAGE_KEY);
   }
 
-  return { logged, role, profile, isMerchant, login, switchRole, logout };
+  return { logged, role, profile, isMerchant, login, switchRole, updateProfile, logout };
 });

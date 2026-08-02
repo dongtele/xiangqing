@@ -82,6 +82,20 @@ const ROUTES = [
   ['41-在线客服', '/pages/customer/support/index'],
   ['77-帮助中心', '/pages/customer/help/index'],
   ['76-意见反馈', '/pages/customer/feedback/index'],
+  // 资料与消息
+  ['73-个人资料', '/pages/customer/profile-edit/index'],
+  ['37-消息通知', '/pages/customer/messages/index'],
+  ['86-通知详情', '/pages/customer/message-detail/index?id=msg_3'],
+  // 卡券与会员（17 与 39 是同一页，合并实现）
+  ['17_39-我的优惠券', '/pages/customer/coupons/index'],
+  ['79-领券中心', '/pages/customer/coupon-center/index'],
+  ['80-会员积分中心', '/pages/customer/points/index'],
+  ['81-积分兑换', '/pages/customer/points-mall/index'],
+  // 设置与账号
+  ['44-设置与关于', '/pages/customer/settings/index'],
+  ['74-账号与安全', '/pages/customer/account/index'],
+  ['75-通知设置', '/pages/customer/notify-settings/index'],
+  ['78-关于美味坊', '/pages/customer/about/index'],
 ];
 
 const MIME = {
@@ -208,6 +222,16 @@ async function main() {
     await go(route);
     await shot(name);
   }
+
+  /* ----------
+   * 59 券使用规则：盖在 coupons 上的半屏浮层，只能点开。
+   * 必须排在路由表之后 —— go() 是改 hash，目标与当前路由相同时组件不会重挂载，
+   * 浮层会残留到下一张图里。
+   * ---------- */
+
+  await go('/pages/customer/coupons/index');
+  await tap('.cp__rule');
+  await shot('59-优惠券使用规则');
 
   await browser.close();
   server.close();

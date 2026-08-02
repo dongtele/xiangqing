@@ -741,3 +741,156 @@ export interface MerchantGoods {
   onSale: boolean;
   stockLevel: 'normal' | 'low' | 'out';
 }
+
+/* ================= 顾客端 · 卡券会员与设置账号（73 37 86 17/39 59 79 80 81 44 74 75 78） ================= */
+
+/** 73 个人资料 */
+export interface ProfileForm {
+  avatar: string;
+  nickname: string;
+  gender: 'male' | 'female' | 'unknown';
+  genderText: string;
+  birthday: string;
+  phoneMask: string;
+  /** 口味偏好，下单时自动带进订单备注（与 31 备注浮层共用一套 key） */
+  tastes: { key: string; label: string; on: boolean }[];
+}
+
+/** 37 消息通知 */
+export type MessageTab = 'all' | 'order' | 'promo';
+
+export interface MessageItem {
+  id: string;
+  tab: Exclude<MessageTab, 'all'>;
+  /** wf-icon 名 */
+  icon: string;
+  tone: 'primary' | 'success';
+  title: string;
+  desc: string;
+  timeText: string;
+  unread: boolean;
+}
+
+/** 86 通知详情 */
+export interface MessageDetail {
+  id: string;
+  categoryText: string;
+  title: string;
+  timeText: string;
+  /** 段落数组，避免在模板里塞 <br> */
+  paragraphs: string[];
+  order: { id: string; shopName: string; summary: string; image: string } | null;
+  actions: { key: string; text: string; style: 'primary' | 'ghost' }[];
+  footText: string;
+}
+
+/** 17 / 39 我的优惠券 */
+export type CouponTab = 'usable' | 'used' | 'expired';
+
+export interface Coupon {
+  id: string;
+  /** cash = 满减/无门槛，discount = 折扣券 */
+  kind: 'cash' | 'discount';
+  /** 面额（分）；折扣券此处存折扣值 ×10（88 = 8.8 折），只用于排序 */
+  amount: number;
+  /** 卡头大字：10 / 8.8折 */
+  amountText: string;
+  /** 满50可用 / 无门槛 / 上限 ¥15 */
+  thresholdText: string;
+  name: string;
+  validText: string;
+  /** 「还差 ¥0 可用 · 结算自动抵扣」这类补充说明 */
+  note: string;
+  noteTone: 'primary' | 'warn' | 'danger' | 'weak';
+  /** 卡头配色 */
+  tone: 'main' | 'light' | 'green' | 'grey';
+}
+
+/** 59 优惠券使用规则（39 上的半屏浮层） */
+export interface CouponRule {
+  couponId: string;
+  rangeText: string;
+  rows: { label: string; value: string }[];
+  terms: string[];
+}
+
+/** 79 领券中心 */
+export type CouponCenterTab = 'shop' | 'platform' | 'points';
+
+export interface CouponOffer {
+  id: string;
+  tab: CouponCenterTab;
+  amountText: string;
+  thresholdText: string;
+  name: string;
+  desc: string;
+  tone: 'main' | 'gold' | 'green' | 'grey';
+  state: 'take' | 'taken' | 'soldout';
+}
+
+export interface CouponPack {
+  title: string;
+  sub: string;
+}
+
+/** 80 会员积分中心 */
+export interface MemberCenter {
+  levelName: string;
+  levelText: string;
+  pointsText: string;
+  /** 升级进度 0–100 */
+  progress: number;
+  upgradeText: string;
+  todayText: string;
+  tasks: { key: string; name: string; sub: string; btnText: string; done: boolean }[];
+  rows: { key: string; label: string; value: string; tone: 'weak' | 'primary' }[];
+}
+
+/** 81 积分兑换 */
+export type PointsGoodsTab = 'all' | 'coupon' | 'dish' | 'gift';
+
+export interface PointsGoods {
+  id: string;
+  tab: Exclude<PointsGoodsTab, 'all'>;
+  name: string;
+  image: string;
+  sub: string;
+  costText: string;
+  /** 积分足够才可兑换 */
+  affordable: boolean;
+  /** 不足时显示「差一点」，并在 sub 里说明还差多少 */
+  shortText: string;
+}
+
+/** 44 设置与关于 */
+export interface SettingsInfo {
+  rows: { key: string; label: string; value: string }[][];
+  version: string;
+  company: string;
+}
+
+/** 74 账号与安全 */
+export interface AccountSecurity {
+  rows: { key: string; label: string; value: string; tone: 'weak' | 'success' }[][];
+  warnText: string;
+}
+
+/** 75 通知设置 */
+export interface NotifySwitch {
+  key: string;
+  name: string;
+  sub: string;
+  on: boolean;
+  /** push = 推送类型分组，quiet = 免打扰分组 */
+  group: 'push' | 'quiet';
+}
+
+/** 78 关于美味坊 */
+export interface AboutInfo {
+  appName: string;
+  versionText: string;
+  docs: { key: string; label: string }[];
+  license: { key: string; label: string; value: string }[];
+  company: string;
+  icp: string;
+}

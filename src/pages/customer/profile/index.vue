@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
+import { onLoad, onShow } from '@dcloudio/uni-app';
+import { getMessages } from '@/services/api';
 import { chrome } from '@/utils/chrome';
 import { gotoRoleHome, push, relaunch, todo } from '@/utils/nav';
 import { useUserStore } from '@/stores/user';
@@ -8,6 +9,8 @@ import { useUserStore } from '@/stores/user';
 /** 07 · 我的（个人中心）—— 顾客端 → 商家端的角色分流入口在此 */
 const user = useUserStore();
 const headPad = ref(104);
+/** 顾客端 TabBar 只有 3 项，消息(37) 的红点按设计稿从这里进入 */
+const unread = ref(0);
 
 const quick = [
   { key: 'unpaid', label: '待付款', icon: 'card', badge: 0, tab: 'ongoing' },
@@ -17,18 +20,12 @@ const quick = [
 ];
 
 const cells = [
-  { key: 'address', label: '地址管理', value: '', primary: false, screen: '38', url: '/pages/customer/addresses/index' },
-  { key: 'coupon', label: '优惠券', value: '2张可用', primary: true, screen: '39', url: '' },
-  { key: 'contact', label: '联系商家', value: '', primary: false, screen: '41', url: '/pages/customer/support/index' },
-  { key: 'about', label: '关于小店', value: '', primary: false, screen: '78', url: '' },
+  { key: 'address', label: '地址管理', value: '', primary: false, url: '/pages/customer/addresses/index' },
+  { key: 'coupon', label: '优惠券', value: '2张可用', primary: true, url: '/pages/customer/coupons/index' },
+  { key: 'points', label: '会员积分', value: '1,280分', primary: true, url: '/pages/customer/points/index' },
+  { key: 'contact', label: '联系商家', value: '', primary: false, url: '/pages/customer/support/index' },
+  { key: 'about', label: '关于小店', value: '', primary: false, url: '/pages/customer/settings/index' },
 ];
-
-const cellNames: Record<string, string> = {
-  address: '地址管理',
-  coupon: '我的卡券',
-  contact: '在线客服',
-  about: '关于美味坊',
-};
 
 const avatarText = computed(() =>
   user.profile ? user.profile.nickname.slice(-1) : '客'
@@ -38,12 +35,13 @@ onLoad(() => {
   headPad.value = chrome().capsuleBottom + 24;
 });
 
-function onCell(c: { key: string; screen: string; url: string }): void {
-  if (c.url) {
-    push(c.url);
-    return;
-  }
-  todo(c.screen, cellNames[c.key]);
+onShow(async () => {
+  const res = await getMessages('all');
+  unread.value = res.unread;
+});
+
+function onCell(c: { url: string }): void {
+  push(c.url);
 }
 
 function onTapOrders(tab: string): void {
@@ -64,20 +62,27 @@ function onEnterMerchant(): void {
 <template>
   <view class="profile">
     <view class="profile__header" :style="{ paddingTop: headPad + 'px' }">
-      <view class="profile__avatar">
-        <image
-          v-if="user.profile && user.profile.avatar"
-          class="profile__avatar-img"
-          :src="user.profile.avatar"
-          mode="aspectFill"
-        />
-        <text v-else>{{ avatarText }}</text>
+      <view class="profile__me tap" @tap="push('/pages/customer/profile-edit/index')">
+        <view class="profile__avatar">
+          <image
+            v-if="user.profile && user.profile.avatar"
+            class="profile__avatar-img"
+            :src="user.profile.avatar"
+            mode="aspectFill"
+          />
+          <text v-else>{{ avatarText }}</text>
+        </view>
+        <view class="profile__id">
+          <text class="profile__name">{{ user.profile ? user.profile.nickname : '未登录' }}</text>
+          <text class="profile__phone">{{
+            user.profile ? user.profile.phoneMask : '登录后可下单与查看订单'
+          }}</text>
+        </view>
       </view>
-      <view class="profile__id">
-        <text class="profile__name">{{ user.profile ? user.profile.nickname : '未登录' }}</text>
-        <text class="profile__phone">{{
-          user.profile ? user.profile.phoneMask : '登录后可下单与查看订单'
-        }}</text>
+
+      <view class="profile__msg tap-sm" @tap="push('/pages/customer/messages/index')">
+        <wf-icon name="chat" :size="40" color="#FFFFFF" :weight="1.9" />
+        <view v-if="unread" class="profile__msg-dot" />
       </view>
     </view>
 
@@ -164,8 +169,40 @@ function onEnterMerchant(): void {
   padding-bottom: 80rpx;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 28rpx;
   flex-shrink: 0;
+}
+
+.profile__me {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+}
+
+.profile__msg {
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.profile__msg-dot {
+  position: absolute;
+  top: 14rpx;
+  right: 16rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #ff3800;
+  border: 3rpx solid rgba(255, 255, 255, 0.9);
 }
 
 .profile__avatar {

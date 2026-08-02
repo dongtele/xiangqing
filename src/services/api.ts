@@ -1,53 +1,70 @@
 import { request } from './request';
 import type {
+  AboutInfo,
+  AccountSecurity,
   AddressFull,
   AftersaleItem,
   AftersaleOptions,
   AftersaleType,
-  CommentOptions,
-  FeedbackOptions,
-  HelpCenterInfo,
-  InvoiceOptions,
-  InvoiceTitle,
-  LicenseInfo,
-  MyReview,
-  MyReviewTab,
-  PickupCodeInfo,
-  SupportMessage,
-  PickupStore,
-  PoiItem,
-  RemarkOptions,
-  Review,
-  ReviewSummary,
-  ShopProfile,
   BulkGoods,
   BulkTab,
   CartItem,
   Category,
   CategoryRow,
-  DeliveryTrack,
-  GoodsDraft,
-  OptionLibGroup,
-  StockGoods,
-  StockTab,
   CheckoutTrial,
+  CommentOptions,
+  Coupon,
+  CouponCenterTab,
+  CouponOffer,
+  CouponPack,
+  CouponRule,
+  CouponTab,
   CustomerOrderTab,
   Dashboard,
+  DeliveryTrack,
   DeliveryType,
+  FeedbackOptions,
   Goods,
+  GoodsDraft,
+  HelpCenterInfo,
+  InvoiceOptions,
+  InvoiceTitle,
+  LicenseInfo,
+  MemberCenter,
   MenuGroup,
   MerchantGoods,
   MerchantOrder,
   MerchantOrderTab,
+  MessageDetail,
+  MessageItem,
+  MessageTab,
+  MyReview,
+  MyReviewTab,
+  NotifySwitch,
+  OptionLibGroup,
   Order,
+  PickupCodeInfo,
+  PickupStore,
+  PoiItem,
+  PointsGoods,
+  PointsGoodsTab,
   PrintSettings,
+  ProfileForm,
   ReceiptPreview,
   ReceiptType,
   Refund,
   RefundTrial,
+  RemarkOptions,
+  Review,
+  ReviewSummary,
   Rider,
   RiderMessage,
+  SettingsInfo,
   Shop,
+  ShopProfile,
+  StockGoods,
+  StockTab,
+  SupportMessage,
   UserProfile,
 } from '@/models';
 
@@ -352,3 +369,72 @@ export const getShopSettings = (): Promise<Shop> => request<Shop>('/merchant/sho
 
 export const updateShopSettings = (patch: Partial<Shop>): Promise<Shop> =>
   request<Shop>('/merchant/shop/update', patch as Record<string, unknown>, { method: 'POST' });
+
+/* ---------------- 顾客端 · 卡券会员与设置账号 ---------------- */
+
+export const getProfileForm = (): Promise<ProfileForm> => request('/customer/profile-form');
+
+export const saveProfileForm = (patch: Partial<ProfileForm>): Promise<{ ok: boolean }> =>
+  request('/customer/profile-form', patch as Record<string, unknown>, {
+    method: 'POST',
+    loading: true,
+  });
+
+export const toggleTaste = (key: string): Promise<{ ok: boolean }> =>
+  request('/customer/profile-form/taste', { key }, { method: 'POST', silent: true });
+
+export const getMessages = (
+  tab: MessageTab
+): Promise<{ list: MessageItem[]; counts: Record<MessageTab, number>; unread: number }> =>
+  request('/customer/messages', { tab });
+
+export const readAllMessages = (): Promise<{ ok: boolean }> =>
+  request('/customer/messages/read-all', {}, { method: 'POST', silent: true });
+
+export const getMessageDetail = (id: string): Promise<MessageDetail | null> =>
+  request('/customer/message-detail', { id });
+
+export const getCoupons = (
+  tab: CouponTab
+): Promise<{ list: Coupon[]; counts: Record<CouponTab, number> }> =>
+  request('/customer/coupons', { tab });
+
+export const getCouponRule = (id: string): Promise<CouponRule | null> =>
+  request('/customer/coupon-rule', { id });
+
+export const redeemCouponCode = (code: string): Promise<{ ok: boolean; message: string }> =>
+  request('/customer/coupons/redeem', { code }, { method: 'POST', loading: true });
+
+export const getCouponCenter = (
+  tab: CouponCenterTab
+): Promise<{ pack: CouponPack; list: CouponOffer[] }> => request('/customer/coupon-center', { tab });
+
+export const takeCoupon = (id: string): Promise<{ ok: boolean; message: string }> =>
+  request('/customer/coupon-center/take', { id }, { method: 'POST' });
+
+export const takeCouponPack = (): Promise<{ ok: boolean; message: string }> =>
+  request('/customer/coupon-center/take-pack', {}, { method: 'POST', loading: true });
+
+export const getMemberCenter = (): Promise<MemberCenter> => request('/customer/member');
+
+export const signIn = (): Promise<{ ok: boolean; message: string }> =>
+  request('/customer/member/signin', {}, { method: 'POST' });
+
+export const getPointsGoods = (
+  tab: PointsGoodsTab
+): Promise<{ points: string; list: PointsGoods[] }> => request('/customer/points-goods', { tab });
+
+export const redeemPointsGoods = (id: string): Promise<{ ok: boolean; message: string }> =>
+  request('/customer/points-goods/redeem', { id }, { method: 'POST', loading: true });
+
+export const getSettings = (): Promise<SettingsInfo> => request('/customer/settings');
+
+export const getAccountSecurity = (): Promise<AccountSecurity> =>
+  request('/customer/account-security');
+
+export const getNotifySwitches = (): Promise<NotifySwitch[]> => request('/customer/notify-settings');
+
+export const setNotifySwitch = (key: string, on: boolean): Promise<{ ok: boolean }> =>
+  request('/customer/notify-settings', { key, on }, { method: 'POST', silent: true });
+
+export const getAbout = (): Promise<AboutInfo> => request('/customer/about');
