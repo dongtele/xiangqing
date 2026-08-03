@@ -26,7 +26,10 @@ const rows = computed(() =>
   list.value.map((o) => ({
     ...o,
     payableText: fen2yuan(o.payable),
-    thumbs: o.items.map((i) => i.image),
+    // 缩略图最多两张、菜名最多三行，多的用「等 N 件」收口，卡片高度才稳定
+    thumbs: o.items.slice(0, 2).map((i) => i.image),
+    nameRows: o.items.slice(0, 3),
+    moreText: o.items.length > 3 ? `等 ${o.items.length} 种商品` : '',
   }))
 );
 
@@ -143,10 +146,18 @@ function pillClass(style: string): string {
           </view>
 
           <view class="orders__goods" @tap="onTapOrder(row.id)">
-            <view v-for="(thumb, i) in row.thumbs" :key="i" class="orders__thumb">
-              <wf-thumb :src="thumb" :radius="20" />
+            <view class="orders__thumbs">
+              <view v-for="(thumb, i) in row.thumbs" :key="i" class="orders__thumb">
+                <wf-thumb :src="thumb" :radius="20" />
+              </view>
             </view>
-            <view class="flex1" />
+            <!-- 光有缩略图看不出点了什么，把菜名和份数也列出来 -->
+            <view class="flex1 col orders__names">
+              <text v-for="(item, i) in row.nameRows" :key="i" class="orders__name ellipsis"
+                >{{ item.name }} ×{{ item.qty }}</text
+              >
+              <text v-if="row.moreText" class="orders__more">{{ row.moreText }}</text>
+            </view>
             <view class="orders__amount">
               <text class="orders__amount-num">¥{{ row.payableText }}</text>
               <text class="orders__amount-cnt">共{{ row.count }}件</text>
@@ -275,12 +286,33 @@ function pillClass(style: string): string {
   gap: 16rpx;
 }
 
+.orders__thumbs {
+  display: flex;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
 .orders__thumb {
   width: 104rpx;
   height: 104rpx;
   border-radius: 20rpx;
   overflow: hidden;
   flex-shrink: 0;
+}
+
+.orders__names {
+  gap: 8rpx;
+  min-width: 0;
+}
+
+.orders__name {
+  font-size: 23rpx;
+  color: var(--c-text-2);
+}
+
+.orders__more {
+  font-size: 21rpx;
+  color: var(--c-text-placeholder);
 }
 
 .orders__amount {

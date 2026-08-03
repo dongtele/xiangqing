@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { getExceptionOrders, resolveException } from '@/services/api';
-import { toast } from '@/utils/nav';
+import { push, toast } from '@/utils/nav';
 import type { ExceptionOrder, ExceptionTab } from '@/models';
 
 /**
@@ -97,9 +97,22 @@ async function onReject(o: ExceptionOrder): Promise<void> {
 
       <template v-else-if="list.length">
         <view v-for="o in list" :key="o.id" class="card ex__card">
-          <view class="row--between">
-            <text class="ex__no">{{ o.orderNo }}</text>
+          <view
+            class="row--between tap"
+            @tap="push(`/pages/merchant/order-detail/index?id=${o.id}`)"
+          >
+            <text class="ex__no">{{ o.orderNo }} ›</text>
             <text class="ex__stage" :class="`ex__stage--${o.stageTone}`">{{ o.stageText }}</text>
+          </view>
+
+          <!-- 直接列出点了什么，不用点进详情才知道 -->
+          <view v-if="o.lines.length" class="ex__lines">
+            <view v-for="(line, i) in o.lines" :key="i" class="ex__line">
+              <text class="flex1 ellipsis">{{
+                line.specText ? `${line.name}（${line.specText}）` : line.name
+              }}</text>
+              <text class="ex__line-qty">×{{ line.qty }}</text>
+            </view>
           </view>
 
           <!-- 已处理的只留结论 -->
@@ -242,6 +255,28 @@ async function onReject(o: ExceptionOrder): Promise<void> {
   font-size: 26rpx;
   color: var(--c-text-2);
   line-height: 1.6;
+}
+
+.ex__lines {
+  background: #faf7f2;
+  border-radius: 20rpx;
+  padding: 18rpx 22rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.ex__line {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  font-size: 23rpx;
+  color: var(--c-text-2);
+}
+
+.ex__line-qty {
+  font-size: 22rpx;
+  color: var(--c-text-placeholder);
 }
 
 .ex__items {

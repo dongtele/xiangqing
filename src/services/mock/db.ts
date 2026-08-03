@@ -139,6 +139,7 @@ export const goodsList: Goods[] = [
       {
         id: 'sg1',
         name: '份量',
+        kind: 'price',
         multiple: false,
         required: true,
         options: [
@@ -149,6 +150,7 @@ export const goodsList: Goods[] = [
       {
         id: 'sg2',
         name: '辣度',
+        kind: 'plain',
         multiple: false,
         required: true,
         defaultOptionId: 'o4',
@@ -161,6 +163,7 @@ export const goodsList: Goods[] = [
       {
         id: 'sg3',
         name: '加料',
+        kind: 'addon',
         multiple: true,
         required: false,
         options: [
@@ -228,6 +231,7 @@ export const goodsList: Goods[] = [
       {
         id: 'sg4',
         name: '温度',
+        kind: 'plain',
         multiple: false,
         required: true,
         options: [
@@ -1099,6 +1103,7 @@ export const merchantGoods: MerchantGoods[] = [
     specCountText: '库存 45 · 2个规格',
     onSale: true,
     stockLevel: 'normal',
+    auditState: 'approved',
   },
   {
     id: 'g3',
@@ -1111,6 +1116,7 @@ export const merchantGoods: MerchantGoods[] = [
     specCountText: '库存偏低 12',
     onSale: true,
     stockLevel: 'low',
+    auditState: 'approved',
   },
   {
     id: 'g6',
@@ -1123,6 +1129,7 @@ export const merchantGoods: MerchantGoods[] = [
     specCountText: '库存 0',
     onSale: true,
     stockLevel: 'out',
+    auditState: 'approved',
   },
   {
     id: 'g7',
@@ -1135,8 +1142,27 @@ export const merchantGoods: MerchantGoods[] = [
     specCountText: '已下架',
     onSale: false,
     stockLevel: 'normal',
+    auditState: 'approved',
+  },
+  // 预置一条被驳回的新品：它不在 goodsList 里，顾客端看不到，用来走通驳回态与「重新提交」
+  {
+    id: 'g_new_1',
+    name: '秘制小龙虾（新品）',
+    image: '',
+    categoryName: '海鲜水产',
+    price: 8800,
+    priceFrom: false,
+    stock: 20,
+    specCountText: '库存 20',
+    onSale: false,
+    stockLevel: 'normal',
+    auditState: 'rejected',
+    auditReason: '商品主图不清晰，请重新上传：需露出实物全貌，避免带文字水印。',
   },
 ];
+
+/** 平台审核的违禁词，命中即驳回（真实平台会有更完整的词库与图片审核） */
+export const BANNED_WORDS = ['酒', '香烟', '代购', '特效', '最正宗'];
 
 /* ================= 顾客端 · 卡券会员与设置账号 ================= */
 
@@ -1678,6 +1704,13 @@ export const historyOrders: HistoryOrder[] = [
     amountText: '68.00',
     refundText: '',
     itemsText: '宫保鸡丁 ×1、红烧肉盖饭 ×1、番茄蛋汤 ×1',
+    channel: '外送',
+    customerName: '王**',
+    lines: [
+      { name: '宫保鸡丁', specText: '', qty: 1, amount: 2800, image: '' },
+      { name: '红烧肉盖饭', specText: '大份', qty: 1, amount: 2900, image: IMG.braisedPork },
+      { name: '番茄蛋汤', specText: '', qty: 1, amount: 1100, image: '' },
+    ],
   },
   {
     id: 'h_2',
@@ -1688,6 +1721,12 @@ export const historyOrders: HistoryOrder[] = [
     amountText: '42.00',
     refundText: '-12',
     itemsText: '酸辣土豆丝 ×1、红烧肉盖饭 ×1',
+    channel: '自提',
+    customerName: '李**',
+    lines: [
+      { name: '酸辣土豆丝 (已退)', specText: '', qty: 1, amount: 1200, image: '' },
+      { name: '红烧肉盖饭', specText: '', qty: 1, amount: 3000, image: IMG.braisedPork },
+    ],
   },
   {
     id: 'h_3',
@@ -1697,7 +1736,10 @@ export const historyOrders: HistoryOrder[] = [
     metaText: '外卖 · 顾客支付前取消',
     amountText: '0.00',
     refundText: '',
-    itemsText: '',
+    itemsText: '金黄炸猪排 ×1',
+    channel: '外送',
+    customerName: '匿名顾客',
+    lines: [{ name: '金黄炸猪排', specText: '', qty: 1, amount: 2200, image: IMG.porkChop }],
   },
 ];
 
@@ -1711,12 +1753,16 @@ export const exceptionOrders: Record<ExceptionTab, ExceptionOrder[]> = {
       stageTone: 'pending',
       countdownText: '剩 4 分钟自动同意',
       reasonQuote: '点错了，想重新下单',
-      itemsText: '未出餐 · 宫保鸡丁 ×1 等 2 件',
+      itemsText: '未出餐',
       amountText: '46.00',
       needProof: false,
       noteText: '',
       resolved: false,
       resolveText: '',
+      lines: [
+        { name: '宫保鸡丁', specText: '微辣', qty: 1, amount: 2800, image: '' },
+        { name: '红烧肉盖饭', specText: '', qty: 1, amount: 1800, image: IMG.braisedPork },
+      ],
     },
     {
       id: 'e_2',
@@ -1731,6 +1777,7 @@ export const exceptionOrders: Record<ExceptionTab, ExceptionOrder[]> = {
       noteText: '拒绝需上传出餐凭证，平台将在 2 小时内仲裁。',
       resolved: false,
       resolveText: '',
+      lines: [{ name: '农家小炒肉拌饭', specText: '', qty: 1, amount: 3800, image: IMG.riceBowl }],
     },
     {
       id: 'e_3',
@@ -1745,6 +1792,7 @@ export const exceptionOrders: Record<ExceptionTab, ExceptionOrder[]> = {
       noteText: '',
       resolved: true,
       resolveText: '12:20 同意取消 · 全额退款 ￥38.00',
+      lines: [{ name: '金黄炸猪排', specText: '', qty: 1, amount: 3800, image: IMG.porkChop }],
     },
   ],
   timeout: [
@@ -1755,12 +1803,16 @@ export const exceptionOrders: Record<ExceptionTab, ExceptionOrder[]> = {
       stageTone: 'pending',
       countdownText: '已超时 8 分钟',
       reasonQuote: '',
-      itemsText: '水煮牛肉 ×1 等 3 件',
+      itemsText: '',
       amountText: '96.00',
       needProof: false,
       noteText: '超时超过 15 分钟顾客可一键取消并全额退款。',
       resolved: false,
       resolveText: '',
+      lines: [
+        { name: '水煮牛肉', specText: '中辣', qty: 1, amount: 5800, image: '' },
+        { name: '冰镇酸梅汤', specText: '加冰', qty: 2, amount: 3800, image: IMG.plumJuice },
+      ],
     },
     {
       id: 'e_5',
@@ -1769,12 +1821,13 @@ export const exceptionOrders: Record<ExceptionTab, ExceptionOrder[]> = {
       stageTone: 'pending',
       countdownText: '已超时 3 分钟',
       reasonQuote: '',
-      itemsText: '清蒸鲈鱼 ×1',
+      itemsText: '',
       amountText: '68.00',
       needProof: false,
       noteText: '',
       resolved: false,
       resolveText: '',
+      lines: [{ name: '清蒸鲈鱼', specText: '', qty: 1, amount: 6800, image: IMG.steamedFish }],
     },
   ],
   delivery: [
@@ -1785,12 +1838,16 @@ export const exceptionOrders: Record<ExceptionTab, ExceptionOrder[]> = {
       stageTone: 'cooked',
       countdownText: '骑手上报 12:52',
       reasonQuote: '顾客电话无人接听',
-      itemsText: '已出餐 · 番茄蛋汤 ×1 等 2 件',
+      itemsText: '已出餐',
       amountText: '52.00',
       needProof: false,
       noteText: '可联系顾客确认，或申请骑手二次配送。',
       resolved: false,
       resolveText: '',
+      lines: [
+        { name: '番茄蛋汤', specText: '', qty: 1, amount: 1200, image: '' },
+        { name: '香煎深海带鱼', specText: '', qty: 1, amount: 4000, image: IMG.hairtail },
+      ],
     },
   ],
 };

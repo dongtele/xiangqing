@@ -50,16 +50,35 @@ export interface SpecOption {
   priceDelta: number;
 }
 
+/**
+ * 规格组的三种类型，对应设计稿 36「定价格 / 不加价 / 加价多选」。
+ *
+ * 必须显式声明，不能从 `priceDelta` 反推：新建的组还没有选项，
+ * 反推的结果永远是「不加价」，商家就再也进不了设价的入口了。
+ * - `price` 份量这类定价组：选项价 = 基础价 + priceDelta，顾客端展示价取组内最低
+ * - `plain` 辣度这类不加价组：priceDelta 恒为 0
+ * - `addon` 加料这类加价组：可多选，priceDelta 就是 +￥
+ */
+export type SpecGroupKind = 'price' | 'plain' | 'addon';
+
 export interface SpecGroup {
   id: string;
   name: string;
-  /** 可多选（加料）/ 单选（份量、辣度） */
+  kind: SpecGroupKind;
+  /** 可多选（加料）/ 单选（份量、辣度）；由 kind 决定，留着给顾客端 02 与购物车用 */
   multiple: boolean;
   required: boolean;
   /** 必选组的默认选项；不填则取第一项 */
   defaultOptionId?: string;
   options: SpecOption[];
 }
+
+/** 规格组类型 → multiple / required，建组与改类型都走这里，避免两处写歪 */
+export const SPEC_KIND_FLAGS: Record<SpecGroupKind, { multiple: boolean; required: boolean }> = {
+  price: { multiple: false, required: true },
+  plain: { multiple: false, required: true },
+  addon: { multiple: true, required: false },
+};
 
 export interface Goods {
   id: string;
@@ -685,10 +704,20 @@ export interface ReceiptPreview {
 
 /* ---------------- 商家端 · 商品与菜单 ---------------- */
 
+/**
+ * 商品审核态。设计稿 98 屏里没有这一层，是按真实外卖平台的规则补的：
+ * 商家改的内容要过平台审核才对顾客端生效，审核期间顾客端看到的仍是上一版本。
+ */
+export type GoodsAuditState = 'approved' | 'reviewing' | 'rejected';
+
+/** 会触发重新审核的字段；库存与上下架不在其中，改了立即生效 */
+export const AUDITED_FIELDS = ['name', 'categoryId', 'price', 'images', 'specGroups'] as const;
+
 /** 11 编辑商品的可编辑副本 */
 export interface GoodsDraft {
   id: string;
   name: string;
+  categoryId: string;
   categoryName: string;
   /** 基础价，分 */
   price: number;
@@ -696,6 +725,11 @@ export interface GoodsDraft {
   images: string[];
   onSale: boolean;
   specGroups: SpecGroup[];
+  auditState: GoodsAuditState;
+  /** 驳回原因 */
+  auditReason?: string;
+  /** 还没提交过审核的新建商品 */
+  isNew: boolean;
 }
 
 /** 64 规格与加料选项库：可复用的选项组 */
@@ -758,6 +792,9 @@ export interface MerchantGoods {
   specCountText: string;
   onSale: boolean;
   stockLevel: 'normal' | 'low' | 'out';
+  auditState: GoodsAuditState;
+  /** 驳回原因 */
+  auditReason?: string;
 }
 
 /* ================= 顾客端 · 卡券会员与设置账号（73 37 86 17/39 59 79 80 81 44 74 75 78） ================= */
@@ -949,6 +986,10 @@ export interface HistoryOrder {
   /** 部分退款时显示的 -12 */
   refundText: string;
   itemsText: string;
+  channel: '外送' | '自提';
+  customerName: string;
+  /** 列表要直接列出点了什么，点进去也用它拼订单详情 */
+  lines: MerchantOrderLine[];
 }
 
 export interface HistoryFilter {
@@ -982,6 +1023,8 @@ export interface ExceptionOrder {
   /** 已处理的单只展示结论 */
   resolved: boolean;
   resolveText: string;
+  /** 列表要直接列出点了什么，点进去也用它拼订单详情 */
+  lines: MerchantOrderLine[];
 }
 
 /** 96 核销记录 */

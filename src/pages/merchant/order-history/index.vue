@@ -80,7 +80,7 @@ function onExport(): void {
           v-for="o in list"
           :key="o.id"
           class="card oh__card tap"
-          @tap="push(`/pages/merchant/order-detail/index?id=m_1024`)"
+          @tap="push(`/pages/merchant/order-detail/index?id=${o.id}`)"
         >
           <view class="row--between">
             <text class="oh__no">{{ o.orderNo }}</text>
@@ -93,7 +93,15 @@ function onExport(): void {
               <text v-if="o.refundText" class="oh__refund">{{ o.refundText }}</text>
             </view>
           </view>
-          <text v-if="o.itemsText" class="oh__items">{{ o.itemsText }}</text>
+          <!-- 直接列出点了什么，一行文字挤在一起看不清 -->
+          <view v-if="o.lines.length" class="oh__lines">
+            <view v-for="(line, i) in o.lines" :key="i" class="oh__line">
+              <text class="flex1 ellipsis">{{
+                line.specText ? `${line.name}（${line.specText}）` : line.name
+              }}</text>
+              <text class="oh__line-qty">×{{ line.qty }}</text>
+            </view>
+          </view>
         </view>
       </template>
 
@@ -226,9 +234,25 @@ function onExport(): void {
   color: var(--c-primary);
 }
 
-.oh__items {
+.oh__lines {
+  background: #faf7f2;
+  border-radius: 20rpx;
+  padding: 18rpx 22rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.oh__line {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  font-size: 23rpx;
+  color: var(--c-text-2);
+}
+
+.oh__line-qty {
   font-size: 22rpx;
   color: var(--c-text-placeholder);
-  line-height: 1.6;
 }
 </style>

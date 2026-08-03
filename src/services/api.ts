@@ -38,6 +38,7 @@ import type {
   ExceptionTab,
   FeedbackOptions,
   Goods,
+  GoodsAuditState,
   GoodsDraft,
   GoodsRank,
   HelpCenterInfo,
@@ -364,7 +365,13 @@ export const printReceipt = (
 export const getGoodsDraft = (id: string): Promise<GoodsDraft | null> =>
   request('/merchant/goods/detail', { id });
 
-export const saveGoodsDraft = (draft: GoodsDraft): Promise<{ ok: boolean }> =>
+/** 发布新商品：先要一个 id，编辑页与 36 规格页都靠它取草稿 */
+export const createGoodsDraft = (): Promise<GoodsDraft> =>
+  request('/merchant/goods/create', {}, { method: 'POST' });
+
+export const saveGoodsDraft = (
+  draft: GoodsDraft
+): Promise<{ ok: boolean; auditState: GoodsAuditState }> =>
   request('/merchant/goods/save', draft as unknown as Record<string, unknown>, {
     method: 'POST',
     loading: true,
@@ -413,7 +420,11 @@ export const getMerchantGoods = (
 ): Promise<{ list: MerchantGoods[]; categories: string[] }> =>
   request('/merchant/goods', { categoryName });
 
-export const setGoodsOnSale = (id: string, onSale: boolean): Promise<{ ok: boolean }> =>
+/** 未过审的商品会被服务端拒绝上架，`ok:false` 时 message 是原因 */
+export const setGoodsOnSale = (
+  id: string,
+  onSale: boolean
+): Promise<{ ok: boolean; message?: string }> =>
   request('/merchant/goods/onsale', { id, onSale }, { method: 'POST' });
 
 export const getShopSettings = (): Promise<Shop> => request<Shop>('/merchant/shop');

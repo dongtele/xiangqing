@@ -2,17 +2,31 @@
 import { ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import { getGoodsDraft, saveGoodsDraft } from '@/services/api';
+import { SPEC_KIND_FLAGS } from '@/models';
 import { fen2yuan2 } from '@/utils/money';
 import { back, push, toast } from '@/utils/nav';
-import type { GoodsDraft, SpecGroup } from '@/models';
+import type { GoodsDraft, SpecGroup, SpecGroupKind } from '@/models';
 
 /**
  * 36 · 规格与价格编辑。
- * 「份量」这类定价组：选项各自带整价；「加料」这类加价组：选项带 +￥。
+ * 设计稿写明三种组类型：定价格 / 不加价 / 加价多选，每个选项单独设价。
+ *
+ * 组类型是建组时**显式选**的（`group.kind`），不能从选项的 priceDelta 反推：
+ * 新建的组还没有选项，反推恒为「不加价」，商家就永远进不了设价的入口。
  * 顾客端展示价 = 最低定价组价格，勾选加料自动累加（02 商品详情实时同步）。
  */
 const draft = ref<GoodsDraft | null>(null);
 let goodsId = '';
+
+/** 组类型选择浮层：新建时 groupBeingTyped 为空，改类型时存的是目标组 id */
+const kindSheet = ref(false);
+const kindTarget = ref('');
+
+const KIND_OPTIONS: { value: SpecGroupKind; label: string; sub: string }[] = [
+  { value: 'price', label: '定价格（单选必选）', sub: '份量这类：每个选项单独定整价，顾客端展示价取最低' },
+  { value: 'plain', label: '不加价（单选必选）', sub: '辣度这类：只影响做法，不影响价格' },
+  { value: 'addon', label: '加价（可多选）', sub: '加料这类：每个选项一个 +￥，勾选后累加' },
+];
 
 onLoad((o) => {
   goodsId = (o && o.id) || '';
@@ -30,19 +44,26 @@ onShow(async () => {
 
 /** 定价组：选项价 = 基础价 + 加价；加价组：只展示 +￥ */
 function isPricing(group: SpecGroup): boolean {
-  return group.required && group.options.some((o) => o.priceDelta > 0);
+  return group.kind === 'price';
+}
+
+/** 不加价组用胶囊平铺，另外两种都要一行一个带价格框 */
+function hasPriceField(group: SpecGroup): boolean {
+  return group.kind !== 'plain';
 }
 
 function groupTag(group: SpecGroup): string {
-  if (group.multiple) return '可多选 · 加价';
-  return isPricing(group) ? '必选 · 定价格' : `${group.required ? '必选' : '可选'} · 不加价`;
+  if (group.kind === 'addon') return '可多选 · 加价';
+  return group.kind === 'price' ? '必选 · 定价格' : `${group.required ? '必选' : '可选'} · 不加价`;
+}
+
+function kindLabel(kind: SpecGroupKind): string {
+  return KIND_OPTIONS.find((k) => k.value === kind)?.label || '';
 }
 
 function optionPriceText(group: SpecGroup, priceDelta: number): string {
   if (!draft.value) return '';
-  return isPricing(group)
-    ? fen2yuan2(draft.value.price + priceDelta)
-    : fen2yuan2(priceDelta);
+  return isPricing(group) ? fen2yuan2(draft.value.price + priceDelta) : fen2yuan2(priceDelta);
 }
 
 function onEditPrice(group: SpecGroup, optionId: string): void {
@@ -100,9 +121,28 @@ function onRemoveGroup(groupId: string): void {
   });
 }
 
+/** 新增：先选类型再输组名——类型定了才知道选项要不要价格框 */
 function onAddGroup(): void {
+  kindTarget.value = '';
+  kindSheet.value = true;
+}
+
+/** 已有组改类型：建错了不用删掉重来 */
+function onChangeKind(group: SpecGroup): void {
+  kindTarget.value = group.id;
+  kindSheet.value = true;
+}
+
+function onPickKind(value: string): void {
+  const kind = value as SpecGroupKind;
+  kindSheet.value = false;
+  if (kindTarget.value) {
+    applyKind(kindTarget.value, kind);
+    kindTarget.value = '';
+    return;
+  }
   uni.showModal({
-    title: '新增规格组',
+    title: `新增「${kindLabel(kind)}」`,
     editable: true,
     placeholderText: '组名，如「份量」「加料」',
     confirmColor: '#FF4A17',
@@ -113,12 +153,27 @@ function onAddGroup(): void {
       draft.value.specGroups.push({
         id: `sg_${Date.now()}`,
         name,
-        multiple: false,
-        required: true,
+        kind,
+        ...SPEC_KIND_FLAGS[kind],
         options: [],
       });
     },
   });
+}
+
+function applyKind(groupId: string, kind: SpecGroupKind): void {
+  const group = draft.value?.specGroups.find((g) => g.id === groupId);
+  if (!group || group.kind === kind) return;
+  group.kind = kind;
+  group.multiple = SPEC_KIND_FLAGS[kind].multiple;
+  group.required = SPEC_KIND_FLAGS[kind].required;
+  if (kind === 'plain') {
+    // 不加价组不能留着差价，否则顾客端会莫名多收钱
+    group.options.forEach((o) => {
+      o.priceDelta = 0;
+    });
+    toast('已改为不加价，选项差价已清零');
+  }
 }
 
 async function onSave(): Promise<void> {
@@ -128,8 +183,9 @@ async function onSave(): Promise<void> {
     toast(`「${empty.name}」还没有选项`);
     return;
   }
-  await saveGoodsDraft(JSON.parse(JSON.stringify(draft.value)) as GoodsDraft);
-  toast('规格已保存', 'success');
+  const res = await saveGoodsDraft(JSON.parse(JSON.stringify(draft.value)) as GoodsDraft);
+  // 规格属于审核字段，改了要重新过审；审核期间顾客端仍是上一版
+  toast(res.auditState === 'reviewing' ? '已提交审核' : '规格已保存', 'success');
   back();
 }
 </script>
@@ -146,20 +202,23 @@ async function onSave(): Promise<void> {
         <view class="row--between">
           <view class="row se__group-head">
             <text class="se__group-name">{{ group.name }}</text>
-            <text class="se__group-tag" :class="{ 'se__group-tag--grey': group.multiple }">{{
-              groupTag(group)
-            }}</text>
+            <text
+              class="se__group-tag tap-sm"
+              :class="{ 'se__group-tag--grey': group.kind === 'plain' }"
+              @tap="onChangeKind(group)"
+              >{{ groupTag(group) }} ▾</text
+            >
           </view>
           <text class="se__group-del tap" @tap="onRemoveGroup(group.id)">删除组</text>
         </view>
 
         <!-- 带价选项：一行一个，右侧价格框 -->
-        <template v-if="isPricing(group) || group.multiple">
+        <template v-if="hasPriceField(group)">
           <view v-for="o in group.options" :key="o.id" class="se__row">
             <text class="se__drag">⠿</text>
             <text class="flex1 se__opt-name">{{ o.name }}</text>
             <view class="se__price tap" @tap="onEditPrice(group, o.id)">
-              <text class="se__price-sym">{{ group.multiple ? '+¥' : '¥' }}</text>
+              <text class="se__price-sym">{{ group.kind === 'addon' ? '+¥' : '¥' }}</text>
               <text class="se__price-num">{{ optionPriceText(group, o.priceDelta) }}</text>
             </view>
             <text class="se__del tap" @tap="onRemoveOption(group, o.id)">✕</text>
@@ -195,6 +254,15 @@ async function onSave(): Promise<void> {
       <view class="se__btn se__btn--ghost tap" @tap="onAddGroup">＋ 新增规格组</view>
       <view class="se__btn se__btn--primary tap" @tap="onSave">保存</view>
     </view>
+
+    <wf-picker-sheet
+      :show="kindSheet"
+      title="规格组类型"
+      :options="KIND_OPTIONS"
+      :value="kindTarget ? draft.specGroups.find((g) => g.id === kindTarget)?.kind || '' : ''"
+      @close="kindSheet = false"
+      @pick="onPickKind"
+    />
   </view>
 </template>
 

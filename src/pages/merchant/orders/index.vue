@@ -240,10 +240,15 @@ async function onPrint(id: string): Promise<void> {
             <text>{{ row.customerName }} {{ row.customerPhone }}</text>
             <text class="mo__customer-addr">{{ row.addressText }} · {{ row.distanceText }}</text>
           </view>
-          <text v-else-if="row.summaryText" class="mo__summary">{{ row.summaryText }}</text>
+          <view v-else class="mo__customer">
+            <text>{{ row.customerName }} {{ row.customerPhone }}</text>
+          </view>
 
-          <!-- 明细（待接单单据展开） -->
-          <view v-if="row.status === 'pending'" class="mo__items">
+          <!-- 菜品明细：每个 tab 都要能直接看到点了什么，不用点进详情 -->
+          <view
+            class="mo__items"
+            @tap="push(`/pages/merchant/order-detail/index?id=${row.id}`)"
+          >
             <view v-for="line in row.lineRows" :key="line.text" class="mo__item">
               <text class="flex1">{{ line.text }}</text>
               <text class="mo__item-qty">x{{ line.qty }}</text>
@@ -432,11 +437,6 @@ async function onPrint(id: string): Promise<void> {
   font-size: 24rpx;
   color: var(--c-text-2);
   line-height: 1.6;
-}
-
-.mo__summary {
-  font-size: 24rpx;
-  color: var(--c-text-2);
 }
 
 .mo__code {

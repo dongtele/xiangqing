@@ -1,5 +1,6 @@
 import * as db from './db';
 import { HOT_CATEGORY_ID } from './db';
+import { AUDITED_FIELDS } from '@/models';
 import { MOCK_LATENCY, PAY_FAIL_FIRST_ATTEMPT } from './config';
 import type {
   AddressFull,
@@ -25,6 +26,7 @@ import type {
   ExceptionOrder,
   ExceptionTab,
   Goods,
+  MerchantGoods,
   GoodsDraft,
   InvoiceTitle,
   MenuGroup,
@@ -60,7 +62,11 @@ import type {
  */
 
 /** 运行期可变副本，模拟服务端状态（下单、上下架等会改数据） */
-const state = {
+/**
+ * 假后端的可变状态。导出是为了让测例把审核倒计时拨到过去，
+ * 不用真的等 10 秒；页面一律走 `mockResolve`，不要直接读这里。
+ */
+export const state = {
   shop: { ...db.shop },
   orders: db.orders.map((o) => ({ ...o })),
   merchantOrders: db.merchantOrders.map((o) => ({ ...o })),
@@ -141,7 +147,25 @@ const state = {
     slots: db.onboardLicense.slots.map((x) => ({ ...x })),
   },
   auditState: 'reviewing' as AuditState,
-  goodsDrafts: {} as Record<string, GoodsDraft>,
+  /** 已驳回的示例新品带一份草稿，让「查看原因 → 修改 → 重新提交」当场能走通 */
+  goodsDrafts: {
+    g_new_1: {
+      id: 'g_new_1',
+      name: '秘制小龙虾（新品）',
+      categoryId: 'c3',
+      categoryName: '海鲜水产',
+      price: 8800,
+      stock: 20,
+      images: [''],
+      onSale: false,
+      specGroups: [],
+      auditState: 'rejected',
+      auditReason: '商品主图不清晰，请重新上传：需露出实物全貌，避免带文字水印。',
+      isNew: true,
+    },
+  } as Record<string, GoodsDraft>,
+  /** 商品审核队列：id → 出结果的时间戳；到点由读接口惰性结算，不用定时器 */
+  goodsReviewAt: {} as Record<string, number>,
   payAttempts: {} as Record<string, number>,
   orderSeq: 1025,
   /** 打印任务流水，仅用于演示「已发送到打印机」 */
@@ -150,6 +174,186 @@ const state = {
 
 function delay<T>(payload: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(payload), MOCK_LATENCY));
+}
+
+/**
+ * 91 历史订单 / 92 异常订单里的单子已经不在待办队列里了，
+ * 但列表行要能点进 62 订单详情，所以按同一套 MerchantOrder 结构现拼一份。
+ * 菜品明细来自各自数据里的 `lines`，不另存一份，避免两处数据对不上。
+ */
+function archivedOrder(id: string): MerchantOrder | null {
+  const history = state.historyOrders.find((o) => o.id === id);
+  if (history) {
+    return {
+      id: history.id,
+      seq: history.orderNo,
+      channel: history.channel,
+      status: 'done',
+      statusText: history.statusText,
+      customerName: history.customerName,
+      customerPhone: '138****0000',
+      addressText: history.channel === '外送' ? '科技园南区A座15层1501室' : undefined,
+      distanceEtaText: history.channel === '外送' ? '1.2 km · 已送达' : undefined,
+      pickupCode: history.channel === '自提' ? '8823' : undefined,
+      lines: history.lines,
+      count: history.lines.reduce((n, l) => n + l.qty, 0),
+      total: Math.round(Number(history.amountText.replace(/,/g, '')) * 100),
+      placedAtText: history.metaText,
+      expectText: history.statusText,
+      customerSeqText: '历史订单',
+    };
+  }
+  const tabs: ExceptionTab[] = ['cancel', 'timeout', 'delivery'];
+  for (const tab of tabs) {
+    const ex = state.exceptionOrders[tab].find((o) => o.id === id);
+    if (!ex) continue;
+    return {
+      id: ex.id,
+      seq: ex.orderNo,
+      channel: tab === 'delivery' ? '外送' : '自提',
+      status: 'aftersale',
+      statusText: ex.stageText,
+      customerName: '顾客',
+      customerPhone: '138****0000',
+      addressText: tab === 'delivery' ? '软件园二期 3 号楼 B 座 902' : undefined,
+      distanceEtaText: tab === 'delivery' ? '0.8 km · 配送异常' : undefined,
+      pickupCode: tab === 'delivery' ? undefined : '6H2P',
+      lines: ex.lines,
+      count: ex.lines.reduce((n, l) => n + l.qty, 0),
+      total: Math.round(Number(ex.amountText.replace(/,/g, '')) * 100),
+      placedAtText: ex.countdownText || ex.stageText,
+      expectText: ex.stageText,
+      customerSeqText: '异常订单',
+      remark: ex.reasonQuote ? `顾客申请取消：${ex.reasonQuote}` : undefined,
+    };
+  }
+  return null;
+}
+
+/* ---------------- 商品审核 ---------------- */
+
+/** 假平台的审核时长；接真实后端后这一段整体换成轮询审核接口 */
+const REVIEW_MS = 10_000;
+
+/** 由线上版本拼出可编辑草稿 */
+function buildDraft(id: string): GoodsDraft | null {
+  const goods = db.goodsList.find((g) => g.id === id);
+  const row = state.merchantGoods.find((g) => g.id === id);
+  if (!goods && !row) return null;
+  const categoryName = row
+    ? row.categoryName
+    : db.categories.find((c) => c.id === (goods ? goods.categoryId : ''))?.name || '';
+  return {
+    id,
+    name: goods ? goods.name : row ? row.name : '',
+    categoryId: goods
+      ? goods.categoryId
+      : db.categories.find((c) => c.name === categoryName)?.id || '',
+    categoryName,
+    price: goods ? goods.price : row ? row.price : 0,
+    stock: goods ? goods.stock : row ? row.stock : 0,
+    images: [goods ? goods.image : row ? row.image : ''],
+    onSale: row ? row.onSale : true,
+    specGroups: goods ? JSON.parse(JSON.stringify(goods.specGroups)) : [],
+    auditState: row ? row.auditState : 'approved',
+    auditReason: row ? row.auditReason : undefined,
+    isNew: !goods,
+  };
+}
+
+/**
+ * 只比审核字段：库存与上下架改了不该惊动审核。
+ * 基准取**线上版本**而不是上一份草稿——草稿是被页面直接改的同一个对象，拿它比永远比不出差异。
+ */
+function auditedChanged(id: string, next: GoodsDraft): boolean {
+  const live = buildDraft(id);
+  if (!live || live.isNew) return true;
+  return AUDITED_FIELDS.some(
+    (key) =>
+      JSON.stringify(live[key as keyof GoodsDraft]) !== JSON.stringify(next[key as keyof GoodsDraft])
+  );
+}
+
+/** 审核通过后才把草稿刷进线上版本（顾客端菜单 + 商家列表） */
+function applyDraftToLive(draft: GoodsDraft): void {
+  const priceFrom = draft.specGroups.some(
+    (sg) => sg.kind === 'price' && sg.options.some((o) => o.priceDelta > 0)
+  );
+  let live = db.goodsList.find((g) => g.id === draft.id);
+  if (!live) {
+    // 新品这时才对顾客端可见
+    live = {
+      id: draft.id,
+      categoryId: draft.categoryId,
+      name: draft.name,
+      desc: '',
+      image: draft.images[0] || '',
+      price: draft.price,
+      monthSold: 0,
+      praiseRate: 100,
+      stock: draft.stock,
+      onSale: draft.onSale,
+      specGroups: JSON.parse(JSON.stringify(draft.specGroups)),
+    };
+    db.goodsList.push(live);
+  } else {
+    live.name = draft.name;
+    live.categoryId = draft.categoryId;
+    live.price = draft.price;
+    live.stock = draft.stock;
+    live.image = draft.images[0] || live.image;
+    live.specGroups = JSON.parse(JSON.stringify(draft.specGroups));
+    live.onSale = draft.onSale;
+  }
+  const row = state.merchantGoods.find((g) => g.id === draft.id);
+  if (row) {
+    row.name = draft.name;
+    row.categoryName = draft.categoryName;
+    row.price = draft.price;
+    row.image = draft.images[0] || row.image;
+    row.priceFrom = priceFrom;
+    row.onSale = draft.onSale;
+  }
+}
+
+function refreshStockText(row: MerchantGoods): void {
+  if (row.auditState === 'reviewing') row.specCountText = '平台审核中';
+  else if (row.auditState === 'rejected') row.specCountText = '审核未通过';
+  else if (!row.onSale) row.specCountText = '已下架';
+  else if (row.stockLevel === 'low') row.specCountText = `库存偏低 ${row.stock}`;
+  else if (row.stockLevel === 'out') row.specCountText = '库存 0';
+  else row.specCountText = `库存 ${row.stock}`;
+}
+
+/**
+ * 到点结算审核。用「读的时候算」而不是定时器：mock 的请求处理器全是同步的，
+ * 引入 setTimeout 会让测例和页面都要等真实时间，也会在小程序后台空跑。
+ */
+function settleGoodsReviews(): void {
+  const now = Date.now();
+  Object.keys(state.goodsReviewAt).forEach((id) => {
+    if (now < state.goodsReviewAt[id]) return;
+    delete state.goodsReviewAt[id];
+    const draft = state.goodsDrafts[id];
+    const row = state.merchantGoods.find((g) => g.id === id);
+    if (!draft) return;
+    const hit = db.BANNED_WORDS.find((w) => draft.name.indexOf(w) >= 0);
+    if (hit) {
+      draft.auditState = 'rejected';
+      draft.auditReason = `商品名称含违禁词「${hit}」，请修改后重新提交。`;
+    } else {
+      draft.auditState = 'approved';
+      draft.auditReason = undefined;
+      draft.isNew = false;
+      applyDraftToLive(draft);
+    }
+    if (row) {
+      row.auditState = draft.auditState;
+      row.auditReason = draft.auditReason;
+      if (draft.auditState !== 'approved') row.onSale = false;
+      refreshStockText(row);
+    }
+  });
 }
 
 function menuGroups(): MenuGroup[] {
@@ -726,7 +930,7 @@ const routes: Record<string, (p: Payload) => unknown> = {
   }),
 
   'GET /merchant/order/detail': (p) => {
-    const order = state.merchantOrders.find((o) => o.id === p.id);
+    const order = state.merchantOrders.find((o) => o.id === p.id) || archivedOrder(String(p.id));
     if (!order) return null;
     return {
       order,
@@ -770,48 +974,80 @@ const routes: Record<string, (p: Payload) => unknown> = {
   /* ---------------- 商家端 · 商品与菜单 ---------------- */
 
   'GET /merchant/goods/detail': (p): GoodsDraft | null => {
+    settleGoodsReviews();
     const id = String(p.id || '');
     if (state.goodsDrafts[id]) return state.goodsDrafts[id];
-    const goods = db.goodsList.find((g) => g.id === id);
-    const row = state.merchantGoods.find((g) => g.id === id);
-    if (!goods && !row) return null;
+    const draft = buildDraft(id);
+    if (draft) state.goodsDrafts[id] = draft;
+    return draft;
+  },
+
+  /** 新建商品：先要一个 id，后续编辑与规格页都靠它取草稿 */
+  'POST /merchant/goods/create': (): GoodsDraft => {
     const draft: GoodsDraft = {
-      id,
-      name: goods ? goods.name : row ? row.name : '',
-      categoryName: row
-        ? row.categoryName
-        : db.categories.find((c) => c.id === (goods ? goods.categoryId : ''))?.name || '',
-      price: goods ? goods.price : row ? row.price : 0,
-      stock: goods ? goods.stock : row ? row.stock : 0,
-      images: [goods ? goods.image : row ? row.image : ''],
-      onSale: row ? row.onSale : true,
-      specGroups: goods ? JSON.parse(JSON.stringify(goods.specGroups)) : [],
+      id: `g_${Date.now()}`,
+      name: '',
+      categoryId: '',
+      categoryName: '',
+      price: 0,
+      stock: 0,
+      images: [''],
+      onSale: true,
+      specGroups: [],
+      auditState: 'approved',
+      isNew: true,
     };
-    state.goodsDrafts[id] = draft;
+    state.goodsDrafts[draft.id] = draft;
     return draft;
   },
 
   'POST /merchant/goods/save': (p) => {
     const draft = p as unknown as GoodsDraft;
+    const needsReview = draft.isNew || auditedChanged(draft.id, draft);
+
+    if (needsReview) {
+      draft.auditState = 'reviewing';
+      draft.auditReason = undefined;
+      state.goodsReviewAt[draft.id] = Date.now() + REVIEW_MS;
+    }
     state.goodsDrafts[draft.id] = draft;
-    // 写回顾客端菜单与商家商品列表，保证 01 / 02 / 10 立即同步
-    const goods = db.goodsList.find((g) => g.id === draft.id);
-    if (goods) {
-      goods.name = draft.name;
-      goods.price = draft.price;
-      goods.stock = draft.stock;
-      goods.specGroups = draft.specGroups;
-      goods.onSale = draft.onSale;
+
+    // 新品在通过审核前不进 goodsList，顾客端看不到；先在商家列表占位
+    let row = state.merchantGoods.find((g) => g.id === draft.id);
+    if (!row) {
+      row = {
+        id: draft.id,
+        name: draft.name,
+        image: draft.images[0] || '',
+        categoryName: draft.categoryName,
+        price: draft.price,
+        priceFrom: false,
+        stock: draft.stock,
+        specCountText: `库存 ${draft.stock}`,
+        onSale: false,
+        stockLevel: draft.stock === 0 ? 'out' : draft.stock <= 15 ? 'low' : 'normal',
+        auditState: 'reviewing',
+      };
+      state.merchantGoods.unshift(row);
     }
-    const row = state.merchantGoods.find((g) => g.id === draft.id);
-    if (row) {
-      row.name = draft.name;
-      row.price = draft.price;
-      row.stock = draft.stock;
-      row.onSale = draft.onSale;
-      row.priceFrom = draft.specGroups.some((sg) => sg.options.some((o) => o.priceDelta > 0));
+
+    // 库存与上下架不需要审核，立即生效
+    row.stock = draft.stock;
+    row.stockLevel = draft.stock === 0 ? 'out' : draft.stock <= 15 ? 'low' : 'normal';
+    const live = db.goodsList.find((g) => g.id === draft.id);
+    if (live) {
+      live.stock = draft.stock;
+      live.onSale = draft.onSale;
     }
-    return { ok: true };
+    // 审核未通过的商品不允许上架
+    row.onSale = draft.auditState === 'approved' ? draft.onSale : false;
+    row.auditState = draft.auditState;
+    row.auditReason = draft.auditReason;
+
+    // 审核字段只有通过后才写进线上版本，重审期间顾客端仍看上一版
+    if (!needsReview) applyDraftToLive(draft);
+    refreshStockText(row);
+    return { ok: true, auditState: draft.auditState };
   },
 
   'GET /merchant/option-lib': () => state.optionLib,
@@ -953,6 +1189,7 @@ const routes: Record<string, (p: Payload) => unknown> = {
   },
 
   'GET /merchant/goods': (p) => {
+    settleGoodsReviews();
     const name = p.categoryName as string | undefined;
     const list =
       !name || name === '全部'
@@ -968,19 +1205,18 @@ const routes: Record<string, (p: Payload) => unknown> = {
   },
 
   'POST /merchant/goods/onsale': (p) => {
-    const goods = state.merchantGoods.find((g) => g.id === p.id);
-    if (goods) {
-      goods.onSale = p.onSale as boolean;
-      if (!goods.onSale) {
-        goods.specCountText = '已下架';
-      } else if (goods.stockLevel === 'low') {
-        goods.specCountText = `库存偏低 ${goods.stock}`;
-      } else if (goods.stockLevel === 'out') {
-        goods.specCountText = '库存 0';
-      } else {
-        goods.specCountText = `库存 ${goods.stock}`;
-      }
+    const row = state.merchantGoods.find((g) => g.id === p.id);
+    if (!row) return { ok: true };
+    // 审核没过的商品不能上架
+    if (row.auditState !== 'approved' && p.onSale) {
+      return { ok: false, message: '商品审核通过后才能上架' };
     }
+    row.onSale = p.onSale as boolean;
+    const draft = state.goodsDrafts[row.id];
+    if (draft) draft.onSale = row.onSale;
+    const live = db.goodsList.find((g) => g.id === row.id);
+    if (live) live.onSale = row.onSale;
+    refreshStockText(row);
     return { ok: true };
   },
 

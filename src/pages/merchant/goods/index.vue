@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { onLoad, onShow } from '@dcloudio/uni-app';
+import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app';
 import { getMerchantGoods, setGoodsOnSale } from '@/services/api';
 import { chrome } from '@/utils/chrome';
 import { push, toast } from '@/utils/nav';
+import { startPoll } from '@/utils/poll';
 import type { MerchantGoods } from '@/models';
 
-/** 10 · 商品管理：分类筛选 + 上下架直达 + 库存预警 */
+/** 10 · 商品管理：分类筛选 + 上下架直达 + 库存预警 + 审核状态 */
 const headPad = ref(96);
 const categories = ref<string[]>([]);
 const activeCategory = ref('全部');
@@ -27,11 +28,31 @@ onShow(() => {
   load();
 });
 
+// 有商品在审核中就轮询等结果，全部出结果就停（与 05/06/09/53 同一套写法）
+let stopPoll: (() => void) | null = null;
+onHide(() => syncPoll(false));
+onUnload(() => syncPoll(false));
+
 async function load(): Promise<void> {
   const res = await getMerchantGoods(activeCategory.value);
   categories.value = res.categories;
   raw.value = res.list;
   loading.value = false;
+  syncPoll(true);
+}
+
+function syncPoll(alive: boolean): void {
+  const wanted = alive && raw.value.some((g) => g.auditState === 'reviewing');
+  if (wanted && !stopPoll) {
+    stopPoll = startPoll(async () => {
+      const res = await getMerchantGoods(activeCategory.value);
+      raw.value = res.list;
+      if (!res.list.some((g) => g.auditState === 'reviewing')) syncPoll(false);
+    }, 5000);
+  } else if (!wanted && stopPoll) {
+    stopPoll();
+    stopPoll = null;
+  }
 }
 
 function onSwitchCategory(name: string): void {
@@ -46,9 +67,22 @@ function onSearchInput(e: Event): void {
 }
 
 async function onToggleSale(id: string, on: boolean): Promise<void> {
-  await setGoodsOnSale(id, on);
-  toast(on ? '已上架' : '已下架');
+  const res = await setGoodsOnSale(id, on);
+  toast(res.ok ? (on ? '已上架' : '已下架') : res.message || '操作失败');
   load();
+}
+
+/** 驳回的商品可以直接看原因并改 */
+function onTapRejected(item: MerchantGoods): void {
+  uni.showModal({
+    title: '审核未通过',
+    content: item.auditReason || '请修改后重新提交',
+    confirmText: '去修改',
+    confirmColor: '#FF4A17',
+    success: (res) => {
+      if (res.confirm) push(`/pages/merchant/goods-edit/index?id=${item.id}`);
+    },
+  });
 }
 </script>
 
@@ -64,9 +98,10 @@ async function onToggleSale(id: string, on: boolean): Promise<void> {
           <view class="mg__pill mg__pill--grey tap" @tap="push('/pages/merchant/goods-bulk/index')"
             >批量</view
           >
+          <!-- 不带 id 就是新建，编辑页会先跟服务端要一个商品 id -->
           <view
             class="mg__pill mg__pill--primary tap"
-            @tap="push('/pages/merchant/goods-edit/index?id=g1')"
+            @tap="push('/pages/merchant/goods-edit/index')"
             >＋ 发布商品</view
           >
         </view>
@@ -136,8 +171,16 @@ async function onToggleSale(id: string, on: boolean): Promise<void> {
           </view>
 
           <view class="mg__right">
+            <!-- 审核态优先：没过审的商品不给上下架开关 -->
+            <text v-if="item.auditState === 'reviewing'" class="tag tag--warn">审核中</text>
             <view
-              v-if="item.stockLevel === 'out'"
+              v-else-if="item.auditState === 'rejected'"
+              class="tag tag--danger tap"
+              @tap="onTapRejected(item)"
+              >已驳回 ›</view
+            >
+            <view
+              v-else-if="item.stockLevel === 'out'"
               class="pill pill--outline-primary tap"
               @tap="push('/pages/merchant/stock/index')"
               >补货</view

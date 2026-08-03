@@ -194,6 +194,12 @@ async function main() {
     await page.goto(`${base}#${route}`, { waitUntil: 'networkidle' });
     await wait(500);
   };
+  /** 同路径重进时用它：整页 reload，拿到一个干净的页面实例 */
+  const goFresh = async (route) => {
+    await page.goto(`${base}#${route}`, { waitUntil: 'networkidle' });
+    await page.reload({ waitUntil: 'networkidle' });
+    await wait(700);
+  };
   /** 按 class 定位，避免正文里的同名文字抢到点击 */
   const tap = async (selector, options) => {
     await page.locator(selector, options).first().click();
@@ -281,6 +287,28 @@ async function main() {
   await go('/pages/customer/orders/index');
   await tap('.orders__seg-item', { hasText: '售后' });
   await shot('42-订单空状态');
+
+  /* ---------- 11 所属分类选择：盖在编辑商品上的半屏浮层 ---------- */
+
+  await go('/pages/merchant/goods-edit/index?id=g1');
+  await tap('.cell', { hasText: '所属分类' });
+  await shot('11-所属分类选择');
+  await tap('.ps__close');
+
+  /* ---------- 36 规格组类型：新建规格组时先选类型，决定选项要不要价格框 ---------- */
+
+  await go('/pages/merchant/spec-edit/index?id=g1');
+  await tap('.se__btn--ghost');
+  await shot('36-规格组类型');
+
+  /* ----------
+   * 11 发布商品：不带 id 进来是新建，字段都空着等填。
+   * 这里必须整页 reload —— 上面刚进过同路径的 goods-edit，
+   * uni-app H5 会把页面实例留在历史栈里，只改 hash 会把那份旧状态（连同浮层）原样搬回来。
+   * ---------- */
+
+  await goFresh('/pages/merchant/goods-edit/index');
+  await shot('11-发布商品-新建');
 
   /* ---------- 21 核销取餐码：输满 4 位才拉出订单预览 ---------- */
 
