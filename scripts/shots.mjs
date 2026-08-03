@@ -236,6 +236,11 @@ async function main() {
   await shot('31-订单备注');
   await tap('.rs__close');
 
+  // 03 的期望送达时间浮层：设计稿只画了入口，这里是补上的选择器
+  await tap('.co__row-label', { hasText: '立即送出' });
+  await shot('03-期望送达时间');
+  await tap('.ts__close');
+
   await tap('.co__pay');
   await shot('85-支付方式选择');
 

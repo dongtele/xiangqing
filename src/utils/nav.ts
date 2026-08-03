@@ -34,8 +34,3 @@ export function gotoRoleHome(role: Role): void {
     role === 'merchant' ? '/pages/merchant/dashboard/index' : '/pages/customer/menu/index'
   );
 }
-
-/** 指向后续步骤的入口：不做无声失效，明确告知所属屏号 */
-export function todo(screen: string, name: string): void {
-  toast(`${name}（${screen}）属后续步骤`);
-}

@@ -4,6 +4,7 @@ import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app';
 import { getDeliveryTrack } from '@/services/api';
 import { HAS_MAP } from '@/config';
 import { chrome } from '@/utils/chrome';
+import { startPoll } from '@/utils/poll';
 import { back, push, toast } from '@/utils/nav';
 import type { DeliveryTrack } from '@/models';
 
@@ -15,7 +16,7 @@ import type { DeliveryTrack } from '@/models';
 const backTop = ref(92);
 const track = ref<DeliveryTrack | null>(null);
 let orderId = '';
-let poll: ReturnType<typeof setInterval> | null = null;
+let stopPoll: (() => void) | null = null;
 
 /** 骑手轨迹：虚线折线，用 SVG data URI 画（小程序不支持内联 SVG 标签） */
 const routeBg = computed(() => {
@@ -73,16 +74,16 @@ onLoad((options) => {
 onShow(() => {
   load();
   // 追踪页开启 8s 轮询（交付文档 State Management：5–10s），离开页面必须停止
-  poll = setInterval(load, 8000);
+  stopPoll = startPoll(load, 8000);
 });
 
-onHide(stopPoll);
-onUnload(stopPoll);
+onHide(stop);
+onUnload(stop);
 
-function stopPoll(): void {
-  if (poll) {
-    clearInterval(poll);
-    poll = null;
+function stop(): void {
+  if (stopPoll) {
+    stopPoll();
+    stopPoll = null;
   }
 }
 

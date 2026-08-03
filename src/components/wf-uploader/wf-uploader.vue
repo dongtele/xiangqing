@@ -12,35 +12,35 @@ import type { UploadSlot } from '@/models';
  */
 withDefaults(
   defineProps<{
-    slot?: UploadSlot | null;
+    item?: UploadSlot | null;
     /** 高度，rpx */
     height?: number;
   }>(),
-  { slot: null, height: 220 }
+  { item: null, height: 220 }
 );
 
 const emit = defineEmits<{ (e: 'pick'): void }>();
 </script>
 
 <template>
-  <view v-if="slot" class="up">
-    <view v-if="slot.label" class="up__head">
-      <text class="up__label">{{ slot.label }}</text>
-      <text v-if="slot.required" class="up__req">*</text>
-      <text v-if="slot.ocrText" class="up__ok">✓ 识别成功</text>
+  <view v-if="item" class="up">
+    <view v-if="item.label" class="up__head">
+      <text class="up__label">{{ item.label }}</text>
+      <text v-if="item.required" class="up__req">*</text>
+      <text v-if="item.ocrText" class="up__ok">✓ 识别成功</text>
     </view>
 
     <view
       class="up__box tap"
-      :class="{ 'up__box--filled': !!slot.path }"
+      :class="{ 'up__box--filled': !!item.path }"
       :style="{ height: height + 'rpx' }"
       @tap="emit('pick')"
     >
-      <template v-if="slot.path">
+      <template v-if="item.path">
         <image
-          v-if="slot.path !== 'ocr' && slot.path !== 'uploaded'"
+          v-if="item.path !== 'ocr' && item.path !== 'uploaded'"
           class="up__img"
-          :src="slot.path"
+          :src="item.path"
           mode="aspectFill"
         />
         <view v-else class="up__filled">
@@ -50,14 +50,14 @@ const emit = defineEmits<{ (e: 'pick'): void }>();
       </template>
       <template v-else>
         <text class="up__plus">＋</text>
-        <text class="up__hint">{{ slot.hint }}</text>
+        <text class="up__hint">{{ item.hint }}</text>
       </template>
     </view>
 
-    <view v-if="slot.ocrText" class="up__ocr">
+    <view v-if="item.ocrText" class="up__ocr">
       <text class="up__ocr-label">已自动识别：</text>
-      <text class="up__ocr-text">{{ slot.ocrText }}</text>
-      <text class="up__ocr-hint">{{ slot.hint }}</text>
+      <text class="up__ocr-text">{{ item.ocrText }}</text>
+      <text class="up__ocr-hint">{{ item.hint }}</text>
     </view>
   </view>
 </template>

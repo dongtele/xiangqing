@@ -92,7 +92,7 @@ async function onNext(): Promise<void> {
           <wf-uploader
             v-for="s in data.slots"
             :key="s.key"
-            :slot="s"
+            :item="s"
             :height="180"
             @pick="onPick(s)"
           />

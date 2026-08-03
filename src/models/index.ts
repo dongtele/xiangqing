@@ -260,6 +260,15 @@ export interface CheckoutTrial {
   etaText: string;
 }
 
+/** 微信支付预下单参数，由后端下单接口返回，直接喂给 uni.requestPayment */
+export interface WechatPayParams {
+  timeStamp: string;
+  nonceStr: string;
+  package: string;
+  signType: 'MD5' | 'HMAC-SHA256' | 'RSA';
+  paySign: string;
+}
+
 export type PayMethodId = 'wechat' | 'balance' | 'friend';
 
 export interface PayMethod {

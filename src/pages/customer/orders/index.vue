@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { onLoad, onShow } from '@dcloudio/uni-app';
+import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app';
 import { getOrders } from '@/services/api';
 import { chrome } from '@/utils/chrome';
 import { fen2yuan } from '@/utils/money';
 import { push, relaunch } from '@/utils/nav';
+import { hasActiveOrder, startPoll } from '@/utils/poll';
 import type { CustomerOrderTab, Order } from '@/models';
 
 const TABS: { key: CustomerOrderTab; label: string }[] = [
@@ -19,6 +20,7 @@ const headPad = ref(96);
 const activeTab = ref<CustomerOrderTab>('all');
 const list = ref<Order[]>([]);
 const loading = ref(true);
+let stopPoll: (() => void) | null = null;
 
 const rows = computed(() =>
   list.value.map((o) => ({
@@ -38,10 +40,37 @@ onShow(() => {
   load();
 });
 
+onHide(stop);
+onUnload(stop);
+
 async function load(): Promise<void> {
   loading.value = true;
   list.value = await getOrders(activeTab.value);
   loading.value = false;
+  syncPoll();
+}
+
+/** 只有还有进行中的单才值得轮询，终态列表再拉也不会变 */
+function syncPoll(): void {
+  const active = hasActiveOrder(list.value.map((o) => o.status));
+  if (active && !stopPoll) {
+    stopPoll = startPoll(silentReload, 15000);
+  } else if (!active) {
+    stop();
+  }
+}
+
+/** 轮询刷新不打骨架屏，避免列表每 15 秒闪一次 */
+async function silentReload(): Promise<void> {
+  list.value = await getOrders(activeTab.value);
+  syncPoll();
+}
+
+function stop(): void {
+  if (stopPoll) {
+    stopPoll();
+    stopPoll = null;
+  }
 }
 
 function onSwitchTab(key: CustomerOrderTab): void {

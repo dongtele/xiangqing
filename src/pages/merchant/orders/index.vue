@@ -5,6 +5,7 @@ import {
   acceptOrder,
   finishOrder,
   getMerchantOrders,
+  getShopSettings,
   printReceipt,
   rejectOrder,
 } from '@/services/api';
@@ -12,6 +13,8 @@ import { chrome } from '@/utils/chrome';
 import { fen2yuan2 } from '@/utils/money';
 import { mmss } from '@/utils/time';
 import { push, toast } from '@/utils/nav';
+import { announceNewOrder } from '@/utils/notify';
+import { startPoll } from '@/utils/poll';
 import type { MerchantOrder, MerchantOrderTab } from '@/models';
 
 const TABS: { key: MerchantOrderTab; label: string }[] = [
@@ -39,8 +42,13 @@ const counts = ref<Record<MerchantOrderTab, number>>({
   aftersale: 0,
 });
 const loading = ref(true);
+/** 新单播报开关，来自 12 店铺中心的「新订单提醒」 */
+const alertOn = ref(true);
 
 let timer: ReturnType<typeof setInterval> | null = null;
+let stopPoll: (() => void) | null = null;
+/** 上一次看到的待接单数，用来判断「来新单了」 */
+let lastPending = -1;
 
 const rows = computed(() =>
   list.value.map((o) => ({
@@ -58,17 +66,46 @@ onLoad(() => {
   headPad.value = chrome().capsuleBottom + 16;
 });
 
-onShow(() => {
+onShow(async () => {
   load();
   startTick();
+  alertOn.value = (await getShopSettings()).newOrderAlert;
+  // 待接单数每 15 秒拉一次，新单到了要播报，商家不能靠盯屏幕
+  stopPoll = startPoll(checkNewOrders, 15000);
 });
 
-onHide(stopTick);
-onUnload(stopTick);
+onHide(stopAll);
+onUnload(stopAll);
+
+function stopAll(): void {
+  stopTick();
+  if (stopPoll) {
+    stopPoll();
+    stopPoll = null;
+  }
+}
+
+/** 只比对待接单数量，增加才播报；减少（接单/拒单）不响 */
+async function checkNewOrders(): Promise<void> {
+  const res = await getMerchantOrders(activeTab.value);
+  const pending = res.counts.pending;
+  if (lastPending >= 0 && pending > lastPending && alertOn.value) {
+    announceNewOrder(pending - lastPending);
+  }
+  lastPending = pending;
+  counts.value = res.counts;
+  if (activeTab.value === 'pending') {
+    list.value = res.list.map((o) => ({
+      ...o,
+      countdownText: o.countdown ? `剩 ${mmss(o.countdown)} 未接自动提醒` : undefined,
+    }));
+  }
+}
 
 async function load(): Promise<void> {
   const res = await getMerchantOrders(activeTab.value);
   counts.value = res.counts;
+  lastPending = res.counts.pending;
   list.value = res.list.map((o) => ({
     ...o,
     countdownText: o.countdown ? `剩 ${mmss(o.countdown)} 未接自动提醒` : undefined,

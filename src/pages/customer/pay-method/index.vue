@@ -5,7 +5,7 @@ import { getOrder } from '@/services/api';
 import { PAY_TIMEOUT_SECONDS } from '@/config';
 import { fen2yuan2 } from '@/utils/money';
 import { countdown, mmss } from '@/utils/time';
-import { push, toast, todo } from '@/utils/nav';
+import { push, toast } from '@/utils/nav';
 import type { Order, PayMethod, PayMethodId } from '@/models';
 
 const METHODS: PayMethod[] = [
@@ -75,6 +75,38 @@ onUnload(() => {
   if (stop) stop();
 });
 
+/**
+ * 找人代付。
+ * 设计稿只画了这一项支付方式，没画卡片本身与分享流程，
+ * 这里按平台能力补：小程序端唤起转发（卡片带订单号与金额），H5 端复制代付链接。
+ * 代付链接的真实生成属于后端，接入前用订单 id 拼一个可读的占位。
+ */
+function onAskFriend(): void {
+  if (!order.value) return;
+  const link = `https://weiweifang.example.com/pay/${order.value.id}`;
+
+  // #ifdef MP-WEIXIN
+  uni.showModal({
+    title: '找人代付',
+    content: '点击「分享」把代付卡片发给好友，好友付款后订单自动完成',
+    confirmText: '去分享',
+    confirmColor: '#FF4A17',
+    success: (res) => {
+      if (!res.confirm) return;
+      uni.showShareMenu({ withShareTicket: true });
+      toast('点击右上角「···」转发给好友');
+    },
+  });
+  // #endif
+
+  // #ifndef MP-WEIXIN
+  uni.setClipboardData({
+    data: link,
+    success: () => toast('代付链接已复制，发给好友即可'),
+  });
+  // #endif
+}
+
 function onConfirm(): void {
   if (expired.value) {
     toast('订单已超时取消');
@@ -82,7 +114,7 @@ function onConfirm(): void {
   }
   if (!order.value) return;
   if (selected.value === 'friend') {
-    todo('85', '找人代付分享卡片');
+    onAskFriend();
     return;
   }
   push(`/pages/customer/pay/index?id=${order.value.id}&method=${selected.value}`);

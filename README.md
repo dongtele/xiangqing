@@ -6,7 +6,7 @@
 
 **全稿 98 屏已全部实现。** 落地为 92 个页面路由 + 4 个半屏浮层组件，
 另有 2 屏并入已有页面（空状态 42 并入 05、卡券 39 与 17 合并）；共 16 个通用组件。
-`shots/` 下有 98 张逐屏截图，与设计稿一一对应。
+`shots/` 下有 99 张逐屏截图（98 屏 + 补的期望送达时间浮层），与设计稿一一对应。
 
 | 步骤 | 内容 | 屏号 | 状态 |
 |---|---|---|---|
@@ -30,6 +30,8 @@
 ```bash
 npm install
 npm run type-check          # vue-tsc --noEmit 全量类型检查
+npm run lint                # ESLint（flat config，格式交给 Prettier）
+npm test                    # vitest 单元测试
 npm run dev:mp-weixin       # 产出 dist/dev/mp-weixin，用微信开发者工具导入
 npm run build:mp-weixin     # 产出 dist/build/mp-weixin（上传用）
 npm run dev:h5 / build:h5   # H5，浏览器里就能走完整链路
@@ -96,7 +98,7 @@ src/
     │                                 # 资料消息 profile-edit(73) messages(37) message-detail(86)
     │                                 # 卡券会员 coupons(17+39) coupon-center(79) points(80) points-mall(81)
     │                                 # 设置账号 settings(44) account(74) notify-settings(75) about(78)
-    └── merchant/                     # 分包（subPackages）。dashboard(08) orders(09) goods(10) shop(12)
+    ├── merchant/                     # 分包（subPackages）。dashboard(08) orders(09) goods(10) shop(12)
                                       # 履约 order-detail(62) print(51) devices(97) refund-review(48)
                                       #      verify(21) verify-log(96) order-history(91) order-exception(92)
                                       #      messages(45)
@@ -163,6 +165,15 @@ scripts/shots.mjs                     # H5 逐屏截图（不参与小程序构�
 
 量到的体积：**主包 1.5M / 商家分包 844K / 入驻分包 124K**，三者都在 2MB 上限内。
 
+**轮询按需起、离开就停。** `utils/poll.ts` 收口了轮询：`05 我的订单`、`06 订单详情`
+只在**还有进行中的单**时才起 15 秒轮询，终态立刻停；`53 配送追踪` 8 秒；
+`09 商家订单` 15 秒比对待接单数，增加时才播报新单（受 12 的「新订单提醒」开关控制）。
+所有页面都在 `onHide` / `onUnload` 停表——小程序 hide 之后定时器不会自动停，后台空跑白耗电。
+
+**订阅消息与新单播报都做了降级。** `utils/notify.ts` 用 `#ifdef MP-WEIXIN` 隔开平台能力：
+下单前申请订阅消息授权，**用户拒绝不阻断下单**且同会话只问一次；新单播报在没有音频资源时
+降级为震动 + toast，不会因为缺 mp3 就静默失败让商家漏单。
+
 **mock 后端可一键切换。** `services/mock/config.ts` 里 `USE_MOCK = true` 时，`request()` 走本地路由表；
 接真实后端只需把它置 false 并填 `BASE_URL`，`api.ts` 与页面代码不用改。
 `PAY_FAIL_FIRST_ATTEMPT = true` 是演示开关：首次支付故意失败一次，用来走通
@@ -192,9 +203,13 @@ scripts/shots.mjs                     # H5 逐屏截图（不参与小程序构�
 7. **20 申请售后与 56 选择退款商品的先后按设计稿走。** 交付文档的顺序是 20 → 56，
    但 56 的主按钮写的是「下一步 · 填写原因」，说明 56 在 20 之前。这里取两者的交集：
    `订单详情(06) → 20`，20 里的「退款商品」行点开进 56 选商品，选完回到 20 填原因提交。
-8. **两处页内功能保留 toast 占位。** `03` 的「期望送达时间选择」与 `85` 的「找人代付分享卡片」
-   在设计稿里不是独立屏，也没有画出交互细节，接后端后再补，目前 toast 说明。
-   其余入口全部是真实跳转，没有无声失效的死链。
+8. **03 的期望送达时间做成半屏浮层。** 设计稿只画了「立即送出 / 预计 12:30 送达」这一行入口，
+   没画选择器本身。按 15/31/59 同样的处理方式补了 `wf-time-sheet`：从下一个半点起按半小时分 8 档，
+   选中写回 `checkout` store 并带进订单备注。**交互是补的，不是设计稿原有的。**
+9. **85 的找人代付按平台能力分流。** 设计稿只列了这一项支付方式，没画代付卡片与分享流程。
+   小程序端唤起转发（`uni.showShareMenu` + 引导用右上角转发），H5 端复制代付链接；
+   代付链接的真实生成属于后端，接入前用订单 id 拼了个可读占位。
+10. **全部入口都是真实跳转**，仓里已经没有 `todo()` 占位，`utils/nav.ts` 里那个辅助函数也一并删了。
 
 ## 98 屏 → 实现对照
 
@@ -222,12 +237,37 @@ scripts/shots.mjs                     # H5 逐屏截图（不参与小程序构�
 | **42** | 05 我的订单的空状态（「售后」Tab 无数据时） |
 | **39** | 与 17 合并为 `pages/customer/coupons/index` |
 
+## 质量保障
+
+**ESLint + Prettier。** `eslint.config.js` 是 flat config，开 `vue/recommended` 与
+`typescript-eslint/recommended`；格式类规则全部交给 Prettier（`eslint-config-prettier` 关冲突项），
+未使用变量交给 `tsconfig` 的 `noUnusedLocals`，避免两处重复告警。
+
+**单元测试（vitest）。** `vitest.config.ts` 与 `vite.config.ts` 分开——后者挂着 `uni()` 插件会去
+编译所有页面，单测跑不动也不需要。52 个测例分两层：
+
+| 文件 | 覆盖 |
+|---|---|
+| `test/money.spec.ts` / `test/time.spec.ts` | 金额换算与倒计时（含负数钳制、停止函数） |
+| `test/cart.spec.ts` | 同规格合并、规格顺序无关、减到 0 移除、切店铺清空、快照脱离响应式 |
+| `test/checkout-trial.spec.ts` | **结算与退款的金额规则**：满减命中/未命中、自提免运费、部分退款按比例摊优惠；并锁死主链路实付 **6400 分** |
+| `test/mock-rules.spec.ts` | 提现下限与余额上限、券面额须小于门槛、核销码校验、入驻必传项、异常单处理、兑换码 |
+
+后两个文件测的是 `services/mock` 里的业务规则，**当接口契约用**——接真实后端后返回对不上，
+说明两边对优惠或校验的理解不一致。`mock` 的 state 是模块级可变对象，所以每个测例前
+`vi.resetModules()` + 动态 import 拿干净副本，不靠测例顺序。
+
 ## 待补齐的工程项
 
-- 真实接口联调（`USE_MOCK=false` + `BASE_URL`）与 `uni.requestPayment` 接入
-- 商品图 / 店铺头图接 CDN（1:1 与 16:9，WebP + 懒加载）
-- 地图相关页面（52 / 53 / 70 / 83）接腾讯位置服务：页面已按真实接入写好（`<map>` 组件 + 真实经纬度
-  数据结构），只差 `src/config.ts` 里的 `MAP_KEY`。填上 key 即渲染真实地图，留空则降级为设计稿那套
-  CSS 示意底图（H5 也能跑通、能截图），页面代码不用改
-- 进行中订单轮询与订阅消息、商家新单语音播报
-- 单元测试与 ESLint 配置
+以下三项**代码侧都已就位，缺的是参数不是代码**：
+
+- **真实后端**：`services/mock/config.ts` 的 `USE_MOCK` 置 false 并填 `BASE_URL` 即可，
+  `api.ts` 与页面代码都不用改。支付已写好双分支：mock 时用服务端返回的结果，
+  接真实后端时用 `payOrder()` 返回的 `payParams` 调 `uni.requestPayment`，取消与失败都落到 43 失败态。
+- **商品图 / 店铺头图接 CDN**（1:1 与 16:9，WebP + 懒加载）：`services/mock/images.ts` 是唯一开关点。
+- **地图**（52 / 53 / 70 / 83）：填 `src/config.ts` 的 `MAP_KEY` 即渲染真实地图，
+  留空则降级为设计稿那套 CSS 示意底图（H5 也能跑通、能截图）。
+
+另需业务方提供的：
+- 微信订阅消息模板 id（`utils/notify.ts` 的 `ORDER_TEMPLATE_IDS` 目前是占位）
+- 商家新单播报的音频文件（`utils/notify.ts` 里 `src` 为空时自动降级为震动 + toast，不会静默漏单）

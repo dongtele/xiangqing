@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { onLoad, onUnload } from '@dcloudio/uni-app';
 import { getOrder, payOrder } from '@/services/api';
+import type { WechatPayParams } from '@/models';
 import { PAY_TIMEOUT_SECONDS } from '@/config';
 import { useCartStore } from '@/stores/cart';
 import { fen2yuan2 } from '@/utils/money';
@@ -46,19 +47,52 @@ onUnload(() => {
   if (stop) stop();
 });
 
-/** 真机上此处调用 uni.requestPayment；mock 走服务端支付结果 */
+/**
+ * 发起支付。
+ * mock 时后端直接给支付结果（`PAY_FAIL_FIRST_ATTEMPT` 会让首次故意失败，用来演示失败态）；
+ * 接真实后端时后端返回预下单参数，这里用 `uni.requestPayment` 唤起微信收银台，
+ * 用户取消与支付失败都落到本页的失败态，不误报成功。
+ */
 async function invokePay(): Promise<void> {
   if (!order.value || paying.value) return;
   paying.value = true;
   failed.value = false;
+
   const res = await payOrder(order.value.id, method.value);
-  paying.value = false;
-  if (res.success) {
-    cart.clear();
-    relaunch(`/pages/customer/pay-result/index?id=${order.value.id}`);
-    return;
+
+  if (res.success && res.payParams) {
+    const paid = await requestWechatPayment(res.payParams);
+    paying.value = false;
+    if (!paid) {
+      failed.value = true;
+      return;
+    }
+  } else {
+    paying.value = false;
+    if (!res.success) {
+      failed.value = true;
+      return;
+    }
   }
-  failed.value = true;
+
+  cart.clear();
+  relaunch(`/pages/customer/pay-result/index?id=${order.value.id}`);
+}
+
+/** 唤起微信收银台；取消 / 失败都返回 false */
+function requestWechatPayment(params: WechatPayParams): Promise<boolean> {
+  return new Promise((resolve) => {
+    uni.requestPayment({
+      provider: 'wxpay',
+      timeStamp: params.timeStamp,
+      nonceStr: params.nonceStr,
+      package: params.package,
+      signType: params.signType,
+      paySign: params.paySign,
+      success: () => resolve(true),
+      fail: () => resolve(false),
+    });
+  });
 }
 
 function onAbandon(): void {

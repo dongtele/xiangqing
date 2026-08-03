@@ -5,7 +5,8 @@ import { createOrder, getAddresses, getShop, trialCheckout } from '@/services/ap
 import { useCartStore } from '@/stores/cart';
 import { useCheckoutStore } from '@/stores/checkout';
 import { fen2yuan } from '@/utils/money';
-import { back, push, toast, todo } from '@/utils/nav';
+import { back, push, toast } from '@/utils/nav';
+import { requestOrderSubscribe } from '@/utils/notify';
 import type { AddressFull, CheckoutTrial, DeliveryType, Shop } from '@/models';
 
 /**
@@ -21,6 +22,7 @@ const deliveryType = ref<DeliveryType>('delivery');
 const submitting = ref(false);
 const addressSheet = ref(false);
 const remarkSheet = ref(false);
+const timeSheet = ref(false);
 
 const address = computed<AddressFull | null>(() => checkout.address);
 
@@ -74,12 +76,25 @@ function onConfirmRemark(payload: { remark: string; tableware: number }): void {
   remarkSheet.value = false;
 }
 
+function onPickTime(value: string): void {
+  checkout.setDeliveryTime(value);
+  timeSheet.value = false;
+}
+
 /** 提交订单 → 支付方式选择（85） */
 async function onSubmit(): Promise<void> {
   if (submitting.value || !trial.value) return;
   submitting.value = true;
   try {
-    const remark = [cart.remark, `餐具 ${checkout.tableware} 份`].filter(Boolean).join('，');
+    // 先申请订阅消息授权：拒绝也照常下单，只是收不到状态推送
+    await requestOrderSubscribe();
+    const remark = [
+      cart.remark,
+      checkout.deliveryTime ? `期望${checkout.deliveryTime}送达` : '',
+      `餐具 ${checkout.tableware} 份`,
+    ]
+      .filter(Boolean)
+      .join('，');
     const { orderId } = await createOrder(cart.snapshot(), deliveryType.value, remark);
     push(`/pages/customer/pay-method/index?id=${orderId}`);
   } finally {
@@ -138,11 +153,13 @@ async function onSubmit(): Promise<void> {
           <text class="chevron">›</text>
         </view>
         <view class="hairline" />
-        <view class="row--between tap" @tap="todo('03', '期望送达时间选择')">
+        <view class="row--between tap" @tap="timeSheet = true">
           <text class="co__row-label">{{
-            deliveryType === 'delivery' ? '立即送出' : '尽快取餐'
+            checkout.deliveryTime || (deliveryType === 'delivery' ? '立即送出' : '尽快取餐')
           }}</text>
-          <text class="co__row-primary">{{ trial.etaText }} ›</text>
+          <text class="co__row-primary">{{
+            checkout.deliveryTime ? '已指定时段' : trial.etaText
+          }} ›</text>
         </view>
       </view>
 
@@ -214,6 +231,16 @@ async function onSubmit(): Promise<void> {
       :tableware="checkout.tableware"
       @close="remarkSheet = false"
       @confirm="onConfirmRemark"
+    />
+
+    <!-- 期望送达时间：与 15 / 31 同样盖在本页上的半屏浮层 -->
+    <wf-time-sheet
+      :show="timeSheet"
+      :value="checkout.deliveryTime"
+      :delivery-type="deliveryType"
+      :eta-text="trial ? trial.etaText : ''"
+      @close="timeSheet = false"
+      @pick="onPickTime"
     />
 
     <!-- 底部合计 + 支付 -->

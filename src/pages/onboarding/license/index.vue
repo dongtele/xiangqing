@@ -59,7 +59,7 @@ async function onSubmit(): Promise<void> {
 
     <scroll-view class="ol__body" scroll-y>
       <view v-for="s in singleSlots" :key="s.key" class="card">
-        <wf-uploader :slot="s" :height="220" @pick="onPick(s)" />
+        <wf-uploader :item="s" :height="220" @pick="onPick(s)" />
       </view>
 
       <view v-if="idSlots.length" class="card">
@@ -71,7 +71,7 @@ async function onSubmit(): Promise<void> {
           <wf-uploader
             v-for="s in idSlots"
             :key="s.key"
-            :slot="s"
+            :item="s"
             :height="180"
             @pick="onPick(s)"
           />

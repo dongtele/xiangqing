@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { onLoad, onShow } from '@dcloudio/uni-app';
+import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app';
 import { getOrder } from '@/services/api';
 import { chrome } from '@/utils/chrome';
 import { fen2yuan } from '@/utils/money';
 import { push, toast } from '@/utils/nav';
+import { hasActiveOrder, startPoll } from '@/utils/poll';
 import type { Order } from '@/models';
 
 /** 06 · 订单详情：状态时间轴、骑手、商品、金额、操作 */
 const headPad = ref(100);
 const order = ref<Order | null>(null);
 let orderId = '';
+let stopPoll: (() => void) | null = null;
 
 const goods = computed(() =>
   order.value ? order.value.items.map((i) => ({ ...i, amountText: fen2yuan(i.amount) })) : []
@@ -25,14 +27,34 @@ onLoad((options) => {
   headPad.value = chrome().capsuleBottom + 20;
 });
 
-onShow(async () => {
+onShow(() => {
+  load(true);
+});
+
+onHide(stop);
+onUnload(stop);
+
+/** 进行中的单每 15 秒刷一次状态；终态就停，不在后台空跑 */
+async function load(first = false): Promise<void> {
   const detail = await getOrder(orderId);
   if (!detail) {
-    toast('订单不存在');
+    if (first) toast('订单不存在');
     return;
   }
   order.value = detail;
-});
+  if (hasActiveOrder([detail.status])) {
+    if (!stopPoll) stopPoll = startPoll(() => load(), 15000);
+  } else {
+    stop();
+  }
+}
+
+function stop(): void {
+  if (stopPoll) {
+    stopPoll();
+    stopPoll = null;
+  }
+}
 
 function onCopyNo(): void {
   if (!order.value) return;

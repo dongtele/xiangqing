@@ -1,5 +1,6 @@
 import { request } from './request';
 import type {
+  WechatPayParams,
   AboutInfo,
   AccountSecurity,
   AddressFull,
@@ -186,10 +187,15 @@ export const createOrder = (
     { method: 'POST', loading: true }
   );
 
+/**
+ * 下单支付。
+ * mock 时服务端直接返回支付结果；接真实后端时后端下预支付单，
+ * 返回 `payParams` 交给 `uni.requestPayment` 唤起微信收银台。
+ */
 export const payOrder = (
   orderId: string,
   method: string
-): Promise<{ success: boolean; message?: string }> =>
+): Promise<{ success: boolean; message?: string; payParams?: WechatPayParams }> =>
   request('/order/pay', { orderId, method }, { method: 'POST' });
 
 /* ---------------- 顾客端 · 订单 ---------------- */
