@@ -91,7 +91,7 @@ function onLogout(): void {
   padding: 20rpx 32rpx 0;
 }
 
-.st__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

@@ -90,7 +90,7 @@ function onLicense(key: string): void {
   padding: 20rpx 32rpx 0;
 }
 
-.ab__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

@@ -170,7 +170,7 @@ async function onSubmit(): Promise<void> {
   padding: 20rpx 32rpx 0;
 }
 
-.iv__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

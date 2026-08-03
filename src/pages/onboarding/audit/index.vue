@@ -98,7 +98,7 @@ function onWithdraw(): void {
   padding: 20rpx 32rpx 0;
 }
 
-.oa__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

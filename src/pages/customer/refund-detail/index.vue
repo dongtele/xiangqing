@@ -116,7 +116,7 @@ function onCancel(): void {
   padding: 20rpx 32rpx 0;
 }
 
-.rd__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

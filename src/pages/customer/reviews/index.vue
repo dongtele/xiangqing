@@ -114,7 +114,7 @@ function stars(n: number): string {
   padding: 20rpx 32rpx 0;
 }
 
-.rv__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

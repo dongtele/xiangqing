@@ -106,7 +106,7 @@ async function onToggle(id: string, on: boolean): Promise<void> {
   padding: 20rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
 }
 
-.mk__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

@@ -193,7 +193,7 @@ function onLogout(): void {
   padding: 20rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
 }
 
-.pe__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

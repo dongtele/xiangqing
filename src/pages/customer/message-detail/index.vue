@@ -103,7 +103,7 @@ function onAction(key: string): void {
   padding: 20rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
 }
 
-.md__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

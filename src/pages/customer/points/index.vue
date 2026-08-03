@@ -129,7 +129,7 @@ function onRights(): void {
   padding: 20rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
 }
 
-.pt__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

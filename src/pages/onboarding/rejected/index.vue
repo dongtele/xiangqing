@@ -76,7 +76,7 @@ async function onResubmit(): Promise<void> {
   padding: 20rpx 32rpx 0;
 }
 
-.or__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

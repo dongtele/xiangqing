@@ -275,7 +275,7 @@ async function onSubmit(): Promise<void> {
   padding: 20rpx 32rpx 0;
 }
 
-.co__body > .card,
+.card,
 .co__seg {
   margin-bottom: 24rpx;
 }

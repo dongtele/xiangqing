@@ -227,7 +227,7 @@ async function onSave(): Promise<void> {
   padding: 28rpx 32rpx 0;
 }
 
-.se__body > .card {
+.card {
   margin-bottom: 24rpx;
 }
 

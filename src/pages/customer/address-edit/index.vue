@@ -187,7 +187,7 @@ function onRemove(): void {
   padding: 20rpx 32rpx 0;
 }
 
-.ae__body > .card {
+.card {
   margin-bottom: 24rpx;
 }
 

@@ -326,7 +326,7 @@ function onAftersale(): void {
   margin-top: -36rpx;
 }
 
-.od__body > .card {
+.card {
   margin-bottom: 24rpx;
 }
 

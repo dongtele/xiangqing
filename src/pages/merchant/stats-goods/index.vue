@@ -102,7 +102,7 @@ function onRange(key: RankRange): void {
   padding: 20rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
 }
 
-.gr__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

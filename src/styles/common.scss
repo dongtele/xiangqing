@@ -59,6 +59,14 @@ textarea {
 }
 
 /* ---------- 卡片 / 列表 ---------- */
+
+/* 卡片本身不带外边距，块间距由使用方给。
+ *
+ * 注意：块间距要挂在块自身（`.card { margin-bottom: 20rpx }` 写进页面的 scoped 样式即可，
+ * 编译后是 `.card[data-v-xxx]`，只作用于本页），不要写成 `.x__body > .card`。
+ * scroll-view 在 H5 与小程序都会在内部再包一层内容容器
+ * （H5 是 uni-scroll-view > div.uni-scroll-view > div.uni-scroll-view-content），
+ * 类名挂在最外层，子选择器跨不过这层包裹，规则会整条失效——曾导致 45 个页面的卡片全部贴在一起。 */
 .card {
   background: var(--c-card);
   border-radius: var(--r-card);

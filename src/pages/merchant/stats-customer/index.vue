@@ -72,7 +72,7 @@ function onSendCoupon(name: string): void {
   padding: 20rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
 }
 
-.ca__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

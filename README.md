@@ -153,6 +153,13 @@ scripts/shots.mjs                     # H5 逐屏截图（不参与小程序构�
 **样式尺寸用 rpx。** 设计稿 375px 画框，换算关系是 1 设计 px = 2rpx，
 所有 12.5px / 13.5px 这类半像素字号折算后都是整数 rpx。
 
+**块间距挂在块自身，不跨 `scroll-view` 写子选择器。** `scroll-view` 在 H5 与小程序端都会在
+自身与插槽内容之间再插一层容器（H5 是 `uni-scroll-view > div.uni-scroll-view >
+div.uni-scroll-view-content`），类名挂在最外层，所以 `.x__body > .card { margin-bottom: 20rpx }`
+这种写法**一条都匹配不上**——规则照样编进产物，但选不中任何元素，肉眼只看得出「卡片全贴在一起」。
+正确写法是把间距写在块自身：页面 scoped 样式里直接写 `.card { margin-bottom: 20rpx }`
+（编译后是 `.card[data-v-xxx]`，只作用于本页）。`test/styles.spec.ts` 会扫描全仓把这类写法挡回去。
+
 **H5 与小程序双端可跑。** 页面不使用只有微信端才有的能力：`13` 的
 `<button open-type="getPhoneNumber">` 用 `#ifdef MP-WEIXIN` 包裹，非微信端走同一个 `login()`，
 所以 H5 里能完整走通下单链路（也是截图验收的基础）。
@@ -244,7 +251,7 @@ scripts/shots.mjs                     # H5 逐屏截图（不参与小程序构�
 未使用变量交给 `tsconfig` 的 `noUnusedLocals`，避免两处重复告警。
 
 **单元测试（vitest）。** `vitest.config.ts` 与 `vite.config.ts` 分开——后者挂着 `uni()` 插件会去
-编译所有页面，单测跑不动也不需要。52 个测例分两层：
+编译所有页面，单测跑不动也不需要。53 个测例分三层：
 
 | 文件 | 覆盖 |
 |---|---|
@@ -252,8 +259,9 @@ scripts/shots.mjs                     # H5 逐屏截图（不参与小程序构�
 | `test/cart.spec.ts` | 同规格合并、规格顺序无关、减到 0 移除、切店铺清空、快照脱离响应式 |
 | `test/checkout-trial.spec.ts` | **结算与退款的金额规则**：满减命中/未命中、自提免运费、部分退款按比例摊优惠；并锁死主链路实付 **6400 分** |
 | `test/mock-rules.spec.ts` | 提现下限与余额上限、券面额须小于门槛、核销码校验、入驻必传项、异常单处理、兑换码 |
+| `test/styles.spec.ts` | 扫描全仓，禁止跨 `scroll-view` / `swiper` 这类会插包裹层的内置组件写 `>` 子选择器（见「关键实现决策」里的块间距一条） |
 
-后两个文件测的是 `services/mock` 里的业务规则，**当接口契约用**——接真实后端后返回对不上，
+`checkout-trial` 与 `mock-rules` 测的是 `services/mock` 里的业务规则，**当接口契约用**——接真实后端后返回对不上，
 说明两边对优惠或校验的理解不一致。`mock` 的 state 是模块级可变对象，所以每个测例前
 `vi.resetModules()` + 动态 import 拿干净副本，不靠测例顺序。
 

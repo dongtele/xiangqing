@@ -129,7 +129,7 @@ async function onNext(): Promise<void> {
   padding: 0 32rpx;
 }
 
-.oa__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

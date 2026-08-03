@@ -112,7 +112,7 @@ async function onSubmit(): Promise<void> {
   padding: 0 32rpx;
 }
 
-.ol__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

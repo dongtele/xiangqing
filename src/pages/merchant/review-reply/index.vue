@@ -136,7 +136,7 @@ async function onAppeal(): Promise<void> {
   padding: 20rpx 32rpx 0;
 }
 
-.rr__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

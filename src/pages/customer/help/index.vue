@@ -84,7 +84,7 @@ function toggle(id: string): void {
   padding: 20rpx 32rpx 0;
 }
 
-.hc__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

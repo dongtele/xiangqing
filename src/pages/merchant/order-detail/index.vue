@@ -247,7 +247,7 @@ async function print(): Promise<void> {
   padding: 20rpx 32rpx 0;
 }
 
-.mod__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

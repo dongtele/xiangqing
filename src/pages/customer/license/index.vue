@@ -72,7 +72,7 @@ function onPreview(image: string): void {
   padding: 20rpx 32rpx 0;
 }
 
-.lc__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

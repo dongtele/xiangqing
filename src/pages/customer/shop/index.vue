@@ -151,7 +151,7 @@ function onCall(): void {
   margin-top: -68rpx;
 }
 
-.sh__body > .card {
+.card {
   margin-bottom: 24rpx;
 }
 

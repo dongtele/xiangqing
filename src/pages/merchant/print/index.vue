@@ -239,7 +239,7 @@ async function onReprint(): Promise<void> {
   padding: 20rpx 32rpx 0;
 }
 
-.pt__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 

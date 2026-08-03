@@ -81,7 +81,7 @@ function onNewGroup(): void {
   padding: 20rpx 32rpx 0;
 }
 
-.ol__body > .card {
+.card {
   margin-bottom: 20rpx;
 }
 
