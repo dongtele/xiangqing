@@ -1,0 +1,1597 @@
+/**
+ * 领域模型
+ * 约定：所有金额字段一律为「分」（整数），展示时用 utils/money 转换。
+ * 当前覆盖交付文档「实现建议顺序」第 1–2 步所需的实体；第 3 步起按需扩充。
+ */
+
+export type Role = 'customer' | 'merchant';
+
+export interface UserProfile {
+  openid: string;
+  nickname: string;
+  avatar: string;
+  /** 掩码手机号，如 138****8000 */
+  phoneMask: string;
+  /** 是否已认证商家，决定「我的」页是否展示商家管理入口 */
+  isMerchant: boolean;
+}
+
+/* ---------------- 店铺 / 商品 ---------------- */
+
+export interface Shop {
+  id: string;
+  name: string;
+  logo: string;
+  score: number;
+  monthSoldText: string;
+  etaText: string;
+  distanceText: string;
+  /** 首页公告 / 满减提示 */
+  promoTag: string;
+  promoText: string;
+  open: boolean;
+  businessHours: string;
+  deliveryText: string;
+  activityText: string;
+  certified: boolean;
+  staffCount: number;
+  newOrderAlert: boolean;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+}
+
+export interface SpecOption {
+  id: string;
+  name: string;
+  /** 定价档的绝对价，分（`kind === 'price'` 时用；它直接决定商品展示价） */
+  price?: number;
+  /** 加价档的 +￥，分（`kind === 'addon'` 时用；不加价组恒为 0） */
+  priceDelta: number;
+  /** 该档独立库存；`undefined` = 不单独管控，走商品总库存 */
+  stock?: number;
+  soldOut?: boolean;
+}
+
+/**
+ * 规格组的三种类型，对应设计稿 36 / 99「定价格 / 不加价 / 加价多选」。
+ *
+ * 必须显式声明，不能从 `priceDelta` 反推：新建的组还没有选项，
+ * 反推的结果永远是「不加价」，商家就再也进不了设价的入口了。
+ * - `price` 份量这类定价组：选项自带绝对价 `option.price`，顾客端展示价取组内最低
+ * - `plain` 辣度这类不加价组：只影响做法，`priceDelta` 恒为 0
+ * - `addon` 加料这类加价组：可多选，`priceDelta` 就是 +￥
+ *
+ * 交付文档 99 用 `required + multiple + affectsPrice` 三个布尔表达同一件事，
+ * 这里用一个 `kind` 收口（三个布尔由 `SPEC_KIND_FLAGS` 派生），避免三处各写各的写歪。
+ */
+export type SpecGroupKind = 'price' | 'plain' | 'addon';
+
+export interface SpecGroup {
+  id: string;
+  name: string;
+  kind: SpecGroupKind;
+  /** 可多选（加料）/ 单选（份量、辣度）；由 kind 决定，留着给顾客端 02 与购物车用 */
+  multiple: boolean;
+  required: boolean;
+  /** 该组是否参与定价；由 kind 决定，对齐交付文档的字段名 */
+  affectsPrice: boolean;
+  /** 必选组的默认选项；不填则取第一项 */
+  defaultOptionId?: string;
+  options: SpecOption[];
+}
+
+/** 规格组类型 → multiple / required / affectsPrice，建组与改类型都走这里，避免两处写歪 */
+export const SPEC_KIND_FLAGS: Record<
+  SpecGroupKind,
+  { multiple: boolean; required: boolean; affectsPrice: boolean }
+> = {
+  price: { multiple: false, required: true, affectsPrice: true },
+  plain: { multiple: false, required: true, affectsPrice: false },
+  addon: { multiple: true, required: false, affectsPrice: true },
+};
+
+/**
+ * 选中一组规格后的实付单价。
+ *
+ * 定价档带绝对价（`option.price`），它直接决定基准价，不是在基础价上加；
+ * 加料这类只带 `priceDelta`，在基准价上累加。
+ * 这样判断不需要知道选项属于哪个组——带 `price` 的就是定价档。
+ */
+export function specUnitPrice(basePrice: number, options: SpecOption[]): number {
+  const tier = options.find((o) => o.price !== undefined);
+  const base = tier?.price ?? basePrice;
+  return base + options.reduce((n, o) => n + (o.price === undefined ? o.priceDelta : 0), 0);
+}
+
+/**
+ * 顾客端展示价 = 所有必选定价组里最低的一档（交付文档 99「¥18 起」）。
+ * 没有定价组时回落到商品基础价。
+ */
+export function displayPrice(groups: SpecGroup[], basePrice: number): number {
+  const tiers = groups
+    .filter((g) => g.kind === 'price' && g.required)
+    .flatMap((g) => g.options.map((o) => o.price ?? basePrice));
+  return tiers.length ? Math.min(...tiers) : basePrice;
+}
+
+/** 定价档多于一档才显示「起」 */
+export function hasPriceRange(groups: SpecGroup[]): boolean {
+  return groups.some((g) => g.kind === 'price' && g.required && g.options.length > 1);
+}
+
+/**
+ * 规格里只与「价格」有关的部分，用来判断要不要重新送审。
+ * 刻意**不含 stock / soldOut**——交付文档写明改库存不需要重新审核。
+ */
+export function specPriceFingerprint(groups: SpecGroup[]): string {
+  return JSON.stringify(
+    groups.map((g) => [g.kind, g.options.map((o) => [o.name, o.price ?? null, o.priceDelta])])
+  );
+}
+
+/* ---------------- 售卖时段（交付文档 102） ---------------- */
+
+export interface SaleSlot {
+  id: string;
+  /** 午市 / 晚市 */
+  label: string;
+  /** 'HH:mm' */
+  start: string;
+  end: string;
+  enabled: boolean;
+}
+
+export interface SaleTime {
+  mode: 'allday' | 'range';
+  /** 重复日期，1 = 周一 … 7 = 周日 */
+  weekdays: number[];
+  /** mode = 'range' 时生效 */
+  slots: SaleSlot[];
+}
+
+export const ALL_WEEKDAYS = [1, 2, 3, 4, 5, 6, 7];
+
+export function allDaySaleTime(): SaleTime {
+  return { mode: 'allday', weekdays: [...ALL_WEEKDAYS], slots: [] };
+}
+
+export interface Goods {
+  id: string;
+  categoryId: string;
+  name: string;
+  desc: string;
+  image: string;
+  /** 基础价（最低规格价），分 */
+  price: number;
+  monthSold: number;
+  praiseRate: number;
+  stock: number;
+  onSale: boolean;
+  /** 角标，如 TOP 1 */
+  rankTag?: string;
+  /** 价格后缀，如 /杯 */
+  unit?: string;
+  /** 热销位次；有值即进入「热销推荐」虚拟分类 */
+  hot?: number;
+  specGroups: SpecGroup[];
+  /** 售卖时段；不填按全天售卖 */
+  saleTime?: SaleTime;
+}
+
+/** 顾客端菜单分组 */
+export interface MenuGroup {
+  category: Category;
+  goods: Goods[];
+}
+
+/* ---------------- 购物车 ---------------- */
+
+export interface CartItem {
+  /** goodsId + 规格指纹，用于合并同规格 */
+  key: string;
+  goodsId: string;
+  name: string;
+  image: string;
+  /** 含规格加价的单价，分 */
+  unitPrice: number;
+  qty: number;
+  /** 「大份 / 微辣」 */
+  specText: string;
+  specIds: string[];
+  unit?: string;
+}
+
+export interface CartState {
+  shopId: string;
+  items: CartItem[];
+  remark: string;
+  deliveryType: DeliveryType;
+}
+
+/* ---------------- 结算 ---------------- */
+
+export type DeliveryType = 'delivery' | 'pickup';
+
+export interface Address {
+  id: string;
+  detail: string;
+  receiver: string;
+  gender: string;
+  phoneMask: string;
+}
+
+/** 完整地址（15 / 16 / 38），Address 是它在订单里的精简投影 */
+export interface AddressFull {
+  id: string;
+  /** 家 / 公司 / 学校 */
+  tag: string;
+  receiver: string;
+  gender: string;
+  phone: string;
+  phoneMask: string;
+  /** 地图选点得到的 POI */
+  poi: string;
+  /** 门牌号 */
+  houseNo: string;
+  /** poi + houseNo 拼出的完整地址 */
+  detail: string;
+  isDefault: boolean;
+  distanceText: string;
+  /** 超出配送范围时不可选 */
+  outOfRange: boolean;
+  latitude: number;
+  longitude: number;
+}
+
+/** 52 地图选点的候选 POI */
+export interface PoiItem {
+  id: string;
+  name: string;
+  districtText: string;
+  distanceText: string;
+  latitude: number;
+  longitude: number;
+}
+
+/** 83 自提门店 */
+export interface PickupStore {
+  id: string;
+  name: string;
+  open: boolean;
+  addressText: string;
+  distanceText: string;
+  /** 预计 15 分钟可取 / 明日 10:00 开始接单 */
+  etaText: string;
+  hoursText: string;
+  latitude: number;
+  longitude: number;
+}
+
+/** 31 订单备注 */
+export interface RemarkOptions {
+  quick: string[];
+  maxLength: number;
+}
+
+/* ---------------- 店铺主页 / 评价 / 资质 ---------------- */
+
+export interface ShopProfile {
+  name: string;
+  logo: string;
+  headerImage: string;
+  score: number;
+  categoryText: string;
+  badges: { text: string; tone: 'primary' | 'success' | 'grey' }[];
+  notice: string;
+  hoursText: string;
+  open: boolean;
+  addressText: string;
+  phone: string;
+  licenseText: string;
+  reviewCount: number;
+  reviewTagText: string;
+}
+
+export interface ReviewDim {
+  label: string;
+  value: number;
+  /** 0–100 */
+  percent: number;
+}
+
+export interface ReviewFilter {
+  key: string;
+  label: string;
+  count: number;
+}
+
+export interface Review {
+  id: string;
+  name: string;
+  avatarText: string;
+  anonymous: boolean;
+  stars: number;
+  dateText: string;
+  text: string;
+  photos: string[];
+  reply?: string;
+  repeatText?: string;
+}
+
+export interface ReviewSummary {
+  score: number;
+  total: number;
+  dims: ReviewDim[];
+  filters: ReviewFilter[];
+}
+
+export interface LicenseDoc {
+  title: string;
+  image: string;
+  noLabel: string;
+  no: string;
+  validText: string;
+}
+
+export interface LicenseInfo {
+  shopName: string;
+  companyName: string;
+  logo: string;
+  docs: LicenseDoc[];
+}
+
+/** 服务端试算结果，前端不自行计算优惠 */
+export interface CheckoutTrial {
+  count: number;
+  itemsTotal: number;
+  packFee: number;
+  deliveryFee: number;
+  couponId: string | null;
+  couponName: string;
+  couponDiscount: number;
+  /** 应付金额 */
+  payable: number;
+  /** 已优惠合计 */
+  discountTotal: number;
+  etaText: string;
+}
+
+/** 微信支付预下单参数，由后端下单接口返回，直接喂给 uni.requestPayment */
+export interface WechatPayParams {
+  timeStamp: string;
+  nonceStr: string;
+  package: string;
+  signType: 'MD5' | 'HMAC-SHA256' | 'RSA';
+  paySign: string;
+}
+
+export type PayMethodId = 'wechat' | 'balance' | 'friend';
+
+export interface PayMethod {
+  id: PayMethodId;
+  name: string;
+  desc: string;
+  icon: string;
+  iconColor: string;
+  iconBg: string;
+  disabled: boolean;
+}
+
+/* ---------------- 订单 ---------------- */
+
+export type OrderStatus =
+  | 'unpaid'
+  | 'pending'
+  | 'cooking'
+  | 'delivering'
+  | 'pickupReady'
+  | 'done'
+  | 'commented'
+  | 'refunding'
+  | 'cancelled';
+
+export interface OrderGoods {
+  name: string;
+  image: string;
+  specText: string;
+  qty: number;
+  /** 该行小计，分 */
+  amount: number;
+}
+
+export interface TimelineNode {
+  label: string;
+  done: boolean;
+  current: boolean;
+}
+
+export interface Rider {
+  name: string;
+  role: string;
+  statusText: string;
+  avatarText: string;
+  phone: string;
+  /** 王师傅 · 浙A·D3821 */
+  titleText: string;
+  /** 已服务 1,204 单 · 准时率 98% */
+  creditText: string;
+  /** 虚拟号，订单完成后失效 */
+  virtualPhone: string;
+}
+
+/* ---------------- 配送追踪 / 联系骑手 ---------------- */
+
+export interface TrackPoint {
+  /** 经纬度，给 <map> 组件用（接入腾讯位置服务后即为真实坐标） */
+  latitude: number;
+  longitude: number;
+  /** 百分比坐标，无地图 key 时降级用示意底图定位 */
+  left: number;
+  top: number;
+}
+
+export interface DeliveryTrack {
+  etaText: string;
+  subText: string;
+  /** 0–100 */
+  percent: number;
+  stages: string[];
+  activeStage: number;
+  rider: Rider;
+  shopPoint: TrackPoint;
+  userPoint: TrackPoint;
+  /** 骑手轨迹折线（SVG path，示意用） */
+  routePath: string;
+}
+
+export interface RiderMessage {
+  id: string;
+  from: 'rider' | 'me';
+  text: string;
+  /** 有值时在气泡上方显示时间胶囊 */
+  timeText?: string;
+}
+
+/* ---------------- 售后 / 退款 ---------------- */
+
+export type AftersaleType = 'refundOnly' | 'refundCompensate';
+
+export interface AftersaleItem {
+  key: string;
+  name: string;
+  specText: string;
+  qty: number;
+  /** 该行实付，分 */
+  amount: number;
+  image: string;
+  checked: boolean;
+}
+
+export interface AftersaleOptions {
+  orderNo: string;
+  orderTitle: string;
+  orderMetaText: string;
+  orderImage: string;
+  /** 整单实付，分 */
+  payable: number;
+  types: { id: AftersaleType; name: string; sub: string }[];
+  reasons: string[];
+  items: AftersaleItem[];
+  tip: string;
+  /** 已出餐提示（56 顶部） */
+  partialTip: string;
+}
+
+/** 退款试算：按实付比例分摊优惠 */
+export interface RefundTrial {
+  itemsAmount: number;
+  couponShare: number;
+  refundAmount: number;
+}
+
+export type RefundStatus = 'reviewing' | 'agreed' | 'rejected' | 'cancelled';
+
+export interface Refund {
+  id: string;
+  orderId: string;
+  orderNo: string;
+  status: RefundStatus;
+  statusText: string;
+  statusSub: string;
+  type: AftersaleType;
+  typeText: string;
+  amount: number;
+  itemsText: string;
+  reasonText: string;
+  desc: string;
+  photos: string[];
+  items: AftersaleItem[];
+  createdAtText: string;
+  /** 商家侧倒计时（秒），超时自动同意 */
+  autoAgreeIn: number;
+  timeline: { title: string; sub: string; done: boolean }[];
+  /** 商家侧展示的顾客下单时间 */
+  placedAtText: string;
+}
+
+export interface OrderAction {
+  key: 'again' | 'progress' | 'comment' | 'pay' | 'aftersale';
+  text: string;
+  style: 'outline' | 'primary' | 'outline-primary';
+}
+
+export interface Order {
+  id: string;
+  orderNo: string;
+  shopName: string;
+  status: OrderStatus;
+  statusText: string;
+  /** 列表页状态色：primary / weak */
+  statusTone: 'primary' | 'weak';
+  deliveryType: DeliveryType;
+  items: OrderGoods[];
+  count: number;
+  itemsTotal: number;
+  packFee: number;
+  deliveryFee: number;
+  couponDiscount: number;
+  payable: number;
+  createdAt: string;
+  createdAtText: string;
+  /** 列表页副标题：今天 12:02 · 外送 · 预计 12:30 送达 */
+  metaText: string;
+  /** 完整描述：预计 12:30 送达 · 距您 1.2km */
+  etaText: string;
+  /** 只有时间点：今天 12:30，用于结果页「预计送达」右值 */
+  etaTimeText: string;
+  pickupCode?: string;
+  address?: Address;
+  rider?: Rider;
+  payMethodText: string;
+  /** 下单备注（口味 / 餐具 / 自定义） */
+  remark?: string;
+  timeline: TimelineNode[];
+  /** 列表页操作按钮 */
+  actions: OrderAction[];
+}
+
+export type CustomerOrderTab = 'all' | 'ongoing' | 'toComment' | 'aftersale';
+
+/* ---------------- 取餐 / 评价 / 发票 / 客服 ---------------- */
+
+/** 25 自提取餐码 */
+export interface PickupCodeInfo {
+  code: string;
+  /** 二维码里编码的内容 */
+  qrData: string;
+  orderNo: string;
+  itemsText: string;
+  statusTitle: string;
+  statusSub: string;
+  waitText: string;
+  shopName: string;
+  shopAddress: string;
+  shopDistance: string;
+}
+
+/** 19 / 55 评价编辑 */
+export interface CommentOptions {
+  orderNo: string;
+  shopName: string;
+  shopLogo: string;
+  orderMetaText: string;
+  /** 5 → 非常满意 */
+  ratingLabels: string[];
+  tags: string[];
+  maxLength: number;
+  maxPhotos: number;
+  rewardText: string;
+}
+
+export type MyReviewTab = 'todo' | 'done';
+
+/** 60 我的评价 */
+export interface MyReview extends Review {
+  canAppend: boolean;
+}
+
+/** 58 发票抬头 */
+export interface InvoiceTitle {
+  id: string;
+  type: 'company' | 'personal';
+  typeText: string;
+  name: string;
+  taxNo: string;
+  isDefault: boolean;
+}
+
+/** 57 申请发票 */
+export interface InvoiceOptions {
+  orderNo: string;
+  /** 开票金额，分 */
+  amount: number;
+  invoiceTypeText: string;
+  email: string;
+  tip: string;
+}
+
+/** 41 在线客服的一条消息 */
+export interface SupportMessage {
+  id: string;
+  from: 'agent' | 'me';
+  /** text 普通气泡；order 订单卡片 */
+  kind: 'text' | 'order';
+  text: string;
+  timeText?: string;
+  order?: { orderNo: string; summary: string; image: string };
+}
+
+/** 77 帮助中心 */
+export interface HelpScene {
+  key: string;
+  label: string;
+  icon: string;
+}
+
+export interface HelpCenterInfo {
+  scenes: HelpScene[];
+  faqs: { id: string; question: string; answer: string }[];
+}
+
+/** 76 意见反馈 */
+export interface FeedbackOptions {
+  types: string[];
+  orderNo: string;
+  phoneMask: string;
+  maxLength: number;
+  minLength: number;
+}
+
+/* ---------------- 商家端 ---------------- */
+
+export interface DashboardMetric {
+  label: string;
+  value: string;
+  delta: string;
+  deltaTone: 'up' | 'flat';
+}
+
+export interface DashboardTodo {
+  label: string;
+  value: number;
+  highlight: boolean;
+}
+
+/** @deprecated 用 ChartBar，08 / 46 / 89 已统一走 wf-bar-chart */
+export type TrendBar = ChartBar;
+
+/**
+ * 柱状图的一根柱，wf-bar-chart 复用（08 工作台 / 46 营业数据 / 89 顾客分析）。
+ * tone 决定配色：weak/normal 浅橙、mid 中橙、strong 深橙渐变、today 主渐变。
+ */
+export interface ChartBar {
+  label: string;
+  /** 柱高百分比 0–100 */
+  percent: number;
+  /** 柱顶数值文案，只有 89 展示 */
+  valueText?: string;
+  tone: 'weak' | 'normal' | 'mid' | 'strong' | 'today';
+}
+
+export interface HotGoods {
+  rank: number;
+  name: string;
+  countText: string;
+}
+
+export interface Dashboard {
+  shopName: string;
+  scoreText: string;
+  open: boolean;
+  todos: DashboardTodo[];
+  metrics: DashboardMetric[];
+  trend: TrendBar[];
+  hot: HotGoods[];
+}
+
+export type MerchantOrderTab = 'pending' | 'ongoing' | 'done' | 'aftersale';
+
+export interface MerchantOrderLine {
+  name: string;
+  specText: string;
+  qty: number;
+  /** 该行小计，分 */
+  amount: number;
+  image: string;
+}
+
+export interface MerchantOrder {
+  id: string;
+  seq: string;
+  channel: '外送' | '自提';
+  status: MerchantOrderTab;
+  statusText: string;
+  /** 待接单倒计时剩余秒数 */
+  countdown?: number;
+  /** 列表页倒计时文案 */
+  countdownText?: string;
+  /** 详情页倒计时文案（超时后自动拒单） */
+  detailCountdownText?: string;
+  customerName: string;
+  customerPhone: string;
+  addressText?: string;
+  distanceText?: string;
+  /** 2.1 km · 预计 25 分钟 */
+  distanceEtaText?: string;
+  pickupCode?: string;
+  lines: MerchantOrderLine[];
+  count: number;
+  total: number;
+  /** 下单 12:41 */
+  placedAtText: string;
+  /** 立即送出 / 12:30 前送达 */
+  expectText: string;
+  /** 第 3 单（回头客提示） */
+  customerSeqText: string;
+  remark?: string;
+  /** 自提单的紧凑摘要行 */
+  summaryText?: string;
+  /** 售后单关联（status = aftersale 时有值） */
+  refundId?: string;
+  refundAmount?: number;
+  refundReason?: string;
+}
+
+/* ---------------- 商家端 · 小票打印 ---------------- */
+
+export interface PrinterDevice {
+  id: string;
+  name: string;
+  online: boolean;
+  /** 在线 · 蓝牙已连接 */
+  statusText: string;
+}
+
+export interface PrintSettings {
+  device: PrinterDevice;
+  autoPrint: boolean;
+  copies: number;
+  copiesText: string;
+  width: string;
+  printRemark: boolean;
+}
+
+export type ReceiptType = 'kitchen' | 'customer';
+
+export interface ReceiptLine {
+  text: string;
+  qty: string;
+}
+
+export interface ReceiptPreview {
+  type: ReceiptType;
+  title: string;
+  meta: string;
+  lines: ReceiptLine[];
+  remark?: string;
+  /** 顾客联的金额区 */
+  amounts: { label: string; value: string }[];
+  footer?: string;
+}
+
+/* ---------------- 商家端 · 商品与菜单 ---------------- */
+
+/**
+ * 商品审核态（交付文档 99–101）：
+ *
+ *   draft ──提交──▶ pending ──通过──▶ approved（这时才允许上架）
+ *                      └──驳回──▶ rejected ──改完重提──▶ pending
+ *
+ * 商家改的内容要过平台审核才对顾客端生效，审核期间顾客端看到的仍是上一个通过的版本。
+ */
+export type GoodsAuditState = 'draft' | 'pending' | 'approved' | 'rejected';
+
+/**
+ * 会触发重新审核的标量字段。
+ * 规格不在这里——规格里既有价格又有库存，得用 `specPriceFingerprint()` 只比价格部分。
+ * 分类归属、库存、售卖时段、上下架都**不**重审（交付文档明写）。
+ */
+export const AUDITED_FIELDS = ['name', 'desc', 'price', 'images'] as const;
+
+/** 101 驳回详情里的一条问题 */
+export interface AuditIssue {
+  /** 对应 99 里的字段锚点：images / price / name / spec / desc */
+  field: string;
+  title: string;
+  desc: string;
+}
+
+/** 11 编辑商品 / 99 发布商品 的可编辑副本 */
+export interface GoodsDraft {
+  id: string;
+  name: string;
+  desc: string;
+  categoryId: string;
+  categoryName: string;
+  /** 基础价，分。有定价组时展示价由 displayPrice() 从最低档算出 */
+  price: number;
+  stock: number;
+  images: string[];
+  onSale: boolean;
+  specGroups: SpecGroup[];
+  saleTime: SaleTime;
+  auditState: GoodsAuditState;
+  /** 驳回时逐项列出，101 靠它做「只改错项重提」 */
+  auditIssues: AuditIssue[];
+  /** 驳回时已通过、无需重填的项 */
+  passedFields: string[];
+  /** 提交时间文案，100 用 */
+  submittedAtText?: string;
+}
+
+/** 64 规格与加料选项库：可复用的选项组 */
+export interface OptionLibGroup {
+  id: string;
+  name: string;
+  multiple: boolean;
+  required: boolean;
+  /** 单选 · 必选 · 已用于 18 个商品 */
+  metaText: string;
+  options: { id: string; name: string; priceDelta: number; checked: boolean }[];
+}
+
+/** 22 分类管理 */
+export interface CategoryRow {
+  id: string;
+  name: string;
+  sub: string;
+  /** 热销推荐这类自动聚合分类不可删改 */
+  pinned: boolean;
+  /** 分类内无在售商品，顾客端自动隐藏 */
+  hidden: boolean;
+}
+
+/** 49 沽清与库存 */
+export interface StockGoods {
+  id: string;
+  name: string;
+  image: string;
+  categoryName: string;
+  /** 今日已售 38 */
+  soldTodayText: string;
+  remain: number;
+  /** false = 已沽清 */
+  available: boolean;
+}
+
+export type StockTab = 'all' | 'onSale' | 'soldOut';
+
+/** 93 商品批量管理 */
+export interface BulkGoods {
+  id: string;
+  name: string;
+  image: string;
+  /** 热菜 · ￥28.00 · 月售 186 */
+  metaText: string;
+  offShelf: boolean;
+}
+
+export type BulkTab = 'all' | 'hot' | 'off' | 'soldOut';
+
+export interface MerchantGoods {
+  id: string;
+  name: string;
+  image: string;
+  categoryName: string;
+  price: number;
+  priceFrom: boolean;
+  stock: number;
+  specCountText: string;
+  onSale: boolean;
+  stockLevel: 'normal' | 'low' | 'out';
+  auditState: GoodsAuditState;
+  /** 驳回摘要，列表上一句话带过；逐项原因在 101 拉详情 */
+  auditReason?: string;
+  /** 卡片副标题的时段文案：全天售卖 / 午市 11:00–14:00 */
+  saleTimeText: string;
+}
+
+/** 100 审核进度里的一行 */
+export interface GoodsAuditRow {
+  id: string;
+  name: string;
+  image: string;
+  /** 2 个规格 · ¥18 起 · 07-26 14:02 提交 */
+  metaText: string;
+  price: number;
+  priceFrom: boolean;
+  state: GoodsAuditState;
+  stateText: string;
+  /** 已驳回时的一句话原因 */
+  reasonText: string;
+}
+
+/** 101 驳回详情 */
+export interface GoodsAuditDetail {
+  id: string;
+  name: string;
+  rejectedAtText: string;
+  issues: AuditIssue[];
+  passedFields: string[];
+  /** 连续驳回次数，达到 3 次提示走人工复核 */
+  rejectCount: number;
+}
+
+/* ================= 顾客端 · 卡券会员与设置账号（73 37 86 17/39 59 79 80 81 44 74 75 78） ================= */
+
+/** 73 个人资料 */
+export interface ProfileForm {
+  avatar: string;
+  nickname: string;
+  gender: 'male' | 'female' | 'unknown';
+  genderText: string;
+  birthday: string;
+  phoneMask: string;
+  /** 口味偏好，下单时自动带进订单备注（与 31 备注浮层共用一套 key） */
+  tastes: { key: string; label: string; on: boolean }[];
+}
+
+/** 37 消息通知 */
+export type MessageTab = 'all' | 'order' | 'promo';
+
+export interface MessageItem {
+  id: string;
+  tab: Exclude<MessageTab, 'all'>;
+  /** wf-icon 名 */
+  icon: string;
+  tone: 'primary' | 'success';
+  title: string;
+  desc: string;
+  timeText: string;
+  unread: boolean;
+}
+
+/** 86 通知详情 */
+export interface MessageDetail {
+  id: string;
+  categoryText: string;
+  title: string;
+  timeText: string;
+  /** 段落数组，避免在模板里塞 <br> */
+  paragraphs: string[];
+  order: { id: string; shopName: string; summary: string; image: string } | null;
+  actions: { key: string; text: string; style: 'primary' | 'ghost' }[];
+  footText: string;
+}
+
+/** 17 / 39 我的优惠券 */
+export type CouponTab = 'usable' | 'used' | 'expired';
+
+export interface Coupon {
+  id: string;
+  /** cash = 满减/无门槛，discount = 折扣券 */
+  kind: 'cash' | 'discount';
+  /** 面额（分）；折扣券此处存折扣值 ×10（88 = 8.8 折），只用于排序 */
+  amount: number;
+  /** 卡头大字：10 / 8.8折 */
+  amountText: string;
+  /** 满50可用 / 无门槛 / 上限 ¥15 */
+  thresholdText: string;
+  name: string;
+  validText: string;
+  /** 「还差 ¥0 可用 · 结算自动抵扣」这类补充说明 */
+  note: string;
+  noteTone: 'primary' | 'warn' | 'danger' | 'weak';
+  /** 卡头配色 */
+  tone: 'main' | 'light' | 'green' | 'grey';
+}
+
+/** 59 优惠券使用规则（39 上的半屏浮层） */
+export interface CouponRule {
+  couponId: string;
+  rangeText: string;
+  rows: { label: string; value: string }[];
+  terms: string[];
+}
+
+/** 79 领券中心 */
+export type CouponCenterTab = 'shop' | 'platform' | 'points';
+
+export interface CouponOffer {
+  id: string;
+  tab: CouponCenterTab;
+  amountText: string;
+  thresholdText: string;
+  name: string;
+  desc: string;
+  tone: 'main' | 'gold' | 'green' | 'grey';
+  state: 'take' | 'taken' | 'soldout';
+}
+
+export interface CouponPack {
+  title: string;
+  sub: string;
+}
+
+/** 80 会员积分中心 */
+export interface MemberCenter {
+  levelName: string;
+  levelText: string;
+  pointsText: string;
+  /** 升级进度 0–100 */
+  progress: number;
+  upgradeText: string;
+  todayText: string;
+  tasks: { key: string; name: string; sub: string; btnText: string; done: boolean }[];
+  rows: { key: string; label: string; value: string; tone: 'weak' | 'primary' }[];
+}
+
+/** 81 积分兑换 */
+export type PointsGoodsTab = 'all' | 'coupon' | 'dish' | 'gift';
+
+export interface PointsGoods {
+  id: string;
+  tab: Exclude<PointsGoodsTab, 'all'>;
+  name: string;
+  image: string;
+  sub: string;
+  costText: string;
+  /** 积分足够才可兑换 */
+  affordable: boolean;
+  /** 不足时显示「差一点」，并在 sub 里说明还差多少 */
+  shortText: string;
+}
+
+/** 44 设置与关于 */
+export interface SettingsInfo {
+  rows: { key: string; label: string; value: string }[][];
+  version: string;
+  company: string;
+}
+
+/** 74 账号与安全 */
+export interface AccountSecurity {
+  rows: { key: string; label: string; value: string; tone: 'weak' | 'success' }[][];
+  warnText: string;
+}
+
+/** 75 通知设置 */
+export interface NotifySwitch {
+  key: string;
+  name: string;
+  sub: string;
+  on: boolean;
+  /** push = 推送类型分组，quiet = 免打扰分组 */
+  group: 'push' | 'quiet';
+}
+
+/** 78 关于美味坊 */
+export interface AboutInfo {
+  appName: string;
+  versionText: string;
+  docs: { key: string; label: string }[];
+  license: { key: string; label: string; value: string }[];
+  company: string;
+  icp: string;
+}
+
+/* ================= 商家端 · 接单扩展与营销评价（21 45 91 92 96 97 23 65 66 94 95 47 90） ================= */
+
+/** 21 核销取餐码 */
+export interface VerifyPreview {
+  code: string;
+  orderNo: string;
+  customer: string;
+  itemsText: string;
+  amountText: string;
+}
+
+/** 45 商家消息中心 */
+export interface MerchantMessage {
+  id: string;
+  /** order = 新订单，refund = 退款申请，review = 新增评价，settle = 货款到账 */
+  kind: 'order' | 'refund' | 'review' | 'settle';
+  icon: string;
+  title: string;
+  timeText: string;
+  desc: string;
+  /** 只有待处理的消息带按钮 */
+  actionable: boolean;
+  urgent: boolean;
+}
+
+/** 91 历史订单查询 */
+export interface HistoryOrder {
+  id: string;
+  orderNo: string;
+  statusText: string;
+  statusTone: 'done' | 'partial' | 'cancelled';
+  metaText: string;
+  amountText: string;
+  /** 部分退款时显示的 -12 */
+  refundText: string;
+  itemsText: string;
+  channel: '外送' | '自提';
+  customerName: string;
+  /** 列表要直接列出点了什么，点进去也用它拼订单详情 */
+  lines: MerchantOrderLine[];
+}
+
+export interface HistoryFilter {
+  dateText: string;
+  statusText: string;
+  channelText: string;
+}
+
+export interface HistorySummary {
+  countText: string;
+  incomeText: string;
+  refundText: string;
+}
+
+/** 92 异常与取消订单 */
+export type ExceptionTab = 'cancel' | 'timeout' | 'delivery';
+
+export interface ExceptionOrder {
+  id: string;
+  orderNo: string;
+  stageText: string;
+  stageTone: 'pending' | 'cooked' | 'done';
+  /** 剩 4 分钟自动同意 */
+  countdownText: string;
+  reasonQuote: string;
+  itemsText: string;
+  amountText: string;
+  /** 已出餐的单拒绝需要上传凭证 */
+  needProof: boolean;
+  noteText: string;
+  /** 已处理的单只展示结论 */
+  resolved: boolean;
+  resolveText: string;
+  /** 列表要直接列出点了什么，点进去也用它拼订单详情 */
+  lines: MerchantOrderLine[];
+}
+
+/** 96 核销记录 */
+export type VerifyLogTab = 'today' | 'yesterday' | 'week';
+
+export interface VerifyStats {
+  countText: string;
+  amountText: string;
+  pendingText: string;
+}
+
+export interface VerifyRecord {
+  id: string;
+  code: string;
+  title: string;
+  metaText: string;
+  amountText: string;
+  /** done = 已核销，void = 已废，pending = 待核销（超时未取） */
+  state: 'done' | 'void' | 'pending';
+}
+
+/** 97 打印机与设备 */
+export interface PrintDevice {
+  id: string;
+  name: string;
+  statusText: string;
+  online: boolean;
+  actionText: string;
+}
+
+export interface DeviceSettings {
+  devices: PrintDevice[];
+  autoPrint: boolean;
+  copies: number;
+  voiceOn: boolean;
+  voiceText: string;
+  volumeText: string;
+  scannerText: string;
+  noteText: string;
+}
+
+/** 23 优惠活动设置 */
+export interface PromotionItem {
+  id: string;
+  kindText: string;
+  name: string;
+  statusText: string;
+  /** running = 生效中，paused = 已暂停 */
+  status: 'running' | 'paused';
+  sub: string;
+  rangeText: string;
+  /** 生效中的活动带三列效果数据 */
+  stats: { label: string; value: string }[];
+}
+
+/** 65 新建满减活动 */
+export type PromotionType = 'full' | 'discount' | 'second';
+
+export interface PromotionTier {
+  id: string;
+  /** 单位：分 */
+  threshold: number;
+  cut: number;
+}
+
+export interface PromotionDraft {
+  id: string;
+  type: PromotionType;
+  tiers: PromotionTier[];
+  dateText: string;
+  timeText: string;
+  goodsText: string;
+  budgetText: string;
+  estimateText: string;
+}
+
+/** 66 选择适用商品 */
+export interface PromoGoods {
+  id: string;
+  name: string;
+  priceText: string;
+  categoryName: string;
+  checked: boolean;
+}
+
+/** 94 营销中心 */
+export interface MarketingTool {
+  key: string;
+  badge: string;
+  label: string;
+}
+
+export interface MarketingActivity {
+  id: string;
+  name: string;
+  sub: string;
+  on: boolean;
+}
+
+export interface MarketingCenter {
+  rangeText: string;
+  stats: { label: string; value: string }[];
+  tools: MarketingTool[];
+  activities: MarketingActivity[];
+}
+
+/** 95 创建店铺优惠券 */
+export type ShopCouponKind = 'cash' | 'discount' | 'delivery';
+
+export interface ShopCouponDraft {
+  kind: ShopCouponKind;
+  /** 分 */
+  amount: number;
+  threshold: number;
+  totalText: string;
+  perUserText: string;
+  validText: string;
+  newOnly: boolean;
+  stackable: boolean;
+}
+
+/** 47 评价管理（商家侧汇总，与顾客端 82 的 ReviewSummary 不是同一个） */
+export interface MerchantReviewSummary {
+  score: string;
+  dist: { label: string; percent: number }[];
+}
+
+export interface MerchantReview {
+  id: string;
+  user: string;
+  stars: number;
+  timeText: string;
+  content: string;
+  goodsText: string;
+  reply: string;
+  /** ≤3 星，需要 24 小时内回复 */
+  lowScore: boolean;
+}
+
+/** 90 评价回复 */
+export interface ReviewReplyInfo {
+  review: MerchantReview;
+  tags: string[];
+  orderNo: string;
+  templates: { key: string; label: string; text: string }[];
+  couponText: string;
+}
+
+/* ================= 商家端 · 数据结算与店铺团队（46 87 89 34 67 88 68 50 33 70 71 35 69 72 98） ================= */
+
+
+
+/** 46 营业数据 */
+export interface BusinessStats {
+  monthText: string;
+  todayAmountText: string;
+  todayDeltaText: string;
+  metrics: { label: string; value: string }[];
+  trend: ChartBar[];
+  hot: { rank: number; name: string; countText: string; amountText: string }[];
+}
+
+/** 87 商品销售排行 */
+export type RankRange = 'today' | 'week' | 'month' | 'custom';
+
+export interface GoodsRankRow {
+  rank: number;
+  name: string;
+  countText: string;
+  amountText: string;
+  /** 条形长度百分比 */
+  percent: number;
+}
+
+export interface GoodsRank {
+  totalText: string;
+  rows: GoodsRankRow[];
+  tips: string[];
+}
+
+/** 89 顾客与复购分析 */
+export interface CustomerAnalysis {
+  metrics: { label: string; value: string; delta: string; deltaTone: 'up' | 'down' | 'flat' }[];
+  distribution: ChartBar[];
+  vips: { id: string; name: string; sub: string; amountText: string }[];
+}
+
+/** 34 货款结算 */
+export interface SettlementRow {
+  id: string;
+  title: string;
+  metaText: string;
+  amountText: string;
+  /** 入账为正、提现与退款为负 */
+  income: boolean;
+}
+
+export interface Settlement {
+  balanceText: string;
+  pendingText: string;
+  monthTotalText: string;
+  accountText: string;
+  rows: SettlementRow[];
+  noteText: string;
+}
+
+/** 67 结算单详情 */
+export interface SettlementDetail {
+  id: string;
+  dateText: string;
+  amountText: string;
+  statusText: string;
+  breakdown: { label: string; value: string; negative: boolean }[];
+  rows: { label: string; value: string; link: boolean }[];
+}
+
+/** 88 账单流水与提现 */
+export type BillTab = 'all' | 'income' | 'expense' | 'withdraw';
+
+export interface BillRow {
+  id: string;
+  tab: Exclude<BillTab, 'all'>;
+  title: string;
+  metaText: string;
+  amountText: string;
+  income: boolean;
+}
+
+export interface Bills {
+  balanceText: string;
+  onTheWayText: string;
+  monthWithdrawText: string;
+  rows: BillRow[];
+  noteText: string;
+}
+
+/** 68 收款账户管理 */
+export interface PayoutAccount {
+  typeText: string;
+  verified: boolean;
+  cardMask: string;
+  bankText: string;
+  holderText: string;
+  rows: { label: string; value: string }[];
+  changeTitle: string;
+  changeText: string;
+  noteText: string;
+}
+
+/** 50 营业设置 */
+export interface BusinessHourSlot {
+  id: string;
+  name: string;
+  start: string;
+  end: string;
+}
+
+export interface BusinessSettings {
+  open: boolean;
+  openText: string;
+  openSub: string;
+  slots: BusinessHourSlot[];
+  /** 每周休息日，0=周一 … 6=周日 */
+  restDays: number[];
+  autoAcceptText: string;
+  cookMinutesText: string;
+  noteText: string;
+}
+
+/** 33 配送范围与运费 */
+export interface DeliverySettings {
+  radiusKm: number;
+  radiusOptions: number[];
+  minOrderText: string;
+  baseFeeText: string;
+  freeOverText: string;
+  autoAccept: boolean;
+  pickupOn: boolean;
+  noteText: string;
+}
+
+/** 70 配送范围绘制 */
+export type AreaShape = 'circle' | 'custom';
+
+export interface DeliveryTier {
+  id: string;
+  rangeText: string;
+  ruleText: string;
+}
+
+export interface DeliveryArea {
+  shape: AreaShape;
+  /** 有 MAP_KEY 时用来画 <map> 的圆心 */
+  latitude: number;
+  longitude: number;
+  tiers: DeliveryTier[];
+}
+
+/** 71 店铺信息编辑 */
+export interface ShopProfileForm {
+  cover: string;
+  rows: { key: string; label: string; value: string }[];
+  notice: string;
+  noticeMax: number;
+  noticeHint: string;
+}
+
+/** 35 员工账号 */
+export type StaffRole = 'owner' | 'cashier' | 'kitchen';
+
+export interface Staff {
+  id: string;
+  name: string;
+  roleText: string;
+  role: StaffRole;
+  /** 138****8888 · 全部权限 */
+  metaText: string;
+  self: boolean;
+}
+
+export interface StaffRoleDoc {
+  role: StaffRole;
+  label: string;
+  desc: string;
+}
+
+/** 69 员工权限设置 */
+export interface StaffPermission {
+  staff: Staff;
+  joinedText: string;
+  roles: { key: StaffRole; label: string }[];
+  permissions: { key: string; label: string; on: boolean }[];
+}
+
+/** 72 资质更新与年审（商家侧证照，与顾客端 61 公示用的 LicenseDoc 不是同一个） */
+export interface LicenseCert {
+  id: string;
+  name: string;
+  statusText: string;
+  /** normal = 正常，soon = 即将到期，expired = 已过期 */
+  status: 'normal' | 'soon' | 'expired';
+  validText: string;
+}
+
+export interface LicenseCenter {
+  warnText: string;
+  docs: LicenseCert[];
+  noteText: string;
+}
+
+/** 98 商家帮助与客服 */
+export interface MerchantHelp {
+  questions: { id: string; title: string }[];
+  courses: { id: string; title: string; metaText: string }[];
+  contacts: { key: string; label: string; value: string }[];
+}
+
+/* ================= 商家入驻全流程（26 14 27 24 28 29） ================= */
+
+/** 26 入驻引导 */
+export interface OnboardIntro {
+  titleLines: string[];
+  subText: string;
+  stats: { value: string; label: string }[];
+  steps: { no: number; title: string; desc: string }[];
+  prepare: string[];
+  agreementText: string;
+}
+
+/** 14 / 27 顶部三步步骤条 */
+export interface OnboardStep {
+  no: number;
+  label: string;
+  /** done 已完成打勾、active 当前、todo 未到 */
+  state: 'done' | 'active' | 'todo';
+}
+
+/** 上传位：14 / 27 / 72 共用 wf-uploader */
+export interface UploadSlot {
+  key: string;
+  label: string;
+  /** 必传项未齐时提交按钮置灰 */
+  required: boolean;
+  /** 已选图片本地路径，空串表示未上传 */
+  path: string;
+  /** OCR 识别结果，只有营业执照有 */
+  ocrText: string;
+  hint: string;
+}
+
+/** 14 商家入驻申请 */
+export interface OnboardForm {
+  steps: OnboardStep[];
+  rows: { key: string; label: string; value: string; placeholder: string }[];
+  slots: UploadSlot[];
+  noteText: string;
+}
+
+/** 27 上传资质 */
+export interface OnboardLicense {
+  steps: OnboardStep[];
+  slots: UploadSlot[];
+  noteText: string;
+}
+
+/** 24 入驻审核状态 / 28 审核驳回 */
+export type AuditState = 'reviewing' | 'rejected' | 'passed';
+
+export interface AuditNode {
+  title: string;
+  desc: string;
+  state: 'done' | 'active' | 'todo';
+}
+
+export interface RejectItem {
+  key: string;
+  kindText: string;
+  title: string;
+  desc: string;
+}
+
+export interface OnboardAudit {
+  state: AuditState;
+  statusTitle: string;
+  statusSub: string;
+  etaText: string;
+  nodes: AuditNode[];
+  /** 驳回时才有 */
+  rejects: RejectItem[];
+  passedText: string;
+  noteText: string;
+}
+
+/** 29 开通成功 */
+export interface OnboardDone {
+  shopName: string;
+  title: string;
+  subText: string;
+  steps: { no: number; title: string; desc: string; btnText: string; primary: boolean; key: string }[];
+  guideTitle: string;
+  guideSub: string;
+}

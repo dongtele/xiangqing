@@ -1,0 +1,611 @@
+{
+  "easycom": {
+    "autoscan": true
+  },
+  "pages": [
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "登录美味坊"
+      }
+    },
+    {
+      "path": "pages/customer/menu/index",
+      "style": {
+        "navigationBarTitleText": "点餐"
+      }
+    },
+    {
+      "path": "pages/customer/orders/index",
+      "style": {
+        "navigationBarTitleText": "我的订单"
+      }
+    },
+    {
+      "path": "pages/customer/profile/index",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/customer/goods/index",
+      "style": {
+        "navigationBarTitleText": "商品详情"
+      }
+    },
+    {
+      "path": "pages/customer/checkout/index",
+      "style": {
+        "navigationBarTitleText": "确认订单"
+      }
+    },
+    {
+      "path": "pages/customer/pay-method/index",
+      "style": {
+        "navigationBarTitleText": "选择支付方式"
+      }
+    },
+    {
+      "path": "pages/customer/pay/index",
+      "style": {
+        "navigationBarTitleText": "收银台"
+      }
+    },
+    {
+      "path": "pages/customer/pay-result/index",
+      "style": {
+        "navigationBarTitleText": "支付结果"
+      }
+    },
+    {
+      "path": "pages/customer/order-detail/index",
+      "style": {
+        "navigationBarTitleText": "订单详情"
+      }
+    },
+    {
+      "path": "pages/customer/delivery-track/index",
+      "style": {
+        "navigationBarTitleText": "配送追踪"
+      }
+    },
+    {
+      "path": "pages/customer/rider-chat/index",
+      "style": {
+        "navigationBarTitleText": "联系骑手"
+      }
+    },
+    {
+      "path": "pages/customer/aftersale/index",
+      "style": {
+        "navigationBarTitleText": "申请售后"
+      }
+    },
+    {
+      "path": "pages/customer/refund-items/index",
+      "style": {
+        "navigationBarTitleText": "选择退款商品"
+      }
+    },
+    {
+      "path": "pages/customer/refund-detail/index",
+      "style": {
+        "navigationBarTitleText": "退款详情"
+      }
+    },
+    {
+      "path": "pages/customer/search/index",
+      "style": {
+        "navigationBarTitleText": "店内搜索"
+      }
+    },
+    {
+      "path": "pages/customer/shop/index",
+      "style": {
+        "navigationBarTitleText": "店铺主页"
+      }
+    },
+    {
+      "path": "pages/customer/photo-view/index",
+      "style": {
+        "navigationBarTitleText": "菜品图片"
+      }
+    },
+    {
+      "path": "pages/customer/reviews/index",
+      "style": {
+        "navigationBarTitleText": "全部评价"
+      }
+    },
+    {
+      "path": "pages/customer/license/index",
+      "style": {
+        "navigationBarTitleText": "资质公示"
+      }
+    },
+    {
+      "path": "pages/customer/address-edit/index",
+      "style": {
+        "navigationBarTitleText": "编辑地址"
+      }
+    },
+    {
+      "path": "pages/customer/addresses/index",
+      "style": {
+        "navigationBarTitleText": "收货地址"
+      }
+    },
+    {
+      "path": "pages/customer/map-picker/index",
+      "style": {
+        "navigationBarTitleText": "地图选点"
+      }
+    },
+    {
+      "path": "pages/customer/pickup-stores/index",
+      "style": {
+        "navigationBarTitleText": "选择自提门店"
+      }
+    },
+    {
+      "path": "pages/customer/pickup-code/index",
+      "style": {
+        "navigationBarTitleText": "取餐码"
+      }
+    },
+    {
+      "path": "pages/customer/comment/index",
+      "style": {
+        "navigationBarTitleText": "评价订单"
+      }
+    },
+    {
+      "path": "pages/customer/comment-publish/index",
+      "style": {
+        "navigationBarTitleText": "评价晒单"
+      }
+    },
+    {
+      "path": "pages/customer/my-reviews/index",
+      "style": {
+        "navigationBarTitleText": "我的评价"
+      }
+    },
+    {
+      "path": "pages/customer/invoice/index",
+      "style": {
+        "navigationBarTitleText": "申请发票"
+      }
+    },
+    {
+      "path": "pages/customer/invoice-titles/index",
+      "style": {
+        "navigationBarTitleText": "发票抬头"
+      }
+    },
+    {
+      "path": "pages/customer/support/index",
+      "style": {
+        "navigationBarTitleText": "在线客服"
+      }
+    },
+    {
+      "path": "pages/customer/help/index",
+      "style": {
+        "navigationBarTitleText": "帮助中心"
+      }
+    },
+    {
+      "path": "pages/customer/feedback/index",
+      "style": {
+        "navigationBarTitleText": "意见反馈"
+      }
+    },
+    {
+      "path": "pages/customer/profile-edit/index",
+      "style": {
+        "navigationBarTitleText": "个人资料"
+      }
+    },
+    {
+      "path": "pages/customer/messages/index",
+      "style": {
+        "navigationBarTitleText": "消息"
+      }
+    },
+    {
+      "path": "pages/customer/message-detail/index",
+      "style": {
+        "navigationBarTitleText": "消息详情"
+      }
+    },
+    {
+      "path": "pages/customer/coupons/index",
+      "style": {
+        "navigationBarTitleText": "优惠券"
+      }
+    },
+    {
+      "path": "pages/customer/coupon-center/index",
+      "style": {
+        "navigationBarTitleText": "领券中心"
+      }
+    },
+    {
+      "path": "pages/customer/points/index",
+      "style": {
+        "navigationBarTitleText": "会员中心"
+      }
+    },
+    {
+      "path": "pages/customer/points-mall/index",
+      "style": {
+        "navigationBarTitleText": "积分兑换"
+      }
+    },
+    {
+      "path": "pages/customer/settings/index",
+      "style": {
+        "navigationBarTitleText": "设置"
+      }
+    },
+    {
+      "path": "pages/customer/account/index",
+      "style": {
+        "navigationBarTitleText": "账号与安全"
+      }
+    },
+    {
+      "path": "pages/customer/notify-settings/index",
+      "style": {
+        "navigationBarTitleText": "通知设置"
+      }
+    },
+    {
+      "path": "pages/customer/about/index",
+      "style": {
+        "navigationBarTitleText": "关于"
+      }
+    }
+  ],
+  "subPackages": [
+    {
+      "root": "pages/merchant",
+      "pages": [
+        {
+          "path": "dashboard/index",
+          "style": {
+            "navigationBarTitleText": "工作台"
+          }
+        },
+        {
+          "path": "orders/index",
+          "style": {
+            "navigationBarTitleText": "订单管理"
+          }
+        },
+        {
+          "path": "goods/index",
+          "style": {
+            "navigationBarTitleText": "商品管理"
+          }
+        },
+        {
+          "path": "shop/index",
+          "style": {
+            "navigationBarTitleText": "店铺中心"
+          }
+        },
+        {
+          "path": "order-detail/index",
+          "style": {
+            "navigationBarTitleText": "商家订单详情"
+          }
+        },
+        {
+          "path": "print/index",
+          "style": {
+            "navigationBarTitleText": "打印设置"
+          }
+        },
+        {
+          "path": "refund-review/index",
+          "style": {
+            "navigationBarTitleText": "退款审核"
+          }
+        },
+        {
+          "path": "goods-edit/index",
+          "style": {
+            "navigationBarTitleText": "编辑商品"
+          }
+        },
+        {
+          "path": "goods-publish/index",
+          "style": {
+            "navigationBarTitleText": "发布商品"
+          }
+        },
+        {
+          "path": "goods-audit/index",
+          "style": {
+            "navigationBarTitleText": "商品审核"
+          }
+        },
+        {
+          "path": "goods-reject/index",
+          "style": {
+            "navigationBarTitleText": "审核结果"
+          }
+        },
+        {
+          "path": "sale-time/index",
+          "style": {
+            "navigationBarTitleText": "售卖时段"
+          }
+        },
+        {
+          "path": "spec-edit/index",
+          "style": {
+            "navigationBarTitleText": "规格与价格"
+          }
+        },
+        {
+          "path": "option-lib/index",
+          "style": {
+            "navigationBarTitleText": "选项库"
+          }
+        },
+        {
+          "path": "image-crop/index",
+          "style": {
+            "navigationBarTitleText": "裁剪图片"
+          }
+        },
+        {
+          "path": "categories/index",
+          "style": {
+            "navigationBarTitleText": "分类管理"
+          }
+        },
+        {
+          "path": "stock/index",
+          "style": {
+            "navigationBarTitleText": "沽清管理"
+          }
+        },
+        {
+          "path": "goods-bulk/index",
+          "style": {
+            "navigationBarTitleText": "批量管理"
+          }
+        },
+        {
+          "path": "verify/index",
+          "style": {
+            "navigationBarTitleText": "核销取餐码"
+          }
+        },
+        {
+          "path": "messages/index",
+          "style": {
+            "navigationBarTitleText": "通知"
+          }
+        },
+        {
+          "path": "order-history/index",
+          "style": {
+            "navigationBarTitleText": "历史订单"
+          }
+        },
+        {
+          "path": "order-exception/index",
+          "style": {
+            "navigationBarTitleText": "异常订单"
+          }
+        },
+        {
+          "path": "verify-log/index",
+          "style": {
+            "navigationBarTitleText": "核销记录"
+          }
+        },
+        {
+          "path": "devices/index",
+          "style": {
+            "navigationBarTitleText": "设备管理"
+          }
+        },
+        {
+          "path": "promotions/index",
+          "style": {
+            "navigationBarTitleText": "优惠活动"
+          }
+        },
+        {
+          "path": "promotion-edit/index",
+          "style": {
+            "navigationBarTitleText": "新建活动"
+          }
+        },
+        {
+          "path": "promotion-goods/index",
+          "style": {
+            "navigationBarTitleText": "选择商品"
+          }
+        },
+        {
+          "path": "marketing/index",
+          "style": {
+            "navigationBarTitleText": "营销中心"
+          }
+        },
+        {
+          "path": "coupon-edit/index",
+          "style": {
+            "navigationBarTitleText": "创建优惠券"
+          }
+        },
+        {
+          "path": "reviews/index",
+          "style": {
+            "navigationBarTitleText": "顾客评价"
+          }
+        },
+        {
+          "path": "review-reply/index",
+          "style": {
+            "navigationBarTitleText": "回复评价"
+          }
+        },
+        {
+          "path": "stats/index",
+          "style": {
+            "navigationBarTitleText": "营业数据"
+          }
+        },
+        {
+          "path": "stats-goods/index",
+          "style": {
+            "navigationBarTitleText": "商品销售排行"
+          }
+        },
+        {
+          "path": "stats-customer/index",
+          "style": {
+            "navigationBarTitleText": "顾客分析"
+          }
+        },
+        {
+          "path": "settlement/index",
+          "style": {
+            "navigationBarTitleText": "货款结算"
+          }
+        },
+        {
+          "path": "settlement-detail/index",
+          "style": {
+            "navigationBarTitleText": "结算单详情"
+          }
+        },
+        {
+          "path": "bills/index",
+          "style": {
+            "navigationBarTitleText": "账单流水"
+          }
+        },
+        {
+          "path": "payout-account/index",
+          "style": {
+            "navigationBarTitleText": "收款账户"
+          }
+        },
+        {
+          "path": "business-hours/index",
+          "style": {
+            "navigationBarTitleText": "营业设置"
+          }
+        },
+        {
+          "path": "delivery/index",
+          "style": {
+            "navigationBarTitleText": "配送设置"
+          }
+        },
+        {
+          "path": "delivery-area/index",
+          "style": {
+            "navigationBarTitleText": "配送范围"
+          }
+        },
+        {
+          "path": "shop-edit/index",
+          "style": {
+            "navigationBarTitleText": "店铺信息"
+          }
+        },
+        {
+          "path": "staff/index",
+          "style": {
+            "navigationBarTitleText": "员工账号"
+          }
+        },
+        {
+          "path": "staff-permission/index",
+          "style": {
+            "navigationBarTitleText": "员工权限"
+          }
+        },
+        {
+          "path": "licenses/index",
+          "style": {
+            "navigationBarTitleText": "经营资质"
+          }
+        },
+        {
+          "path": "help/index",
+          "style": {
+            "navigationBarTitleText": "帮助与客服"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/onboarding",
+      "pages": [
+        {
+          "path": "intro/index",
+          "style": {
+            "navigationBarTitleText": "入驻引导"
+          }
+        },
+        {
+          "path": "apply/index",
+          "style": {
+            "navigationBarTitleText": "商家入驻"
+          }
+        },
+        {
+          "path": "license/index",
+          "style": {
+            "navigationBarTitleText": "上传资质"
+          }
+        },
+        {
+          "path": "audit/index",
+          "style": {
+            "navigationBarTitleText": "审核进度"
+          }
+        },
+        {
+          "path": "rejected/index",
+          "style": {
+            "navigationBarTitleText": "审核结果"
+          }
+        },
+        {
+          "path": "done/index",
+          "style": {
+            "navigationBarTitleText": "开通成功"
+          }
+        }
+      ]
+    }
+  ],
+  "preloadRule": {
+    "pages/login/index": {
+      "network": "all",
+      "packages": [
+        "pages/merchant"
+      ]
+    }
+  },
+  "globalStyle": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#F6F5F2",
+    "backgroundTextStyle": "dark",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "美味坊",
+    "navigationBarBackgroundColor": "#FFFFFF"
+  }
+}

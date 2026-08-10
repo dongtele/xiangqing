@@ -1,90 +1,217 @@
 # 美味坊点餐小程序（顾客端 + 商家端）
 
-按 `design_handoff_weiweifang_miniprogram` 交付包的「实现建议顺序」，用**微信原生小程序 + TypeScript**（WXML / WXSS / TS）重新实现设计稿。HTML 设计稿只作为视觉与交互参考，DOM 结构没有照搬。
+按 `design_handoff_weiweifang_miniprogram` 交付包的「实现建议顺序」，用 **uni-app（Vue 3 + Vite + TypeScript + Pinia）**
+重新实现设计稿。HTML 设计稿只作为视觉与交互参考，DOM 结构没有照搬——交付文档里那套 375×812 固定画框、
+`dc-import` 手机状态栏、内联样式都是展示脚手架，不是产品结构。
 
-当前进度：**第 1–4 步已完成**，共 23 个页面 / 9 个组件。
+**全稿 98 屏 + 增量 4 屏（99–102）已全部实现。** 落地为 96 个页面路由 + 5 个半屏浮层组件，
+另有 2 屏并入已有页面（空状态 42 并入 05、卡券 39 与 17 合并）；共 18 个通用组件。
+`shots/` 下有 106 张逐屏截图，与设计稿一一对应。
 
 | 步骤 | 内容 | 屏号 | 状态 |
 |---|---|---|---|
 | 1 | 登录分流 + 顾客端 TabBar + 商家端 TabBar | 13 / 01 05 07 / 08 09 10 12 | ✅ |
-| 2 | 顾客下单闭环 | 01 → 02 → 30 → 03 → 85 → 43 → 04 → 06 | ✅ |
+| 2 | 顾客下单闭环 | 01 → 02 → 30 → 03 → 85 → 43 → 04 → 06（含 15 31 42） | ✅ |
 | 3 | 商家履约链路（接单出餐） | 08 → 09 → 62 → 51 | ✅ |
 | 4 | 配送与售后（退款闭环） | 53 / 84 / 20 / 56 / 40 / 48 | ✅ |
-| 5 | 商品与菜单 | 10 / 11 / 36 / 64 / 22 / 49 / 93 | 待做 |
-| 6 | 营销、数据、结算、设置、入驻 | — | 待做 |
+| 5 | 商品与菜单 | 11 / 36 / 64 / 63 / 22 / 49 / 93 | ✅ |
+| 6a | 顾客端浏览选餐 + 结算二级页 | 18 32 54 82 61 / 16 38 52 83 | ✅ |
+| 6b | 顾客端订单尾部 + 售后客服 | 25 19 55 60 / 57 58 41 77 76 | ✅ |
+| 6c | 顾客端卡券会员 + 设置账号 | 73 37 86 39 17 59 79 80 81 / 44 74 75 78 | ✅ |
+| 6d | 商家端接单扩展 + 营销评价 | 21 45 91 92 96 97 / 23 65 66 94 95 47 90 | ✅ |
+| 6e | 商家端数据结算 + 店铺团队 | 46 87 89 34 67 88 68 / 50 33 70 71 35 69 72 98 | ✅ |
+| 6f | 商家入驻全流程 | 26 → 14 → 27 → 24 →（驳回）28 → 29 | ✅ |
+| 增量 | 商家端商品发布 / 审核 / 售卖时段 | 99 → 100 →（驳回）101；102 | ✅ |
+
+> 设计稿的 98 屏分散在两份文件里：`screens.js` 只含 72 屏，**73–98 只存在于
+> `美味坊全页面原型.dc.html` 的 `id="sNN"` 锚点**。取设计稿时别只看 `screens.js`。
+> 99–102 在后来的增量包 `handoff_incremental/`（`screens-99-102.html` + 自带 README）里。
 
 ## 快速开始
 
 ```bash
-npm install                 # 只装 TS 与类型定义，运行时零依赖
-npm run type-check          # tsc --noEmit 全量类型检查
-npm run preview             # 生成 preview.html（浏览器直接打开看效果）
+npm install
+npm run type-check          # vue-tsc --noEmit 全量类型检查
+npm run lint                # ESLint（flat config，格式交给 Prettier）
+npm test                    # vitest 单元测试
+npm run dev:mp-weixin       # 产出 dist/dev/mp-weixin，用微信开发者工具导入
+npm run build:mp-weixin     # 产出 dist/build/mp-weixin（上传用）
+npm run dev:h5 / build:h5   # H5，浏览器里就能走完整链路
 ```
 
-微信开发者工具：导入本目录即可（`miniprogramRoot: miniprogram/`）。TS 由工具内置的
-`useCompilerPlugins: ["typescript"]` 编译，无需额外构建步骤；生成的 `.js` 已在 `.gitignore` 中忽略。
-`appid` 目前是 `touristappid`（测试号），换成真实 AppID 即可预览真机。
+微信开发者工具：导入 `dist/dev/mp-weixin`（或 `dist/build/mp-weixin`）。`manifest.json` 里的 appid
+目前是 `touristappid`（测试号），换成真实 AppID 即可真机预览。
+
+### 逐屏截图
+
+```bash
+npm i -D playwright         # 仅截图用，没写进 devDependencies，避免每次装依赖都拉浏览器
+npm run build:h5 && npm run shots
+```
+
+`scripts/shots.mjs` 会起一个本地静态服务托管 H5 产物，用无头 Chromium 按 375×812 逐屏输出到 `shots/`。
+脚本分两段：**流程段**真实点完「登录 → 加购 → 选规格 → 购物车 → 确认订单 →（地址浮层 / 备注浮层）→
+支付方式 → 收银台失败 → 重试 → 支付成功 → 订单详情」，覆盖只能靠交互到达的屏；**路由表段**是
+`ROUTES` 里的 `[截图名, 路由]` 数组，新增页面在这里加一行即可。
+截图里的价格、状态、倒计时都是代码算出来的，不是静态图。
+
+## 版本锁定
+
+uni-app 的 Vue3 分支对 vite / vue 版本敏感，以下版本是按 peerDependencies 对齐后锁死的，升级前先确认：
+
+| 包 | 版本 | 原因 |
+|---|---|---|
+| `@dcloudio/*` | `3.0.0-5010520260709002` | vue3 线最新稳定版，各包必须同版本 |
+| `vite` | `5.2.8` | `@dcloudio/vite-plugin-uni` 的 peer 是精确版本 |
+| `vue` | `3.4.21` | 与 uni-app 内置的 `@vue/shared` 对齐 |
+| `pinia` | `2.1.7` | peer `vue ^3.3.0`；2.2+ 起 peer 抬到 `^3.5.11`，与 vue 3.4 冲突 |
 
 ## 目录结构
 
 ```
-miniprogram/
-├── app.ts / app.json / app.wxss     # 入口、路由表、全局样式
-├── styles/tokens.wxss               # Design Tokens（颜色/阴影/圆角），全部来自交付文档
-├── config.ts                        # 店铺 id、支付超时等常量
-├── models/index.ts                  # 领域模型（金额统一「分」）
-├── store/                           # base（极简 observable）+ user + cart（本地持久化）
+src/
+├── main.ts / App.vue / pages.json / manifest.json   # 入口、路由表、平台配置
+├── styles/tokens.scss                # Design Tokens（颜色/阴影/圆角），全部来自交付文档
+├── styles/common.scss                # 卡片 / 主按钮 / 列表行 / 标签 / 骨架屏等复用类
+├── config.ts                         # 店铺 id、支付超时等常量
+├── models/index.ts                   # 领域模型（金额统一「分」）
+├── stores/                           # Pinia：user（角色持久化）+ cart（本地持久化）+ checkout + aftersale
+├── utils/sale-time.ts                # 售卖时段判定（102 与顾客端 01/02、下单校验共用）
 ├── services/
-│   ├── request.ts                   # 统一请求层：登录态注入、401 重授权、loading/错误收口
-│   ├── api.ts                       # 按域分组的接口函数（唯一对外出口）
-│   └── mock/                        # 本地假后端：db / 路由表 / 开关
-├── components/                      # icon · nav-bar · tab-bar · price · qty-stepper
-│                                    # toggle · cart-bar · cart-sheet
-├── pages/
-│   ├── login/                       # 13 授权登录与角色分流
-│   ├── customer/                    # menu(01) orders(05) profile(07) goods(02)
-│   │                                # checkout(03) pay-method(85) pay(43)
-│   │                                # pay-result(04) order-detail(06)
-│   │                                # delivery-track(53) rider-chat(84)
-│   │                                # aftersale(20) refund-items(56)
-│   │                                # refund-detail(40)
-│   └── merchant/                    # dashboard(08) orders(09) order-detail(62)
-│                                    # print(51) refund-review(48)
-│                                    # goods(10) shop(12)
-└── ...
-tools/preview/                       # 静态预览生成器（不参与小程序构建）
+│   ├── request.ts                    # 统一请求层：登录态注入、401 重授权、loading/错误收口
+│   ├── api.ts                        # 按域分组的接口函数（页面访问数据的唯一出口）
+│   └── mock/                         # 本地假后端：db / 路由表 / 开关
+├── components/                       # wf-icon · wf-nav-bar · wf-tab-bar · wf-price · wf-qty-stepper
+│                                     # wf-toggle · wf-thumb · wf-cart-bar · wf-cart-sheet · wf-timeline
+│                                     # wf-bar-chart（08/46/89）· wf-steps（14/27）
+│                                     # wf-uploader（14/27/71/72 的资质图上传位）
+│                                     # 半屏浮层：wf-cart-sheet(30) wf-address-sheet(15)
+│                                     #           wf-remark-sheet(31) wf-coupon-rule-sheet(59)
+│                                     #           wf-time-sheet(03) wf-picker-sheet(11/36/99)
+└── pages/
+    ├── login/                        # 13 授权登录与角色分流
+    ├── customer/                     # 主包。下单链路 menu(01) goods(02) checkout(03) pay-method(85)
+    │                                 # pay(43) pay-result(04) order-detail(06) orders(05) profile(07)
+    │                                 # 浏览 search(18) shop(32) photo-view(54) reviews(82) license(61)
+    │                                 # 地址 addresses(38) address-edit(16) map-picker(52)
+    │                                 # 履约 delivery-track(53) rider-chat(84) pickup-stores(83) pickup-code(25)
+    │                                 # 售后 aftersale(20) refund-items(56) refund-detail(40)
+    │                                 # 评价发票 comment(19) comment-publish(55) my-reviews(60)
+    │                                 #        invoice(57) invoice-titles(58)
+    │                                 # 客服 support(41) help(77) feedback(76)
+    │                                 # 资料消息 profile-edit(73) messages(37) message-detail(86)
+    │                                 # 卡券会员 coupons(17+39) coupon-center(79) points(80) points-mall(81)
+    │                                 # 设置账号 settings(44) account(74) notify-settings(75) about(78)
+    ├── merchant/                     # 分包（subPackages）。dashboard(08) orders(09) goods(10) shop(12)
+                                      # 履约 order-detail(62) print(51) devices(97) refund-review(48)
+                                      #      verify(21) verify-log(96) order-history(91) order-exception(92)
+                                      #      messages(45)
+                                      # 商品 goods-publish(99) goods-edit(11) spec-edit(36)
+                                      #      goods-audit(100) goods-reject(101) sale-time(102)
+                                      #      option-lib(64) image-crop(63) categories(22)
+                                      #      stock(49) goods-bulk(93)
+                                      # 营销评价 marketing(94) promotions(23) promotion-edit(65)
+                                      #          promotion-goods(66) coupon-edit(95)
+                                      #          reviews(47) review-reply(90)
+                                      # 数据结算 stats(46) stats-goods(87) stats-customer(89)
+                                      #          settlement(34) settlement-detail(67) bills(88)
+                                      #          payout-account(68)
+                                      # 店铺团队 business-hours(50) delivery(33) delivery-area(70)
+                                      #          shop-edit(71) staff(35) staff-permission(69)
+                                      #          licenses(72) help(98)
+    └── onboarding/                   # 分包。入驻流程 intro(26) apply(14) license(27)
+                                      #              audit(24) rejected(28) done(29)
+scripts/shots.mjs                     # H5 逐屏截图（不参与小程序构建）
 ```
+
+组件走 uni-app 的 easycom 自动注册（`src/components/wf-x/wf-x.vue`），模板里直接写 `<wf-x />`，不用 import。
 
 ## 关键实现决策
 
 **双角色 TabBar 不用原生 tabBar。**
-顾客端 3 项 + 商家端 4 项 = 7 个 tab 页，超过 `app.json` `tabBar.list` 的 5 项上限，
-自定义 tabBar 也绕不过这个限制。因此每个 tab 页自行挂载 `components/tab-bar`，
-切换用 `wx.reLaunch` 清栈。角色存在 `userStore` 里并持久化，`app.gotoRoleHome()` 负责分流：
-`我的(07) →「商家管理」` 进商家端，`店铺中心(12) →「切换到顾客视角」` 回顾客端。
+顾客端 3 项 + 商家端 4 项 = 7 个 tab 页，超过 `pages.json` `tabBar.list` 的 5 项上限，自定义 tabBar 也绕不过。
+因此每个 tab 页自行挂载 `wf-tab-bar`，切换用 `uni.reLaunch` 清栈。角色存在 Pinia 的 `user` store 里并持久化，
+`utils/nav.ts` 的 `gotoRoleHome()` 负责分流：`我的(07) →「商家管理」` 进商家端，
+`店铺中心(12) →「切换到顾客视角」` 回顾客端。
 
-**全局自定义导航栏。** 设计稿的头部大量使用渐变沉浸式布局与圆形返回钮，所以
-`app.json` 里 `navigationStyle: "custom"`；`utils/chrome.ts` 从 `wx.getWindowInfo()` 与
-胶囊按钮位置算出 `statusBarHeight / capsuleBottom`，页面用它做顶部占位，
-在任何机型上都对齐胶囊按钮，而不是写死设计稿的 96px。
+**全局自定义导航栏。** 设计稿的头部大量使用渐变沉浸式布局与圆形返回钮，所以 `pages.json` 里
+`globalStyle.navigationStyle: "custom"`；`utils/chrome.ts` 用 `uni.getWindowInfo()` 拿状态栏高度，
+再在 `#ifdef MP-WEIXIN` 分支里用 `uni.getMenuButtonBoundingClientRect()` 算出 `capsuleBottom`，
+页面用它做顶部占位，在任何机型上都对齐胶囊按钮，而不是写死设计稿的 96px（H5 用固定回退值）。
 
-`nav-bar` 的纵向位置按设计稿分两种：常规（占位）标题栏落在**胶囊按钮下方**，
-整行宽度可用，右侧文字按钮（如 62 的「打印」、51 的「测试打印」）不会被胶囊压住；
-`fixed`（浮在大图 / 渐变头部上，只有返回钮，如 02 / 06）时与胶囊按钮同一水平线。
+`wf-nav-bar` 的纵向位置按设计稿分两种：常规（占位）标题栏落在**胶囊按钮下方**，整行宽度可用，
+右侧文字按钮不会被胶囊压住；`fixed`（浮在大图 / 渐变头部上，只有返回钮，如 02 / 06）时与胶囊按钮同一水平线。
 
-**图标用内联 SVG，不引位图。** `components/icon` 把设计稿的线性 SVG 路径按 `color`
-烘焙成 `background-image: url("data:image/svg+xml,...")`，任意尺寸清晰，也不用维护图片资源。
-新增图标写进 `components/icon/icons.ts` 即可，保持 `stroke-width 1.9–2.4` 的线性风格。
+**图标用内联 SVG，不引位图。** `wf-icon` 把设计稿的线性 SVG 路径按 `color` 烘焙成
+`background-image: url("data:image/svg+xml,...")`，任意尺寸清晰，也不用维护图片资源。
+新增图标写进 `components/wf-icon/icons.ts` 即可，保持 `stroke-width 1.9–2.4` 的线性风格。
 
-**金额一律用「分」，优惠一律服务端试算。** `models` 里所有金额字段都是分，
-展示走 `utils/money`；`确认订单(03)`、`购物车条(01)`、`购物车明细(30)` 的满减文案与实付金额
-全部来自 `POST /checkout/trial` 的返回，前端不自己算优惠（交付文档 State Management 的要求）。
+**图片位一律灰块占位。** 交付文档 Assets 写明设计稿没有任何位图素材，商品图 / 店铺头图都是 `#F0EAE3` 占位，
+真实图源待业务方提供。所以 `services/mock/images.ts` 里全是空串，`wf-thumb` 遇到空串渲染灰块、
+有值才渲染 `<image>`——拿到 CDN 地址（商品图 1:1、店铺头图 16:9，WebP + 懒加载）后只改这一个文件。
+
+**金额一律用「分」，优惠一律服务端试算。** `models` 里所有金额字段都是分，展示走 `utils/money`；
+`确认订单(03)`、`购物车条(01)`、`购物车明细(30)` 的满减文案与实付金额全部来自 `POST /checkout/trial`
+的返回，前端不自己算优惠（交付文档 State Management 的要求）。菜单页用一个
+`watch(() => [cart.count, cart.itemsTotal])` 收口所有触发路径——本页加减、02 详情页加购返回、
+浮层里改数量都会重新试算。
 
 **样式尺寸用 rpx。** 设计稿 375px 画框，换算关系是 1 设计 px = 2rpx，
 所有 12.5px / 13.5px 这类半像素字号折算后都是整数 rpx。
 
-**mock 后端可一键切换。** `services/mock/config.ts` 里 `USE_MOCK = true` 时，
-`request()` 走本地路由表；接真实后端只需把它置 false 并填 `BASE_URL`，`api.ts` 与页面代码不用改。
+**块间距挂在块自身，不跨 `scroll-view` 写子选择器。** `scroll-view` 在 H5 与小程序端都会在
+自身与插槽内容之间再插一层容器（H5 是 `uni-scroll-view > div.uni-scroll-view >
+div.uni-scroll-view-content`），类名挂在最外层，所以 `.x__body > .card { margin-bottom: 20rpx }`
+这种写法**一条都匹配不上**——规则照样编进产物，但选不中任何元素，肉眼只看得出「卡片全贴在一起」。
+正确写法是把间距写在块自身：页面 scoped 样式里直接写 `.card { margin-bottom: 20rpx }`
+（编译后是 `.card[data-v-xxx]`，只作用于本页）。`test/styles.spec.ts` 会扫描全仓把这类写法挡回去。
+
+**H5 与小程序双端可跑。** 页面不使用只有微信端才有的能力：`13` 的
+`<button open-type="getPhoneNumber">` 用 `#ifdef MP-WEIXIN` 包裹，非微信端走同一个 `login()`，
+所以 H5 里能完整走通下单链路（也是截图验收的基础）。
+
+**分成三个小程序包。** 微信小程序主包有 2MB 上限，全稿 98 屏放一个包里必然超。
+`pages.json` 里把 `pages/merchant/**` 与 `pages/onboarding/**` 各声明成一个 `subPackages`，
+主包只留登录与顾客端（分包只改路由配置，页面代码与 `push()` 里的绝对路径都不用动）。
+`preloadRule` 在 `pages/login/index` 上预下载商家分包，商家登录后进工作台不会有加载空窗；
+入驻分包不预下载——只有未入驻用户点「成为商家」才会用到。
+
+量到的体积：**主包 1.5M / 商家分包 944K / 入驻分包 124K**，三者都在 2MB 上限内。
+
+**轮询按需起、离开就停。** `utils/poll.ts` 收口了轮询：`05 我的订单`、`06 订单详情`
+只在**还有进行中的单**时才起 15 秒轮询，终态立刻停；`53 配送追踪` 8 秒；
+`09 商家订单` 15 秒比对待接单数，增加时才播报新单（受 12 的「新订单提醒」开关控制）。
+所有页面都在 `onHide` / `onUnload` 停表——小程序 hide 之后定时器不会自动停，后台空跑白耗电。
+
+**订阅消息与新单播报都做了降级。** `utils/notify.ts` 用 `#ifdef MP-WEIXIN` 隔开平台能力：
+下单前申请订阅消息授权，**用户拒绝不阻断下单**且同会话只问一次；新单播报在没有音频资源时
+降级为震动 + toast，不会因为缺 mp3 就静默失败让商家漏单。
+
+**商品审核：审核字段与非审核字段分开。** 商家改动分两类——
+名称 / 描述 / 主图 / **规格价格**是**审核字段**，改了要重新过审；
+库存、售卖时段、上下架、分类归属立即生效。
+规格里既有价格又有库存，所以不能整体 JSON 比对，用 `specPriceFingerprint()`（`models/index.ts`）
+只取每档的 `price` / `priceDelta` 做指纹——改一档库存不会误触审核。审核期间**线上版本原样保留**，
+顾客端 01/02 看到的还是上一个通过审核的版本；新品在通过前压根不进 `goodsList`，顾客端看不到。
+未过审的商品服务端会拒绝上架（`POST /merchant/goods/onsale` 返回 `ok:false`），前端也禁用开关。
+
+假后端里审核约 10 秒出结果，命中 `db.BANNED_WORDS` 的名称会被驳回。
+**结果是「读接口时按时间戳惰性结算」而不是起定时器**——mock 的处理器都是同步的，
+起 `setTimeout` 会让测例真等 10 秒，也会在小程序后台空跑。10 商品管理在有商品审核中时
+用 `utils/poll.ts` 起 5 秒轮询等结果，全部出结果就停。
+
+**规格档位价是绝对价，展示价是算出来的。** 交付文档 99 要求「商家在这里填写每个规格的价格和库存」，
+所以定价档存 `option.price`（绝对价）而不是相对基础价的差值，另带 `option.stock` 每档独立库存。
+顾客端展示价 `displayPrice()` = 所有必选定价组里最低的一档，多于一档才显示「起」；
+实付单价 `specUnitPrice()` = 选中定价档的价 + 勾选加料的 `priceDelta`。
+三个函数都在 `models/index.ts`，菜单、商品详情、购物车、商家端四处共用，避免各算各的。
+
+**售卖时段收口在一个纯函数模块。** `utils/sale-time.ts` 提供 `isOnSaleNow` / `nextOpenText` /
+`saleTimeText` / `mergeSlots`，不碰 `uni.*`。「现在能不能买」这条判断菜单(01)、商品详情(02)、
+下单校验三处都在用，写三遍迟早不一致；重叠时段自动合并、跨零点的夜宵档也在这里处理。
+
+**mock 后端可一键切换。** `services/mock/config.ts` 里 `USE_MOCK = true` 时，`request()` 走本地路由表；
+接真实后端只需把它置 false 并填 `BASE_URL`，`api.ts` 与页面代码不用改。
 `PAY_FAIL_FIRST_ATTEMPT = true` 是演示开关：首次支付故意失败一次，用来走通
 `收银台失败态(43) → 重新支付 → 支付成功(04)`；接真实支付时删掉。
 
@@ -98,36 +225,110 @@ tools/preview/                       # 静态预览生成器（不参与小程�
    与设计稿 03 / 06 的数值一致）。
 3. **商品详情的「起」按规格判定。** 只有存在加价选项的商品才显示「起」，
    所以 `农家小炒肉拌饭`（单规格）不再显示「起」，与「多规格才显示选规格」的设计意图保持一致。
-4. **超时倒计时的文案在设计稿里不一致，两处按各自的稿实现。** 订单管理（09）写的是
-   「剩 3:42 未接自动提醒」，商家订单详情（62）写的是「剩 2:38 自动拒单」——
-   同一个倒计时，一处是提醒、一处是自动拒单。目前两屏各自照稿实现，
-   **超时到底是提醒还是自动拒单需要确认**，确认后统一为一处文案即可（只改 mock 的 `detailCountdownText` 拼装）。
-5. **小票打印（51）合并了设计稿与交付文档的两种描述。** 设计稿画的是「打印设置 + 后厨联预览」，
-   交付文档写的是「顾客单 / 厨房单预览与补打」。实现保留设计稿的版式，
-   预览区加了「后厨联 / 顾客联」切换，底部加了「补打小票（N 联）」——顾客联带金额与页脚，
-   后厨联不带价格（后厨不需要），并受「打印菜品备注」开关控制。
-6. **售后流程的页面顺序按设计稿的按钮文案定。** 交付文档写的是 `20 → 56`，
-   但设计稿 56 的主按钮是「下一步 · 填写原因」，说明 56 在 20 之前。
-   实现折中为：06 →「申请售后」进 20，20 里「退款商品」一行可进 56 勾选部分商品，
-   选完回到 20，退款金额随之重算 —— 既保住文档的顺序，也保住设计稿的按钮语义。
-7. **未做的页面给出明确提示。** 设计稿里指向后续步骤的入口（店内搜索 18、地址 15/16、
-   优惠券 17、配送追踪 53、核销取餐码 21、打印机与设备 97 等）会 toast 说明所属屏号，
-   不做无声失效。
+4. **只对「跨页要带的草稿」落 store。** 交付文档 State Management 建议按域拆 store，但订单详情、
+   退款进度这类每次进页面都按 id 重拉的数据落 store 只会多一份会过期的副本，所以没做 `orders` store。
+   真正需要 store 的是跨页面攒出来的草稿：`checkout`（地址 / 备注 / 支付方式，15 31 85 都要写回 03）与
+   `aftersale`（退款商品 / 原因 / 说明，56 写回 20 再提交）。
+5. **半屏浮层不做独立页。** 设计稿里 30 购物车明细、15 选择收货地址、31 订单备注、
+   59 优惠券使用规则都画成盖在上一屏之上的半屏卡片（顶部还能看到下层内容），
+   所以实现为 `wf-cart-sheet` / `wf-address-sheet` / `wf-remark-sheet` / `wf-coupon-rule-sheet`
+   四个组件挂在宿主页里，不进 `pages.json`——独立页会丢掉「盖在上一屏上」的层次关系。
+6. **17 我的优惠券与 39 我的卡券合并成一页。** 两屏是同一个卡券包的两版画法
+   （17 用分段控件、39 用下划线 Tab 且多了兑换码入口），线上不该有两个入口指向同一功能。
+   实现按并集来：分段控件带数量（17）+ 券卡的补充说明行与配色变体（17）+ 兑换码入口（39）。
+7. **20 申请售后与 56 选择退款商品的先后按设计稿走。** 交付文档的顺序是 20 → 56，
+   但 56 的主按钮写的是「下一步 · 填写原因」，说明 56 在 20 之前。这里取两者的交集：
+   `订单详情(06) → 20`，20 里的「退款商品」行点开进 56 选商品，选完回到 20 填原因提交。
+8. **03 的期望送达时间做成半屏浮层。** 设计稿只画了「立即送出 / 预计 12:30 送达」这一行入口，
+   没画选择器本身。按 15/31/59 同样的处理方式补了 `wf-time-sheet`：从下一个半点起按半小时分 8 档，
+   选中写回 `checkout` store 并带进订单备注。**交互是补的，不是设计稿原有的。**
+9. **85 的找人代付按平台能力分流。** 设计稿只列了这一项支付方式，没画代付卡片与分享流程。
+   小程序端唤起转发（`uni.showShareMenu` + 引导用右上角转发），H5 端复制代付链接；
+   代付链接的真实生成属于后端，接入前用订单 id 拼了个可读占位。
+10. **全部入口都是真实跳转**，仓里已经没有 `todo()` 占位，`utils/nav.ts` 里那个辅助函数也一并删了。
+11. **商品加了一层平台审核，设计稿 98 屏里没有这一层。** 设计稿 10 只有「售卖中 / 补货 / 已下架」，
+    但真实外卖平台里商家改的内容要过审才对顾客端生效。补法见下面「商品审核」一节：
+    10 的状态区多了「审核中 / 已驳回」，11 顶部多了状态条，两处都是新增的。
+12. **规格组类型改成显式选择。** 设计稿 36 的说明写的是「三种组类型（定价格 / 不加价 / 加价多选）」，
+    但没画选类型的交互。原实现从选项的 `priceDelta` 反推组类型，导致**新建的组永远设不了价**
+    （新组没有选项 → 反推恒为「不加价」→ 不出价格框 → 没有把差价改成正数的入口）。
+    现在建组时先用 `wf-picker-sheet` 选类型（`SpecGroup.kind`），已有组也能改类型。
+13. **所属分类从手输改成选择器。** 设计稿 11 的「所属分类 招牌热菜 ›」带 `›` 就是要进选择器，
+    原实现用 `uni.showModal({ editable: true })` 让商家打字，能打出 22 分类管理里根本没有的分类。
+    现在只能从已有分类里选，浮层底部带「去分类管理 ›」。
+14. **规格组类型仍用 `kind` 一个字段。** 增量交付文档的 `SpecGroup` 用
+    `required + multiple + affectsPrice` 三个布尔表达组类型，这里保留已有的
+    `kind: 'price' | 'plain' | 'addon'` 作单一真相，三个布尔由 `SPEC_KIND_FLAGS` 派生并照样存在
+    （字段名与文档一致）。理由是 `kind` 已经贯穿 36 / 99 与 mock、测例，三个布尔分散写容易写歪。
+15. **接口路径沿用 `/merchant/goods/*`。** 增量文档建议 `/merchant/products/:id/...` 这套 RESTful 路径，
+    但同一份文档也要求「按你现有 request 封装写、沿用现有命名规范」。改路径要动已有页面，
+    所以新增接口按现有风格命名：`submit` / `audits` / `audit-detail` / `sale-time`。
+16. **审核时长：文案 2 小时，mock 10 秒出结果。** 文档口径是「约 2 小时 + 微信服务通知推送」，
+    界面文案照此写；假后端为了当场能演示闭环把倒计时压到 10 秒，接真实后端时换成轮询审核接口即可。
+17. **订单列表都列出菜品。** 设计稿只画了 09 的「待接单」tab（会展开菜品明细），
+    其余 tab 与 91 / 92 / 05 都只给了一行摘要。实际用起来看不到点了什么，所以统一列出菜品名 × 份数；
+    05 顾客端缩略图最多两张、菜名最多三行，多的用「等 N 种商品」收口。
 
-## 预览
+## 98 屏 → 实现对照
 
-`npm run preview` 会：编译 `miniprogram/**/*.ts` → 用替身运行时（`tools/preview/runtime.js`）
-真实执行每个页面的 `onLoad / onShow`（含 mock 请求、store、服务端试算）→ 拿页面最终的 `data`
-渲染真实 WXML + WXSS → 输出 `preview.html`。
+| 屏号 | 页面路由 |
+|---|---|
+| 13 | `pages/login/index` |
+| 01 02 03 85 43 04 06 05 07 | `pages/customer/{menu,goods,checkout,pay-method,pay,pay-result,order-detail,orders,profile}/index` |
+| 18 32 54 82 61 | `pages/customer/{search,shop,photo-view,reviews,license}/index` |
+| 38 16 52 | `pages/customer/{addresses,address-edit,map-picker}/index` |
+| 53 84 83 25 | `pages/customer/{delivery-track,rider-chat,pickup-stores,pickup-code}/index` |
+| 20 56 40 | `pages/customer/{aftersale,refund-items,refund-detail}/index` |
+| 19 55 60 57 58 | `pages/customer/{comment,comment-publish,my-reviews,invoice,invoice-titles}/index` |
+| 41 77 76 | `pages/customer/{support,help,feedback}/index` |
+| 73 37 86 | `pages/customer/{profile-edit,messages,message-detail}/index` |
+| 17 79 80 81 | `pages/customer/{coupons,coupon-center,points,points-mall}/index` |
+| 44 74 75 78 | `pages/customer/{settings,account,notify-settings,about}/index` |
+| 08 09 10 12 62 51 48 | `pages/merchant/{dashboard,orders,goods,shop,order-detail,print,refund-review}/index` |
+| 11 36 64 63 22 49 93 | `pages/merchant/{goods-edit,spec-edit,option-lib,image-crop,categories,stock,goods-bulk}/index` |
+| 21 96 45 91 92 97 | `pages/merchant/{verify,verify-log,messages,order-history,order-exception,devices}/index` |
+| 23 65 66 94 95 47 90 | `pages/merchant/{promotions,promotion-edit,promotion-goods,marketing,coupon-edit,reviews,review-reply}/index` |
+| 46 87 89 34 67 88 68 | `pages/merchant/{stats,stats-goods,stats-customer,settlement,settlement-detail,bills,payout-account}/index` |
+| 50 33 70 71 35 69 72 98 | `pages/merchant/{business-hours,delivery,delivery-area,shop-edit,staff,staff-permission,licenses,help}/index` |
+| 26 14 27 24 28 29 | `pages/onboarding/{intro,apply,license,audit,rejected,done}/index` |
+| **30 15 31 59** | 半屏浮层组件 `wf-cart-sheet` / `wf-address-sheet` / `wf-remark-sheet` / `wf-coupon-rule-sheet` |
+| **42** | 05 我的订单的空状态（「售后」Tab 无数据时） |
+| **39** | 与 17 合并为 `pages/customer/coupons/index` |
 
-也就是说预览里的价格、状态、倒计时都是代码算出来的。与真机的差异只有三处等价替换：
-`rpx` 按 375px 折成 px、`position:fixed` 改为相对画框定位、`env(safe-area-inset-bottom)` 取 34px；
-图片按交付文档用 `#F0EAE3` 灰块占位（等业务方提供真实图源）。
+## 质量保障
+
+**ESLint + Prettier。** `eslint.config.js` 是 flat config，开 `vue/recommended` 与
+`typescript-eslint/recommended`；格式类规则全部交给 Prettier（`eslint-config-prettier` 关冲突项），
+未使用变量交给 `tsconfig` 的 `noUnusedLocals`，避免两处重复告警。
+
+**单元测试（vitest）。** `vitest.config.ts` 与 `vite.config.ts` 分开——后者挂着 `uni()` 插件会去
+编译所有页面，单测跑不动也不需要。89 个测例分三层：
+
+| 文件 | 覆盖 |
+|---|---|
+| `test/money.spec.ts` / `test/time.spec.ts` | 金额换算与倒计时（含负数钳制、停止函数） |
+| `test/cart.spec.ts` | 同规格合并、规格顺序无关、减到 0 移除、切店铺清空、快照脱离响应式 |
+| `test/checkout-trial.spec.ts` | **结算与退款的金额规则**：满减命中/未命中、自提免运费、部分退款按比例摊优惠；并锁死主链路实付 **6400 分** |
+| `test/mock-rules.spec.ts` | 提现下限与余额上限、券面额须小于门槛、核销码校验、入驻必传项、异常单处理、兑换码 |
+| `test/styles.spec.ts` | 扫描全仓，禁止跨 `scroll-view` / `swiper` 这类会插包裹层的内置组件写 `>` 子选择器（见「关键实现决策」里的块间距一条） |
+| `test/goods-audit.spec.ts` | **商品审核规则**：新建必审、只改库存/某档库存/分类/时段都不触发审核、改档位价重审期间顾客端仍是旧价、通过后才写回菜单、违禁词逐项驳回、未过审不能上架、草稿不进审核列表 |
+| `test/sale-time.spec.ts` | **售卖时段**：区间内外与边界、跨零点夜宵档、重复日期、关闭的时段、重叠自动合并、「11:00 开售」角标、商家端副标题文案 |
+
+`checkout-trial` / `mock-rules` / `goods-audit` 测的是 `services/mock` 里的业务规则，**当接口契约用**——接真实后端后返回对不上，
+说明两边对优惠或校验的理解不一致。`mock` 的 state 是模块级可变对象，所以每个测例前
+`vi.resetModules()` + 动态 import 拿干净副本，不靠测例顺序。
 
 ## 待补齐的工程项
 
-- 真实接口联调（`USE_MOCK=false` + `BASE_URL`）与 `wx.requestPayment` 接入
-- 商品图 / 店铺头图接 CDN（1:1 与 16:9，WebP + 懒加载）
-- 地图相关页面（52 / 53 / 70 / 83）接腾讯位置服务
-- 进行中订单轮询与订阅消息、商家新单语音播报
-- 单元测试与 ESLint 配置
+以下三项**代码侧都已就位，缺的是参数不是代码**：
+
+- **真实后端**：`services/mock/config.ts` 的 `USE_MOCK` 置 false 并填 `BASE_URL` 即可，
+  `api.ts` 与页面代码都不用改。支付已写好双分支：mock 时用服务端返回的结果，
+  接真实后端时用 `payOrder()` 返回的 `payParams` 调 `uni.requestPayment`，取消与失败都落到 43 失败态。
+- **商品图 / 店铺头图接 CDN**（1:1 与 16:9，WebP + 懒加载）：`services/mock/images.ts` 是唯一开关点。
+- **地图**（52 / 53 / 70 / 83）：填 `src/config.ts` 的 `MAP_KEY` 即渲染真实地图，
+  留空则降级为设计稿那套 CSS 示意底图（H5 也能跑通、能截图）。
+
+另需业务方提供的：
+- 微信订阅消息模板 id（`utils/notify.ts` 的 `ORDER_TEMPLATE_IDS` 目前是占位）
+- 商家新单播报的音频文件（`utils/notify.ts` 里 `src` 为空时自动降级为震动 + toast，不会静默漏单）

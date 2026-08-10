@@ -1,13 +1,7 @@
 node_modules/
-miniprogram_npm/
-project.private.config.json
+dist/
 .DS_Store
 *.log
 
-# 预览产物
-.preview-build/
-preview.html
-
-# 微信开发者工具由 TS 编译插件生成的产物
-miniprogram/**/*.js
-!miniprogram/**/*.wxs
+# 截图产物
+shots/
