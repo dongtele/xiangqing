@@ -321,6 +321,30 @@
           }
         },
         {
+          "path": "goods-publish/index",
+          "style": {
+            "navigationBarTitleText": "发布商品"
+          }
+        },
+        {
+          "path": "goods-audit/index",
+          "style": {
+            "navigationBarTitleText": "商品审核"
+          }
+        },
+        {
+          "path": "goods-reject/index",
+          "style": {
+            "navigationBarTitleText": "审核结果"
+          }
+        },
+        {
+          "path": "sale-time/index",
+          "style": {
+            "navigationBarTitleText": "售卖时段"
+          }
+        },
+        {
           "path": "spec-edit/index",
           "style": {
             "navigationBarTitleText": "规格与价格"

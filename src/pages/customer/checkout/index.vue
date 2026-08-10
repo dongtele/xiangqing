@@ -95,8 +95,13 @@ async function onSubmit(): Promise<void> {
     ]
       .filter(Boolean)
       .join('，');
-    const { orderId } = await createOrder(cart.snapshot(), deliveryType.value, remark);
-    push(`/pages/customer/pay-method/index?id=${orderId}`);
+    const res = await createOrder(cart.snapshot(), deliveryType.value, remark);
+    // 购物车里可能躺着已过售卖时段的商品，服务端会拦下来
+    if (!res.orderId) {
+      toast(res.message || '下单失败');
+      return;
+    }
+    push(`/pages/customer/pay-method/index?id=${res.orderId}`);
   } finally {
     submitting.value = false;
   }

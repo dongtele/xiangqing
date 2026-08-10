@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
+import { specUnitPrice } from '@/models';
 import type { CartItem, CartState, DeliveryType, Goods, SpecOption } from '@/models';
 
 const STORAGE_KEY = 'wwf_cart';
@@ -67,7 +68,7 @@ export const useCartStore = defineStore('cart', () => {
       goodsId: goods.id,
       name: goods.name,
       image: goods.image,
-      unitPrice: goods.price + options.reduce((n, o) => n + o.priceDelta, 0),
+      unitPrice: specUnitPrice(goods.price, options),
       qty,
       specText: options.map((o) => o.name).join(' / '),
       specIds,

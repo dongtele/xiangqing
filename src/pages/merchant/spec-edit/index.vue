@@ -5,7 +5,7 @@ import { getGoodsDraft, saveGoodsDraft } from '@/services/api';
 import { SPEC_KIND_FLAGS } from '@/models';
 import { fen2yuan2 } from '@/utils/money';
 import { back, push, toast } from '@/utils/nav';
-import type { GoodsDraft, SpecGroup, SpecGroupKind } from '@/models';
+import type { GoodsDraft, SpecGroup, SpecGroupKind, SpecOption } from '@/models';
 
 /**
  * 36 · 规格与价格编辑。
@@ -42,7 +42,7 @@ onShow(async () => {
   draft.value = res;
 });
 
-/** 定价组：选项价 = 基础价 + 加价；加价组：只展示 +￥ */
+/** 定价组：选项自带绝对价；加价组：只展示 +￥ */
 function isPricing(group: SpecGroup): boolean {
   return group.kind === 'price';
 }
@@ -61,9 +61,11 @@ function kindLabel(kind: SpecGroupKind): string {
   return KIND_OPTIONS.find((k) => k.value === kind)?.label || '';
 }
 
-function optionPriceText(group: SpecGroup, priceDelta: number): string {
+function optionPriceText(group: SpecGroup, option: SpecOption): string {
   if (!draft.value) return '';
-  return isPricing(group) ? fen2yuan2(draft.value.price + priceDelta) : fen2yuan2(priceDelta);
+  return isPricing(group)
+    ? fen2yuan2(option.price ?? draft.value.price)
+    : fen2yuan2(option.priceDelta);
 }
 
 function onEditPrice(group: SpecGroup, optionId: string): void {
@@ -73,7 +75,7 @@ function onEditPrice(group: SpecGroup, optionId: string): void {
   uni.showModal({
     title: pricing ? `${option.name} 售价（元）` : `${option.name} 加价（元）`,
     editable: true,
-    placeholderText: optionPriceText(group, option.priceDelta),
+    placeholderText: optionPriceText(group, option),
     confirmColor: '#FF4A17',
     success: (res) => {
       if (!res.confirm || !draft.value) return;
@@ -83,7 +85,8 @@ function onEditPrice(group: SpecGroup, optionId: string): void {
         return;
       }
       const fen = Math.round(value * 100);
-      option.priceDelta = pricing ? Math.max(0, fen - draft.value.price) : fen;
+      if (pricing) option.price = fen;
+      else option.priceDelta = fen;
     },
   });
 }
@@ -98,7 +101,13 @@ function onAddOption(group: SpecGroup): void {
       if (!res.confirm) return;
       const name = (res.content || '').trim();
       if (!name) return;
-      group.options.push({ id: `o_${Date.now()}`, name, priceDelta: 0 });
+      // 定价档默认继承商品基础价，价格框立刻可点改
+      group.options.push({
+        id: `o_${Date.now()}`,
+        name,
+        priceDelta: 0,
+        price: group.kind === 'price' ? draft.value?.price : undefined,
+      });
     },
   });
 }
@@ -167,12 +176,18 @@ function applyKind(groupId: string, kind: SpecGroupKind): void {
   group.kind = kind;
   group.multiple = SPEC_KIND_FLAGS[kind].multiple;
   group.required = SPEC_KIND_FLAGS[kind].required;
+  group.affectsPrice = SPEC_KIND_FLAGS[kind].affectsPrice;
   if (kind === 'plain') {
     // 不加价组不能留着差价，否则顾客端会莫名多收钱
     group.options.forEach((o) => {
       o.priceDelta = 0;
+      o.price = undefined;
     });
     toast('已改为不加价，选项差价已清零');
+  } else if (kind === 'price') {
+    group.options.forEach((o) => {
+      if (o.price === undefined) o.price = draft.value?.price;
+    });
   }
 }
 
@@ -185,7 +200,7 @@ async function onSave(): Promise<void> {
   }
   const res = await saveGoodsDraft(JSON.parse(JSON.stringify(draft.value)) as GoodsDraft);
   // 规格属于审核字段，改了要重新过审；审核期间顾客端仍是上一版
-  toast(res.auditState === 'reviewing' ? '已提交审核' : '规格已保存', 'success');
+  toast(res.auditState === 'pending' ? '已提交审核' : '规格已保存', 'success');
   back();
 }
 </script>
@@ -219,7 +234,7 @@ async function onSave(): Promise<void> {
             <text class="flex1 se__opt-name">{{ o.name }}</text>
             <view class="se__price tap" @tap="onEditPrice(group, o.id)">
               <text class="se__price-sym">{{ group.kind === 'addon' ? '+¥' : '¥' }}</text>
-              <text class="se__price-num">{{ optionPriceText(group, o.priceDelta) }}</text>
+              <text class="se__price-num">{{ optionPriceText(group, o) }}</text>
             </view>
             <text class="se__del tap" @tap="onRemoveOption(group, o.id)">✕</text>
           </view>

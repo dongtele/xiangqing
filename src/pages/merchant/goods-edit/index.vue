@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
-import { createGoodsDraft, getCategoryRows, getGoodsDraft, saveGoodsDraft } from '@/services/api';
+import { getCategoryRows, getGoodsDraft, saveGoodsDraft } from '@/services/api';
 import { fen2yuan2 } from '@/utils/money';
 import { back, push, toast } from '@/utils/nav';
+import { saleTimeText } from '@/utils/sale-time';
 import type { CategoryRow, GoodsDraft, SpecGroup, SpecOption } from '@/models';
 
 /** 11 · 编辑商品 / 发布商品：基础信息、图片、价格、规格、审核状态 */
@@ -11,19 +12,13 @@ const draft = ref<GoodsDraft | null>(null);
 const categories = ref<CategoryRow[]>([]);
 const catSheet = ref(false);
 let goodsId = '';
-/**
- * 不带 id 进来就是「发布商品」，要先跟服务端要一个 id。
- * onLoad 是异步的，onShow 可能先跑，所以把这次请求存成 promise，onShow 先 await 它。
- */
-let ready: Promise<void> = Promise.resolve();
-
 const priceText = computed(() => (draft.value ? fen2yuan2(draft.value.price) : '0.00'));
-const isNew = computed(() => !!draft.value?.isNew);
 const auditState = computed(() => draft.value?.auditState || 'approved');
 const canToggleSale = computed(() => auditState.value === 'approved');
+const saleText = computed(() => saleTimeText(draft.value?.saleTime));
 
 const saveText = computed(() => {
-  if (auditState.value === 'rejected' || isNew.value) return '提交审核';
+  if (auditState.value === 'rejected' || auditState.value === 'draft') return '提交审核';
   return draft.value?.onSale ? '保存并上架' : '保存';
 });
 
@@ -36,16 +31,13 @@ const categoryOptions = computed(() =>
 
 onLoad((o) => {
   goodsId = (o && o.id) || '';
-  if (!goodsId) {
-    ready = createGoodsDraft().then((created) => {
-      goodsId = created.id;
-    });
-  }
+  // 新建统一走 99 发布商品（交付文档：10「＋发布」→ 99），11 只负责编辑已有商品
+  if (!goodsId) uni.redirectTo({ url: '/pages/merchant/goods-publish/index' });
 });
 
 // 从 36 规格页返回后要拿到最新规格，所以每次 show 都重新取
 onShow(async () => {
-  await ready;
+  if (!goodsId) return;
   const [res, rows] = await Promise.all([getGoodsDraft(goodsId), getCategoryRows()]);
   if (!res) {
     toast('商品不存在');
@@ -82,11 +74,13 @@ function onPickCategory(id: string): void {
 }
 
 /** 规格预览：定价组显示整价，加料这类加价组显示 +￥ */
+/** 规格预览：定价档显示整价，加料这类加价组显示 +￥ */
 function optionLabel(group: SpecGroup, option: SpecOption): string {
-  if (!draft.value || option.priceDelta === 0) return option.name;
-  return group.kind === 'price'
-    ? `${option.name} ¥${fen2yuan2(draft.value.price + option.priceDelta)}`
-    : `${option.name} +¥${fen2yuan2(option.priceDelta)}`;
+  if (!draft.value) return option.name;
+  if (group.kind === 'price') {
+    return `${option.name} ¥${fen2yuan2(option.price ?? draft.value.price)}`;
+  }
+  return option.priceDelta > 0 ? `${option.name} +¥${fen2yuan2(option.priceDelta)}` : option.name;
 }
 
 function editNumber(field: 'price' | 'stock', title: string): void {
@@ -135,18 +129,20 @@ async function onSave(): Promise<void> {
     return;
   }
   const res = await saveGoodsDraft(JSON.parse(JSON.stringify(draft.value)) as GoodsDraft);
-  if (res.auditState === 'reviewing') {
+  if (res.auditState === 'pending') {
+    // 交付文档：提交审核后落到 100 审核进度
     toast('已提交审核', 'success');
-  } else {
-    toast(draft.value.onSale ? '已保存并上架' : '已保存（未上架）', 'success');
+    uni.redirectTo({ url: '/pages/merchant/goods-audit/index' });
+    return;
   }
+  toast(draft.value.onSale ? '已保存并上架' : '已保存（未上架）', 'success');
   back();
 }
 
 function onToggleSale(on: boolean): void {
   if (!draft.value) return;
   if (!canToggleSale.value) {
-    toast(auditState.value === 'reviewing' ? '审核通过后才能上架' : '审核未通过，无法上架');
+    toast(auditState.value === 'pending' ? '审核通过后才能上架' : '审核未通过，无法上架');
     return;
   }
   draft.value.onSale = on;
@@ -155,19 +151,26 @@ function onToggleSale(on: boolean): void {
 
 <template>
   <view v-if="draft" class="ge">
-    <wf-nav-bar :title="isNew ? '发布商品' : '编辑商品'" />
+    <wf-nav-bar title="编辑商品" />
 
     <scroll-view class="ge__body" scroll-y>
       <!-- 审核状态：设计稿 98 屏之外新增的一层，商家要能看到自己的商品卡在哪 -->
-      <view v-if="auditState === 'reviewing'" class="ge__audit ge__audit--reviewing">
+      <view v-if="auditState === 'pending'" class="ge__audit ge__audit--reviewing">
         <text class="ge__audit-title">平台审核中</text>
         <text class="ge__audit-text"
-          >约 10 秒出结果。审核期间顾客端展示的仍是上一个通过审核的版本。</text
+          >预计 2 小时内出结果，结果会通过微信服务通知推送。审核期间顾客端展示的仍是上一个通过审核的版本。</text
         >
       </view>
       <view v-else-if="auditState === 'rejected'" class="ge__audit ge__audit--rejected">
         <text class="ge__audit-title">审核未通过</text>
-        <text class="ge__audit-text">{{ draft.auditReason }}</text>
+        <text class="ge__audit-text">{{
+          draft.auditIssues[0]?.title || '请修改后重新提交'
+        }}</text>
+        <text
+          class="ge__audit-link tap"
+          @tap="push(`/pages/merchant/goods-reject/index?id=${goodsId}`)"
+          >查看逐项原因 ›</text
+        >
       </view>
 
       <!-- 图片 -->
@@ -202,6 +205,11 @@ function onToggleSale(on: boolean): void {
         <view class="cell tap" @tap="editNumber('stock', '库存')">
           <text class="ge__label">库存</text>
           <text class="ge__value">{{ draft.stock }}</text>
+        </view>
+        <!-- 102 · 售卖时段；改时段不触发重新审核 -->
+        <view class="cell tap" @tap="push(`/pages/merchant/sale-time/index?id=${goodsId}`)">
+          <text class="ge__label">售卖时段</text>
+          <text class="ge__value">{{ saleText }} ›</text>
         </view>
       </view>
 
@@ -243,7 +251,6 @@ function onToggleSale(on: boolean): void {
         <view class="col ge__sale-text">
           <text class="cell__label">上架销售</text>
           <text v-if="!canToggleSale" class="ge__sale-hint">审核通过后才能上架</text>
-          <text v-else-if="isNew" class="ge__sale-hint">审核通过后自动上架</text>
         </view>
         <wf-toggle
           :on="draft.onSale && canToggleSale"
@@ -330,6 +337,12 @@ function onToggleSale(on: boolean): void {
   font-size: 22rpx;
   line-height: 1.6;
   color: var(--c-text-weak);
+}
+
+.ge__audit-link {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: var(--c-danger);
 }
 
 /* 图片 */

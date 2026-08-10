@@ -6,7 +6,9 @@ import { CURRENT_SHOP_ID } from '@/config';
 import { useCartStore } from '@/stores/cart';
 import { chrome } from '@/utils/chrome';
 import { fen2yuan } from '@/utils/money';
-import { push } from '@/utils/nav';
+import { push, toast } from '@/utils/nav';
+import { isOnSaleNow, nextOpenText } from '@/utils/sale-time';
+import { hasPriceRange } from '@/models';
 import type { CheckoutTrial, Goods, MenuGroup, Shop } from '@/models';
 
 /** 01 · 点餐菜单（首页）：左侧分类锚点 + 右侧商品列表 + 底部购物车条 */
@@ -34,8 +36,11 @@ const groups = computed(() =>
       ...gd,
       qty: cart.qtyOfGoods(gd.id),
       hasSpec: gd.specGroups.length > 0,
-      // 只有存在加价选项才显示「起」，单规格商品不显示
-      priceFrom: gd.specGroups.some((sg) => sg.options.some((o) => o.priceDelta > 0)),
+      // 只有定价档多于一档才显示「起」，单规格商品不显示
+      priceFrom: hasPriceRange(gd.specGroups),
+      // 售卖时段（交付文档 102）：不在时段内置灰、标「11:00 开售」、不可加购
+      onSaleNow: isOnSaleNow(gd.saleTime),
+      openText: nextOpenText(gd.saleTime),
     })),
   }))
 );
@@ -145,6 +150,11 @@ function onTapGoods(id: string): void {
 function onPlus(id: string): void {
   const goods = goodsById(id);
   if (!goods) return;
+  if (!isOnSaleNow(goods.saleTime)) {
+    const open = nextOpenText(goods.saleTime);
+    toast(open ? `该商品 ${open}` : '该商品当前不在售卖时段');
+    return;
+  }
   if (goods.specGroups.length) {
     // 多规格必须先选规格（设计稿：显示「选规格」）
     push(`/pages/customer/goods/index?id=${id}`);
@@ -255,7 +265,12 @@ function onCheckout(): void {
         <view v-for="group in groups" :id="`g-${group.id}`" :key="group.id" class="menu__group js-group">
           <text class="menu__group-title">{{ group.name }}</text>
 
-          <view v-for="item in group.goods" :key="item.id" class="menu__row">
+          <view
+            v-for="item in group.goods"
+            :key="item.id"
+            class="menu__row"
+            :class="{ 'menu__row--closed': !item.onSaleNow }"
+          >
             <view class="menu__thumb-wrap" @tap="onTapGoods(item.id)">
               <view class="menu__thumb"><wf-thumb :src="item.image" :radius="28" /></view>
               <text v-if="item.rankTag" class="menu__rank">{{ item.rankTag }}</text>
@@ -263,13 +278,22 @@ function onCheckout(): void {
 
             <view class="menu__row-main">
               <view class="menu__row-top" @tap="onTapGoods(item.id)">
-                <text class="menu__name">{{ item.name }}</text>
+                <view class="row menu__name-row">
+                  <text class="menu__name">{{ item.name }}</text>
+                  <text v-if="!item.onSaleNow" class="menu__closed-tag">{{ item.openText }}</text>
+                </view>
                 <text class="menu__meta">月售{{ item.monthSold }} · 好评{{ item.praiseRate }}%</text>
               </view>
               <view class="menu__row-bottom">
                 <wf-price :fen="item.price" :size="38" :from="item.priceFrom" :unit="item.unit" />
                 <view
-                  v-if="item.hasSpec"
+                  v-if="!item.onSaleNow"
+                  class="menu__spec-btn menu__spec-btn--off"
+                  @tap="onPlus(item.id)"
+                  >暂不可售</view
+                >
+                <view
+                  v-else-if="item.hasSpec"
                   class="menu__spec-btn tap-sm"
                   @tap="onTapGoods(item.id)"
                   >选规格</view
@@ -537,6 +561,30 @@ page {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+}
+
+.menu__row--closed .menu__thumb,
+.menu__row--closed .menu__row-main {
+  opacity: 0.45;
+}
+
+.menu__name-row {
+  gap: 12rpx;
+}
+
+.menu__closed-tag {
+  font-size: 20rpx;
+  font-weight: 800;
+  color: var(--c-warn-text-2);
+  background: var(--c-warn-bg);
+  padding: 4rpx 12rpx;
+  border-radius: 10rpx;
+}
+
+.menu__spec-btn--off {
+  background: var(--c-fill-3);
+  color: var(--c-text-placeholder);
+  border-color: transparent;
 }
 
 .menu__spec-btn {

@@ -46,18 +46,26 @@ export interface Category {
 export interface SpecOption {
   id: string;
   name: string;
-  /** 相对基础价的加价，分 */
+  /** 定价档的绝对价，分（`kind === 'price'` 时用；它直接决定商品展示价） */
+  price?: number;
+  /** 加价档的 +￥，分（`kind === 'addon'` 时用；不加价组恒为 0） */
   priceDelta: number;
+  /** 该档独立库存；`undefined` = 不单独管控，走商品总库存 */
+  stock?: number;
+  soldOut?: boolean;
 }
 
 /**
- * 规格组的三种类型，对应设计稿 36「定价格 / 不加价 / 加价多选」。
+ * 规格组的三种类型，对应设计稿 36 / 99「定价格 / 不加价 / 加价多选」。
  *
  * 必须显式声明，不能从 `priceDelta` 反推：新建的组还没有选项，
  * 反推的结果永远是「不加价」，商家就再也进不了设价的入口了。
- * - `price` 份量这类定价组：选项价 = 基础价 + priceDelta，顾客端展示价取组内最低
- * - `plain` 辣度这类不加价组：priceDelta 恒为 0
- * - `addon` 加料这类加价组：可多选，priceDelta 就是 +￥
+ * - `price` 份量这类定价组：选项自带绝对价 `option.price`，顾客端展示价取组内最低
+ * - `plain` 辣度这类不加价组：只影响做法，`priceDelta` 恒为 0
+ * - `addon` 加料这类加价组：可多选，`priceDelta` 就是 +￥
+ *
+ * 交付文档 99 用 `required + multiple + affectsPrice` 三个布尔表达同一件事，
+ * 这里用一个 `kind` 收口（三个布尔由 `SPEC_KIND_FLAGS` 派生），避免三处各写各的写歪。
  */
 export type SpecGroupKind = 'price' | 'plain' | 'addon';
 
@@ -68,17 +76,87 @@ export interface SpecGroup {
   /** 可多选（加料）/ 单选（份量、辣度）；由 kind 决定，留着给顾客端 02 与购物车用 */
   multiple: boolean;
   required: boolean;
+  /** 该组是否参与定价；由 kind 决定，对齐交付文档的字段名 */
+  affectsPrice: boolean;
   /** 必选组的默认选项；不填则取第一项 */
   defaultOptionId?: string;
   options: SpecOption[];
 }
 
-/** 规格组类型 → multiple / required，建组与改类型都走这里，避免两处写歪 */
-export const SPEC_KIND_FLAGS: Record<SpecGroupKind, { multiple: boolean; required: boolean }> = {
-  price: { multiple: false, required: true },
-  plain: { multiple: false, required: true },
-  addon: { multiple: true, required: false },
+/** 规格组类型 → multiple / required / affectsPrice，建组与改类型都走这里，避免两处写歪 */
+export const SPEC_KIND_FLAGS: Record<
+  SpecGroupKind,
+  { multiple: boolean; required: boolean; affectsPrice: boolean }
+> = {
+  price: { multiple: false, required: true, affectsPrice: true },
+  plain: { multiple: false, required: true, affectsPrice: false },
+  addon: { multiple: true, required: false, affectsPrice: true },
 };
+
+/**
+ * 选中一组规格后的实付单价。
+ *
+ * 定价档带绝对价（`option.price`），它直接决定基准价，不是在基础价上加；
+ * 加料这类只带 `priceDelta`，在基准价上累加。
+ * 这样判断不需要知道选项属于哪个组——带 `price` 的就是定价档。
+ */
+export function specUnitPrice(basePrice: number, options: SpecOption[]): number {
+  const tier = options.find((o) => o.price !== undefined);
+  const base = tier?.price ?? basePrice;
+  return base + options.reduce((n, o) => n + (o.price === undefined ? o.priceDelta : 0), 0);
+}
+
+/**
+ * 顾客端展示价 = 所有必选定价组里最低的一档（交付文档 99「¥18 起」）。
+ * 没有定价组时回落到商品基础价。
+ */
+export function displayPrice(groups: SpecGroup[], basePrice: number): number {
+  const tiers = groups
+    .filter((g) => g.kind === 'price' && g.required)
+    .flatMap((g) => g.options.map((o) => o.price ?? basePrice));
+  return tiers.length ? Math.min(...tiers) : basePrice;
+}
+
+/** 定价档多于一档才显示「起」 */
+export function hasPriceRange(groups: SpecGroup[]): boolean {
+  return groups.some((g) => g.kind === 'price' && g.required && g.options.length > 1);
+}
+
+/**
+ * 规格里只与「价格」有关的部分，用来判断要不要重新送审。
+ * 刻意**不含 stock / soldOut**——交付文档写明改库存不需要重新审核。
+ */
+export function specPriceFingerprint(groups: SpecGroup[]): string {
+  return JSON.stringify(
+    groups.map((g) => [g.kind, g.options.map((o) => [o.name, o.price ?? null, o.priceDelta])])
+  );
+}
+
+/* ---------------- 售卖时段（交付文档 102） ---------------- */
+
+export interface SaleSlot {
+  id: string;
+  /** 午市 / 晚市 */
+  label: string;
+  /** 'HH:mm' */
+  start: string;
+  end: string;
+  enabled: boolean;
+}
+
+export interface SaleTime {
+  mode: 'allday' | 'range';
+  /** 重复日期，1 = 周一 … 7 = 周日 */
+  weekdays: number[];
+  /** mode = 'range' 时生效 */
+  slots: SaleSlot[];
+}
+
+export const ALL_WEEKDAYS = [1, 2, 3, 4, 5, 6, 7];
+
+export function allDaySaleTime(): SaleTime {
+  return { mode: 'allday', weekdays: [...ALL_WEEKDAYS], slots: [] };
+}
 
 export interface Goods {
   id: string;
@@ -99,6 +177,8 @@ export interface Goods {
   /** 热销位次；有值即进入「热销推荐」虚拟分类 */
   hot?: number;
   specGroups: SpecGroup[];
+  /** 售卖时段；不填按全天售卖 */
+  saleTime?: SaleTime;
 }
 
 /** 顾客端菜单分组 */
@@ -705,31 +785,51 @@ export interface ReceiptPreview {
 /* ---------------- 商家端 · 商品与菜单 ---------------- */
 
 /**
- * 商品审核态。设计稿 98 屏里没有这一层，是按真实外卖平台的规则补的：
- * 商家改的内容要过平台审核才对顾客端生效，审核期间顾客端看到的仍是上一版本。
+ * 商品审核态（交付文档 99–101）：
+ *
+ *   draft ──提交──▶ pending ──通过──▶ approved（这时才允许上架）
+ *                      └──驳回──▶ rejected ──改完重提──▶ pending
+ *
+ * 商家改的内容要过平台审核才对顾客端生效，审核期间顾客端看到的仍是上一个通过的版本。
  */
-export type GoodsAuditState = 'approved' | 'reviewing' | 'rejected';
+export type GoodsAuditState = 'draft' | 'pending' | 'approved' | 'rejected';
 
-/** 会触发重新审核的字段；库存与上下架不在其中，改了立即生效 */
-export const AUDITED_FIELDS = ['name', 'categoryId', 'price', 'images', 'specGroups'] as const;
+/**
+ * 会触发重新审核的标量字段。
+ * 规格不在这里——规格里既有价格又有库存，得用 `specPriceFingerprint()` 只比价格部分。
+ * 分类归属、库存、售卖时段、上下架都**不**重审（交付文档明写）。
+ */
+export const AUDITED_FIELDS = ['name', 'desc', 'price', 'images'] as const;
 
-/** 11 编辑商品的可编辑副本 */
+/** 101 驳回详情里的一条问题 */
+export interface AuditIssue {
+  /** 对应 99 里的字段锚点：images / price / name / spec / desc */
+  field: string;
+  title: string;
+  desc: string;
+}
+
+/** 11 编辑商品 / 99 发布商品 的可编辑副本 */
 export interface GoodsDraft {
   id: string;
   name: string;
+  desc: string;
   categoryId: string;
   categoryName: string;
-  /** 基础价，分 */
+  /** 基础价，分。有定价组时展示价由 displayPrice() 从最低档算出 */
   price: number;
   stock: number;
   images: string[];
   onSale: boolean;
   specGroups: SpecGroup[];
+  saleTime: SaleTime;
   auditState: GoodsAuditState;
-  /** 驳回原因 */
-  auditReason?: string;
-  /** 还没提交过审核的新建商品 */
-  isNew: boolean;
+  /** 驳回时逐项列出，101 靠它做「只改错项重提」 */
+  auditIssues: AuditIssue[];
+  /** 驳回时已通过、无需重填的项 */
+  passedFields: string[];
+  /** 提交时间文案，100 用 */
+  submittedAtText?: string;
 }
 
 /** 64 规格与加料选项库：可复用的选项组 */
@@ -793,8 +893,36 @@ export interface MerchantGoods {
   onSale: boolean;
   stockLevel: 'normal' | 'low' | 'out';
   auditState: GoodsAuditState;
-  /** 驳回原因 */
+  /** 驳回摘要，列表上一句话带过；逐项原因在 101 拉详情 */
   auditReason?: string;
+  /** 卡片副标题的时段文案：全天售卖 / 午市 11:00–14:00 */
+  saleTimeText: string;
+}
+
+/** 100 审核进度里的一行 */
+export interface GoodsAuditRow {
+  id: string;
+  name: string;
+  image: string;
+  /** 2 个规格 · ¥18 起 · 07-26 14:02 提交 */
+  metaText: string;
+  price: number;
+  priceFrom: boolean;
+  state: GoodsAuditState;
+  stateText: string;
+  /** 已驳回时的一句话原因 */
+  reasonText: string;
+}
+
+/** 101 驳回详情 */
+export interface GoodsAuditDetail {
+  id: string;
+  name: string;
+  rejectedAtText: string;
+  issues: AuditIssue[];
+  passedFields: string[];
+  /** 连续驳回次数，达到 3 次提示走人工复核 */
+  rejectCount: number;
 }
 
 /* ================= 顾客端 · 卡券会员与设置账号（73 37 86 17/39 59 79 80 81 44 74 75 78） ================= */

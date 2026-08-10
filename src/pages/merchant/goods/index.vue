@@ -42,12 +42,12 @@ async function load(): Promise<void> {
 }
 
 function syncPoll(alive: boolean): void {
-  const wanted = alive && raw.value.some((g) => g.auditState === 'reviewing');
+  const wanted = alive && raw.value.some((g) => g.auditState === 'pending');
   if (wanted && !stopPoll) {
     stopPoll = startPoll(async () => {
       const res = await getMerchantGoods(activeCategory.value);
       raw.value = res.list;
-      if (!res.list.some((g) => g.auditState === 'reviewing')) syncPoll(false);
+      if (!res.list.some((g) => g.auditState === 'pending')) syncPoll(false);
     }, 5000);
   } else if (!wanted && stopPoll) {
     stopPoll();
@@ -72,17 +72,24 @@ async function onToggleSale(id: string, on: boolean): Promise<void> {
   load();
 }
 
-/** 驳回的商品可以直接看原因并改 */
+/** 四态标签：审核中黄 / 已驳回红 / 售卖中绿 / 已下架灰 */
+function stateTagText(item: MerchantGoods): string {
+  if (item.auditState === 'pending') return '审核中';
+  if (item.auditState === 'rejected') return '已驳回';
+  if (item.auditState === 'draft') return '待提交';
+  return item.onSale ? '售卖中' : '已下架';
+}
+
+function stateTagClass(item: MerchantGoods): string {
+  if (item.auditState === 'pending') return 'tag--warn';
+  if (item.auditState === 'rejected') return 'tag--danger';
+  if (item.auditState === 'draft') return 'tag--grey';
+  return item.onSale ? 'tag--success' : 'tag--grey';
+}
+
+/** 驳回的商品直接进 101 看逐项原因 */
 function onTapRejected(item: MerchantGoods): void {
-  uni.showModal({
-    title: '审核未通过',
-    content: item.auditReason || '请修改后重新提交',
-    confirmText: '去修改',
-    confirmColor: '#FF4A17',
-    success: (res) => {
-      if (res.confirm) push(`/pages/merchant/goods-edit/index?id=${item.id}`);
-    },
-  });
+  push(`/pages/merchant/goods-reject/index?id=${item.id}`);
 }
 </script>
 
@@ -93,16 +100,15 @@ function onTapRejected(item: MerchantGoods): void {
         <text class="mg__title">商品管理</text>
         <view class="row mg__head-actions">
           <view class="mg__pill mg__pill--grey tap" @tap="push('/pages/merchant/categories/index')"
-            >分类管理</view
+            >分类</view
           >
-          <view class="mg__pill mg__pill--grey tap" @tap="push('/pages/merchant/goods-bulk/index')"
-            >批量</view
+          <view class="mg__pill mg__pill--grey tap" @tap="push('/pages/merchant/sale-time/index')"
+            >批量时段</view
           >
-          <!-- 不带 id 就是新建，编辑页会先跟服务端要一个商品 id -->
           <view
             class="mg__pill mg__pill--primary tap"
-            @tap="push('/pages/merchant/goods-edit/index')"
-            >＋ 发布商品</view
+            @tap="push('/pages/merchant/goods-publish/index')"
+            >＋ 发布</view
           >
         </view>
       </view>
@@ -167,30 +173,32 @@ function onTapRejected(item: MerchantGoods): void {
               }}</text>
               <text v-else class="mg__stock">{{ item.specCountText }}</text>
             </view>
+            <text class="mg__saletime">{{ item.saleTimeText }}</text>
             <wf-price :fen="item.price" :size="32" :from="item.priceFrom" />
           </view>
 
           <view class="mg__right">
-            <!-- 审核态优先：没过审的商品不给上下架开关 -->
-            <text v-if="item.auditState === 'reviewing'" class="tag tag--warn">审核中</text>
+            <text class="tag" :class="stateTagClass(item)">{{ stateTagText(item) }}</text>
             <view
-              v-else-if="item.auditState === 'rejected'"
-              class="tag tag--danger tap"
+              v-if="item.auditState === 'rejected'"
+              class="mg__reason tap"
               @tap="onTapRejected(item)"
-              >已驳回 ›</view
+              >查看原因 ›</view
             >
             <view
-              v-else-if="item.stockLevel === 'out'"
+              v-else-if="item.auditState === 'approved' && item.stockLevel === 'out'"
               class="pill pill--outline-primary tap"
               @tap="push('/pages/merchant/stock/index')"
               >补货</view
             >
-            <template v-else>
-              <wf-toggle size="sm" :on="item.onSale" @change="onToggleSale(item.id, $event)" />
-              <text class="mg__sale-label" :class="{ 'mg__sale-label--on': item.onSale }">{{
-                item.onSale ? '售卖中' : '已下架'
-              }}</text>
-            </template>
+            <!-- 未过审的商品开关置灰不可点 -->
+            <wf-toggle
+              v-else
+              size="sm"
+              :on="item.onSale"
+              :disabled="item.auditState !== 'approved'"
+              @change="onToggleSale(item.id, $event)"
+            />
           </view>
         </view>
       </template>
@@ -231,6 +239,17 @@ function onTapRejected(item: MerchantGoods): void {
 
 .mg__head-actions {
   gap: 16rpx;
+}
+
+.mg__saletime {
+  font-size: 21rpx;
+  color: var(--c-text-weaker);
+}
+
+.mg__reason {
+  font-size: 21rpx;
+  font-weight: 700;
+  color: var(--c-danger);
 }
 
 .mg__pill {

@@ -56,6 +56,11 @@ const ROUTES = [
   // 商品与菜单
   ['11-编辑商品', '/pages/merchant/goods-edit/index?id=g1'],
   ['36-规格与价格', '/pages/merchant/spec-edit/index?id=g1'],
+  // 增量 99–102：商家端商品发布 / 审核 / 售卖时段
+  ['99-发布商品-规格与价格', '/pages/merchant/goods-publish/index?id=g_demo_99'],
+  ['100-商品审核进度', '/pages/merchant/goods-audit/index'],
+  ['101-商品审核驳回', '/pages/merchant/goods-reject/index?id=g_new_1'],
+  ['102-售卖时段-批量设置', '/pages/merchant/sale-time/index'],
   ['64-选项库', '/pages/merchant/option-lib/index'],
   ['63-图片裁剪', '/pages/merchant/image-crop/index?id=g1'],
   ['22-分类管理', '/pages/merchant/categories/index'],

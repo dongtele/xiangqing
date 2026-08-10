@@ -4,6 +4,7 @@ import type {
   AccountSecurity,
   Address,
   AddressFull,
+  AuditIssue,
   AuditState,
   Bills,
   BulkGoods,
@@ -142,9 +143,10 @@ export const goodsList: Goods[] = [
         kind: 'price',
         multiple: false,
         required: true,
+        affectsPrice: true,
         options: [
-          { id: 'o1', name: '标准', priceDelta: 0 },
-          { id: 'o2', name: '大份', priceDelta: 700 },
+          { id: 'o1', name: '标准', price: 3800, priceDelta: 0, stock: 50 },
+          { id: 'o2', name: '大份', price: 4500, priceDelta: 0, stock: 30 },
         ],
       },
       {
@@ -153,6 +155,7 @@ export const goodsList: Goods[] = [
         kind: 'plain',
         multiple: false,
         required: true,
+        affectsPrice: false,
         defaultOptionId: 'o4',
         options: [
           { id: 'o3', name: '免辣', priceDelta: 0 },
@@ -166,6 +169,7 @@ export const goodsList: Goods[] = [
         kind: 'addon',
         multiple: true,
         required: false,
+        affectsPrice: true,
         options: [
           { id: 'o6', name: '卤蛋', priceDelta: 300 },
           { id: 'o7', name: '加饭', priceDelta: 200 },
@@ -200,6 +204,12 @@ export const goodsList: Goods[] = [
     onSale: true,
     hot: 3,
     specGroups: [],
+  // 午市限定：用来演示顾客端非售卖时段的置灰与「11:00 开售」
+    saleTime: {
+      mode: 'range',
+      weekdays: [1, 2, 3, 4, 5, 6, 7],
+      slots: [{ id: 'sl_lunch', label: '午市', start: '11:00', end: '14:00', enabled: true }],
+    },
   },
   {
     id: 'g4',
@@ -234,6 +244,7 @@ export const goodsList: Goods[] = [
         kind: 'plain',
         multiple: false,
         required: true,
+        affectsPrice: false,
         options: [
           { id: 'o8', name: '常温', priceDelta: 0 },
           { id: 'o9', name: '加冰', priceDelta: 0 },
@@ -1104,6 +1115,7 @@ export const merchantGoods: MerchantGoods[] = [
     onSale: true,
     stockLevel: 'normal',
     auditState: 'approved',
+    saleTimeText: '全天售卖',
   },
   {
     id: 'g3',
@@ -1117,6 +1129,7 @@ export const merchantGoods: MerchantGoods[] = [
     onSale: true,
     stockLevel: 'low',
     auditState: 'approved',
+    saleTimeText: '午市 11:00–14:00',
   },
   {
     id: 'g6',
@@ -1130,6 +1143,7 @@ export const merchantGoods: MerchantGoods[] = [
     onSale: true,
     stockLevel: 'out',
     auditState: 'approved',
+    saleTimeText: '全天售卖',
   },
   {
     id: 'g7',
@@ -1143,23 +1157,42 @@ export const merchantGoods: MerchantGoods[] = [
     onSale: false,
     stockLevel: 'normal',
     auditState: 'approved',
+    saleTimeText: '全天售卖',
   },
-  // 预置一条被驳回的新品：它不在 goodsList 里，顾客端看不到，用来走通驳回态与「重新提交」
+  // 预置一条被驳回的新品（对齐设计稿 100 / 101 的示例）：
+  // 它不在 goodsList 里，顾客端看不到，用来走通驳回态与「改完重提」
   {
     id: 'g_new_1',
-    name: '秘制小龙虾（新品）',
+    name: '秘制烤鱼',
     image: '',
     categoryName: '海鲜水产',
-    price: 8800,
+    price: 6800,
     priceFrom: false,
     stock: 20,
     specCountText: '库存 20',
     onSale: false,
     stockLevel: 'normal',
     auditState: 'rejected',
-    auditReason: '商品主图不清晰，请重新上传：需露出实物全貌，避免带文字水印。',
+    auditReason: '图片含第三方水印',
+    saleTimeText: '全天售卖',
   },
 ];
+
+/** 101 的逐项驳回详情（对齐设计稿） */
+export const rejectedIssues: AuditIssue[] = [
+  {
+    field: 'images',
+    title: '主图含第三方平台水印',
+    desc: '请上传无水印实拍图，建议 3:2 横图、光线充足',
+  },
+  {
+    field: 'price',
+    title: '加大份价格高于同类均价 60%',
+    desc: '同类烤鱼加大份均价 ¥78，请核对定价或补充分量说明',
+  },
+];
+
+export const rejectedPassedFields = ['商品名称', '所属分类', '辣度规格'];
 
 /** 平台审核的违禁词，命中即驳回（真实平台会有更完整的词库与图片审核） */
 export const BANNED_WORDS = ['酒', '香烟', '代购', '特效', '最正宗'];

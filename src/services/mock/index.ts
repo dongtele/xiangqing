@@ -1,6 +1,13 @@
 import * as db from './db';
 import { HOT_CATEGORY_ID } from './db';
-import { AUDITED_FIELDS } from '@/models';
+import {
+  AUDITED_FIELDS,
+  allDaySaleTime,
+  displayPrice,
+  hasPriceRange,
+  specPriceFingerprint,
+} from '@/models';
+import { isOnSaleNow, nextOpenText, saleTimeText } from '@/utils/sale-time';
 import { MOCK_LATENCY, PAY_FAIL_FIRST_ATTEMPT } from './config';
 import type {
   AddressFull,
@@ -8,6 +15,7 @@ import type {
   AftersaleOptions,
   AftersaleType,
   AreaShape,
+  AuditIssue,
   AuditState,
   BulkGoods,
   BulkTab,
@@ -26,7 +34,11 @@ import type {
   ExceptionOrder,
   ExceptionTab,
   Goods,
+  GoodsAuditDetail,
+  GoodsAuditRow,
+  GoodsAuditState,
   MerchantGoods,
+  SaleTime,
   GoodsDraft,
   InvoiceTitle,
   MenuGroup,
@@ -147,23 +159,85 @@ export const state = {
     slots: db.onboardLicense.slots.map((x) => ({ ...x })),
   },
   auditState: 'reviewing' as AuditState,
-  /** 已驳回的示例新品带一份草稿，让「查看原因 → 修改 → 重新提交」当场能走通 */
+  /** 已驳回的示例新品带一份草稿，让「查看原因 → 改错项 → 重新提交」当场能走通 */
   goodsDrafts: {
     g_new_1: {
       id: 'g_new_1',
-      name: '秘制小龙虾（新品）',
+      name: '秘制烤鱼',
+      desc: '整条鲜活鲈鱼现杀现烤，秘制酱料。',
       categoryId: 'c3',
       categoryName: '海鲜水产',
-      price: 8800,
+      price: 6800,
       stock: 20,
       images: [''],
       onSale: false,
       specGroups: [],
+      saleTime: allDaySaleTime(),
       auditState: 'rejected',
-      auditReason: '商品主图不清晰，请重新上传：需露出实物全貌，避免带文字水印。',
-      isNew: true,
+      auditIssues: db.rejectedIssues.map((i) => ({ ...i })),
+      passedFields: [...db.rejectedPassedFields],
+      submittedAtText: '07-25 16:40 驳回',
+    },
+    // 99 的示例草稿，对齐设计稿：份量两档各自定价与库存，加料单独加价
+    g_demo_99: {
+      id: 'g_demo_99',
+      name: '香辣鸡腿堡',
+      desc: '整块鸡腿肉现炸，秘制香辣酱。',
+      categoryId: 'c1',
+      categoryName: '招牌热菜',
+      price: 1800,
+      stock: 80,
+      images: [''],
+      onSale: true,
+      specGroups: [
+        {
+          id: 'sg_demo_1',
+          name: '份量',
+          kind: 'price',
+          multiple: false,
+          required: true,
+          affectsPrice: true,
+          options: [
+            { id: 'od1', name: '标准份', price: 1800, priceDelta: 0, stock: 50 },
+            { id: 'od2', name: '加大份', price: 2400, priceDelta: 0, stock: 30 },
+          ],
+        },
+        {
+          id: 'sg_demo_2',
+          name: '加料',
+          kind: 'addon',
+          multiple: true,
+          required: false,
+          affectsPrice: true,
+          options: [{ id: 'od3', name: '芝士片', priceDelta: 300 }],
+        },
+      ],
+      saleTime: allDaySaleTime(),
+      auditState: 'draft',
+      auditIssues: [],
+      passedFields: [],
+    },
+    // 100「近期审核记录」里的已通过样本（对齐设计稿）
+    g2: {
+      id: 'g2',
+      name: '香煎深海带鱼',
+      desc: '深海带鱼段中段，薄面粉煎至两面金黄，外脆里嫩。',
+      categoryId: 'c3',
+      categoryName: '海鲜水产',
+      price: 4500,
+      stock: 30,
+      images: [''],
+      onSale: true,
+      specGroups: [],
+      saleTime: allDaySaleTime(),
+      auditState: 'approved',
+      auditIssues: [],
+      passedFields: [],
+      submittedAtText: '07-24 通过 · 已上架售卖',
     },
   } as Record<string, GoodsDraft>,
+  /** 连续驳回次数：达到 3 次时 101 提示走人工复核 */
+  goodsRejectCount: { g_new_1: 1 } as Record<string, number>,
   /** 商品审核队列：id → 出结果的时间戳；到点由读接口惰性结算，不用定时器 */
   goodsReviewAt: {} as Record<string, number>,
   payAttempts: {} as Record<string, number>,
@@ -232,6 +306,39 @@ function archivedOrder(id: string): MerchantOrder | null {
 
 /* ---------------- 商品审核 ---------------- */
 
+const AUDIT_STATE_TEXT: Record<GoodsAuditState, string> = {
+  draft: '待提交',
+  pending: '审核中',
+  approved: '已通过',
+  rejected: '已驳回',
+};
+
+/** 100 的提交时间戳文案 */
+function submitStamp(): string {
+  const d = new Date();
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  return `${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+}
+
+function fen(n: number): string {
+  return String(Math.round(n / 100));
+}
+
+/** 每档库存不需要审核，按 id 直接刷进线上版本 */
+function applySpecStock(live: Goods, draft: GoodsDraft): void {
+  draft.specGroups.forEach((g) => {
+    const target = live.specGroups.find((x) => x.id === g.id);
+    if (!target) return;
+    g.options.forEach((o) => {
+      const hit = target.options.find((x) => x.id === o.id);
+      if (hit) {
+        hit.stock = o.stock;
+        hit.soldOut = o.soldOut;
+      }
+    });
+  });
+}
+
 /** 假平台的审核时长；接真实后端后这一段整体换成轮询审核接口 */
 const REVIEW_MS = 10_000;
 
@@ -246,6 +353,7 @@ function buildDraft(id: string): GoodsDraft | null {
   return {
     id,
     name: goods ? goods.name : row ? row.name : '',
+    desc: goods ? goods.desc : '',
     categoryId: goods
       ? goods.categoryId
       : db.categories.find((c) => c.name === categoryName)?.id || '',
@@ -255,30 +363,38 @@ function buildDraft(id: string): GoodsDraft | null {
     images: [goods ? goods.image : row ? row.image : ''],
     onSale: row ? row.onSale : true,
     specGroups: goods ? JSON.parse(JSON.stringify(goods.specGroups)) : [],
-    auditState: row ? row.auditState : 'approved',
-    auditReason: row ? row.auditReason : undefined,
-    isNew: !goods,
+    saleTime: goods?.saleTime ? JSON.parse(JSON.stringify(goods.saleTime)) : allDaySaleTime(),
+    // 线上已有的商品必定是过审的；只在商家列表里挂着的是还没落地的新品
+    auditState: goods ? 'approved' : 'draft',
+    auditIssues: [],
+    passedFields: [],
   };
 }
 
 /**
- * 只比审核字段：库存与上下架改了不该惊动审核。
+ * 只比审核字段。交付文档写明：库存、售卖时段、上下架、分类归属改了都**不**重审，
+ * 所以规格不能整体 JSON 比对（里面混着库存），要用只含价格的指纹。
+ *
  * 基准取**线上版本**而不是上一份草稿——草稿是被页面直接改的同一个对象，拿它比永远比不出差异。
  */
 function auditedChanged(id: string, next: GoodsDraft): boolean {
   const live = buildDraft(id);
-  if (!live || live.isNew) return true;
-  return AUDITED_FIELDS.some(
+  if (!live || live.auditState === 'draft') return true;
+  const scalarChanged = AUDITED_FIELDS.some(
     (key) =>
       JSON.stringify(live[key as keyof GoodsDraft]) !== JSON.stringify(next[key as keyof GoodsDraft])
+  );
+  return (
+    scalarChanged ||
+    specPriceFingerprint(live.specGroups) !== specPriceFingerprint(next.specGroups)
   );
 }
 
 /** 审核通过后才把草稿刷进线上版本（顾客端菜单 + 商家列表） */
 function applyDraftToLive(draft: GoodsDraft): void {
-  const priceFrom = draft.specGroups.some(
-    (sg) => sg.kind === 'price' && sg.options.some((o) => o.priceDelta > 0)
-  );
+  // 顾客端展示价 = 所有必选定价组里最低的一档；只有一档时不显示「起」
+  const shownPrice = displayPrice(draft.specGroups, draft.price);
+  const priceFrom = hasPriceRange(draft.specGroups);
   let live = db.goodsList.find((g) => g.id === draft.id);
   if (!live) {
     // 新品这时才对顾客端可见
@@ -288,18 +404,20 @@ function applyDraftToLive(draft: GoodsDraft): void {
       name: draft.name,
       desc: '',
       image: draft.images[0] || '',
-      price: draft.price,
+      price: shownPrice,
       monthSold: 0,
       praiseRate: 100,
       stock: draft.stock,
       onSale: draft.onSale,
       specGroups: JSON.parse(JSON.stringify(draft.specGroups)),
+      saleTime: JSON.parse(JSON.stringify(draft.saleTime)),
     };
     db.goodsList.push(live);
   } else {
     live.name = draft.name;
+    live.desc = draft.desc;
     live.categoryId = draft.categoryId;
-    live.price = draft.price;
+    live.price = shownPrice;
     live.stock = draft.stock;
     live.image = draft.images[0] || live.image;
     live.specGroups = JSON.parse(JSON.stringify(draft.specGroups));
@@ -309,7 +427,7 @@ function applyDraftToLive(draft: GoodsDraft): void {
   if (row) {
     row.name = draft.name;
     row.categoryName = draft.categoryName;
-    row.price = draft.price;
+    row.price = shownPrice;
     row.image = draft.images[0] || row.image;
     row.priceFrom = priceFrom;
     row.onSale = draft.onSale;
@@ -317,12 +435,52 @@ function applyDraftToLive(draft: GoodsDraft): void {
 }
 
 function refreshStockText(row: MerchantGoods): void {
-  if (row.auditState === 'reviewing') row.specCountText = '平台审核中';
+  if (row.auditState === 'pending') row.specCountText = '平台审核中';
   else if (row.auditState === 'rejected') row.specCountText = '审核未通过';
+  else if (row.auditState === 'draft') row.specCountText = '草稿 · 待提交';
   else if (!row.onSale) row.specCountText = '已下架';
   else if (row.stockLevel === 'low') row.specCountText = `库存偏低 ${row.stock}`;
   else if (row.stockLevel === 'out') row.specCountText = '库存 0';
   else row.specCountText = `库存 ${row.stock}`;
+}
+
+/** 会被逐项审的字段，通过的进 101 的「已通过项」 */
+const PASSABLE_FIELDS = [
+  { field: 'name', label: '商品名称' },
+  { field: 'category', label: '所属分类' },
+  { field: 'images', label: '商品主图' },
+  { field: 'price', label: '规格与价格' },
+];
+
+/**
+ * 假平台的审核判定，逐项产出问题（真实平台是人工 + 机审）。
+ * 规则做成确定性的，方便演示与测试复现：
+ * - 名称命中违禁词 → 名称项驳回
+ * - 没有主图 → 图片项驳回
+ * - 任一定价档超过 ¥200 → 价格项驳回
+ */
+function auditIssuesOf(draft: GoodsDraft): AuditIssue[] {
+  const issues: AuditIssue[] = [];
+  const hit = db.BANNED_WORDS.find((w) => draft.name.indexOf(w) >= 0);
+  if (hit) {
+    issues.push({
+      field: 'name',
+      title: `商品名称含违禁词「${hit}」`,
+      desc: '请去掉违禁词后重新提交，平台会重新机审名称合规性。',
+    });
+  }
+  const overpriced = draft.specGroups
+    .filter((g) => g.kind === 'price')
+    .flatMap((g) => g.options)
+    .find((o) => (o.price ?? 0) > 20000);
+  if (overpriced) {
+    issues.push({
+      field: 'price',
+      title: `「${overpriced.name}」定价明显高于同类`,
+      desc: '同类商品均价远低于该定价，请核对价格或补充分量说明。',
+    });
+  }
+  return issues;
 }
 
 /**
@@ -337,19 +495,24 @@ function settleGoodsReviews(): void {
     const draft = state.goodsDrafts[id];
     const row = state.merchantGoods.find((g) => g.id === id);
     if (!draft) return;
-    const hit = db.BANNED_WORDS.find((w) => draft.name.indexOf(w) >= 0);
-    if (hit) {
+    const issues = auditIssuesOf(draft);
+    if (issues.length) {
       draft.auditState = 'rejected';
-      draft.auditReason = `商品名称含违禁词「${hit}」，请修改后重新提交。`;
+      draft.auditIssues = issues;
+      // 已通过的项保留，101 靠它做「无需重填」
+      draft.passedFields = PASSABLE_FIELDS.filter(
+        (f) => !issues.some((i) => i.field === f.field)
+      ).map((f) => f.label);
+      state.goodsRejectCount[id] = (state.goodsRejectCount[id] || 0) + 1;
     } else {
       draft.auditState = 'approved';
-      draft.auditReason = undefined;
-      draft.isNew = false;
+      draft.auditIssues = [];
+      draft.passedFields = [];
       applyDraftToLive(draft);
     }
     if (row) {
       row.auditState = draft.auditState;
-      row.auditReason = draft.auditReason;
+      row.auditReason = draft.auditIssues[0]?.title;
       if (draft.auditState !== 'approved') row.onSale = false;
       refreshStockText(row);
     }
@@ -614,6 +777,19 @@ const routes: Record<string, (p: Payload) => unknown> = {
     trial(p.items as CartItem[], (p.deliveryType as DeliveryType) || 'delivery'),
 
   'POST /order/create': (p) => {
+    // 交付文档 102：购物车里可能躺着已过售卖时段的商品，下单时要拦一次
+    const items = (p.items as CartItem[]) || [];
+    const closed = items
+      .map((i) => db.goodsList.find((g) => g.id === i.goodsId))
+      .find((g) => g && !isOnSaleNow(g.saleTime));
+    if (closed) {
+      const open = nextOpenText(closed.saleTime);
+      return {
+        orderId: '',
+        ok: false,
+        message: `「${closed.name}」${open || '当前不在售卖时段'}，请先移出购物车`,
+      };
+    }
     const order = buildOrder(
       p.items as CartItem[],
       (p.deliveryType as DeliveryType) || 'delivery',
@@ -982,11 +1158,12 @@ const routes: Record<string, (p: Payload) => unknown> = {
     return draft;
   },
 
-  /** 新建商品：先要一个 id，后续编辑与规格页都靠它取草稿 */
+  /** 新建商品：先要一个 id，99 发布页与 11 编辑页都靠它取草稿 */
   'POST /merchant/goods/create': (): GoodsDraft => {
     const draft: GoodsDraft = {
       id: `g_${Date.now()}`,
       name: '',
+      desc: '',
       categoryId: '',
       categoryName: '',
       price: 0,
@@ -994,8 +1171,10 @@ const routes: Record<string, (p: Payload) => unknown> = {
       images: [''],
       onSale: true,
       specGroups: [],
-      auditState: 'approved',
-      isNew: true,
+      saleTime: allDaySaleTime(),
+      auditState: 'draft',
+      auditIssues: [],
+      passedFields: [],
     };
     state.goodsDrafts[draft.id] = draft;
     return draft;
@@ -1003,12 +1182,18 @@ const routes: Record<string, (p: Payload) => unknown> = {
 
   'POST /merchant/goods/save': (p) => {
     const draft = p as unknown as GoodsDraft;
-    const needsReview = draft.isNew || auditedChanged(draft.id, draft);
+    const submit = p.submit !== false;
+    const wasDraft = (state.goodsDrafts[draft.id] || draft).auditState === 'draft';
+    const needsReview = submit && (wasDraft || auditedChanged(draft.id, draft));
 
     if (needsReview) {
-      draft.auditState = 'reviewing';
-      draft.auditReason = undefined;
+      draft.auditState = 'pending';
+      draft.auditIssues = [];
+      draft.passedFields = [];
+      draft.submittedAtText = `${submitStamp()} 提交`;
       state.goodsReviewAt[draft.id] = Date.now() + REVIEW_MS;
+    } else if (!submit && wasDraft) {
+      draft.auditState = 'draft';
     }
     state.goodsDrafts[draft.id] = draft;
 
@@ -1020,34 +1205,124 @@ const routes: Record<string, (p: Payload) => unknown> = {
         name: draft.name,
         image: draft.images[0] || '',
         categoryName: draft.categoryName,
-        price: draft.price,
-        priceFrom: false,
+        price: displayPrice(draft.specGroups, draft.price),
+        priceFrom: hasPriceRange(draft.specGroups),
         stock: draft.stock,
         specCountText: `库存 ${draft.stock}`,
         onSale: false,
         stockLevel: draft.stock === 0 ? 'out' : draft.stock <= 15 ? 'low' : 'normal',
-        auditState: 'reviewing',
+        auditState: draft.auditState,
+        saleTimeText: saleTimeText(draft.saleTime),
       };
       state.merchantGoods.unshift(row);
     }
 
-    // 库存与上下架不需要审核，立即生效
+    // 库存、售卖时段、上下架都不需要审核，立即生效
     row.stock = draft.stock;
     row.stockLevel = draft.stock === 0 ? 'out' : draft.stock <= 15 ? 'low' : 'normal';
+    row.saleTimeText = saleTimeText(draft.saleTime);
     const live = db.goodsList.find((g) => g.id === draft.id);
     if (live) {
       live.stock = draft.stock;
       live.onSale = draft.onSale;
+      live.saleTime = JSON.parse(JSON.stringify(draft.saleTime));
+      applySpecStock(live, draft);
     }
     // 审核未通过的商品不允许上架
     row.onSale = draft.auditState === 'approved' ? draft.onSale : false;
     row.auditState = draft.auditState;
-    row.auditReason = draft.auditReason;
+    row.auditReason = draft.auditIssues[0]?.title;
 
     // 审核字段只有通过后才写进线上版本，重审期间顾客端仍看上一版
-    if (!needsReview) applyDraftToLive(draft);
+    if (!needsReview && draft.auditState === 'approved') applyDraftToLive(draft);
     refreshStockText(row);
     return { ok: true, auditState: draft.auditState };
+  },
+
+  /** 99 / 101 的「提交审核」「修改并重新提交」：草稿或驳回态推回 pending */
+  'POST /merchant/goods/submit': (p) => {
+    const draft = state.goodsDrafts[String(p.id || '')];
+    if (!draft) return { ok: false, message: '商品不存在' };
+    if (!draft.name.trim()) return { ok: false, message: '请填写商品名称' };
+    if (!draft.categoryId) return { ok: false, message: '请选择所属分类' };
+    if (displayPrice(draft.specGroups, draft.price) <= 0) return { ok: false, message: '请填写价格' };
+
+    draft.auditState = 'pending';
+    draft.auditIssues = [];
+    draft.passedFields = [];
+    draft.submittedAtText = `${submitStamp()} 提交`;
+    state.goodsReviewAt[draft.id] = Date.now() + REVIEW_MS;
+
+    const row = state.merchantGoods.find((g) => g.id === draft.id);
+    if (row) {
+      row.auditState = 'pending';
+      row.auditReason = undefined;
+      row.onSale = false;
+      refreshStockText(row);
+    }
+    return { ok: true, auditState: 'pending' };
+  },
+
+  /** 100 审核进度列表 */
+  'GET /merchant/goods/audits': (p): GoodsAuditRow[] => {
+    settleGoodsReviews();
+    const want = String(p.status || '');
+    return Object.values(state.goodsDrafts)
+      .filter((d) => d.auditState !== 'draft' && !!d.submittedAtText)
+      .filter((d) => !want || d.auditState === want)
+      .map((d) => {
+        const shown = displayPrice(d.specGroups, d.price);
+        const specCount = d.specGroups
+          .filter((g) => g.kind === 'price')
+          .reduce((n, g) => n + g.options.length, 0);
+        const meta = [
+          specCount ? `${specCount} 个规格` : '无规格',
+          `${hasPriceRange(d.specGroups) ? '¥' + fen(shown) + ' 起' : '¥' + fen(shown)}`,
+          d.submittedAtText || '',
+        ].filter(Boolean);
+        return {
+          id: d.id,
+          name: d.name,
+          image: d.images[0] || '',
+          metaText: meta.join(' · '),
+          price: shown,
+          priceFrom: hasPriceRange(d.specGroups),
+          state: d.auditState,
+          stateText: AUDIT_STATE_TEXT[d.auditState],
+          reasonText: d.auditIssues[0]?.title || '',
+        };
+      });
+  },
+
+  /** 101 驳回详情：逐项原因 + 已通过项 */
+  'GET /merchant/goods/audit-detail': (p): GoodsAuditDetail | null => {
+    settleGoodsReviews();
+    const draft = state.goodsDrafts[String(p.id || '')];
+    if (!draft) return null;
+    return {
+      id: draft.id,
+      name: draft.name,
+      rejectedAtText: draft.submittedAtText || '',
+      issues: draft.auditIssues,
+      passedFields: draft.passedFields,
+      rejectCount: state.goodsRejectCount[draft.id] || 0,
+    };
+  },
+
+  /** 102 售卖时段批量设置：时段调整**不触发审核** */
+  'POST /merchant/goods/sale-time': (p) => {
+    const ids = (p.ids as string[]) || [];
+    const saleTime = p.saleTime as unknown as SaleTime;
+    const text = saleTimeText(saleTime);
+    ids.forEach((id) => {
+      const draft = state.goodsDrafts[id];
+      if (draft) draft.saleTime = JSON.parse(JSON.stringify(saleTime));
+      const live = db.goodsList.find((g) => g.id === id);
+      if (live) live.saleTime = JSON.parse(JSON.stringify(saleTime));
+      const row = state.merchantGoods.find((g) => g.id === id);
+      if (row) row.saleTimeText = text;
+    });
+    return { ok: true, count: ids.length };
   },
 
   'GET /merchant/option-lib': () => state.optionLib,

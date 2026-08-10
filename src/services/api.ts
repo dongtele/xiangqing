@@ -38,6 +38,8 @@ import type {
   ExceptionTab,
   FeedbackOptions,
   Goods,
+  GoodsAuditDetail,
+  GoodsAuditRow,
   GoodsAuditState,
   GoodsDraft,
   GoodsRank,
@@ -89,6 +91,7 @@ import type {
   Refund,
   RefundTrial,
   RemarkOptions,
+  SaleTime,
   Review,
   ReviewReplyInfo,
   ReviewSummary,
@@ -181,7 +184,8 @@ export const createOrder = (
   items: CartItem[],
   deliveryType: DeliveryType,
   remark: string
-): Promise<{ orderId: string }> =>
+  // 售卖时段等校验不通过时 orderId 为空串，message 是可读原因
+): Promise<{ orderId: string; ok?: boolean; message?: string }> =>
   request(
     '/order/create',
     { items, deliveryType, remark } as unknown as Record<string, unknown>,
@@ -369,10 +373,40 @@ export const getGoodsDraft = (id: string): Promise<GoodsDraft | null> =>
 export const createGoodsDraft = (): Promise<GoodsDraft> =>
   request('/merchant/goods/create', {}, { method: 'POST' });
 
+/**
+ * 保存草稿。`submit=false` 时只存不送审（99 的「存草稿」），
+ * 默认按提交处理：改了审核字段就回到 pending。
+ */
 export const saveGoodsDraft = (
-  draft: GoodsDraft
+  draft: GoodsDraft,
+  submit = true
 ): Promise<{ ok: boolean; auditState: GoodsAuditState }> =>
-  request('/merchant/goods/save', draft as unknown as Record<string, unknown>, {
+  request(
+    '/merchant/goods/save',
+    { ...(draft as unknown as Record<string, unknown>), submit },
+    { method: 'POST', loading: true }
+  );
+
+/** 99 提交审核 / 101 修改并重新提交 */
+export const submitGoodsAudit = (
+  id: string
+): Promise<{ ok: boolean; message?: string; auditState: GoodsAuditState }> =>
+  request('/merchant/goods/submit', { id }, { method: 'POST', loading: true });
+
+/** 100 审核进度；status 留空取全部 */
+export const getGoodsAudits = (status?: GoodsAuditState): Promise<GoodsAuditRow[]> =>
+  request('/merchant/goods/audits', { status });
+
+/** 101 驳回详情 */
+export const getGoodsAuditDetail = (id: string): Promise<GoodsAuditDetail | null> =>
+  request('/merchant/goods/audit-detail', { id });
+
+/** 102 售卖时段批量设置；时段调整不触发审核 */
+export const saveSaleTime = (
+  saleTime: SaleTime,
+  ids: string[]
+): Promise<{ ok: boolean; count: number }> =>
+  request('/merchant/goods/sale-time', { saleTime, ids } as unknown as Record<string, unknown>, {
     method: 'POST',
     loading: true,
   });

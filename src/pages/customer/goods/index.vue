@@ -5,6 +5,8 @@ import { getGoods } from '@/services/api';
 import { CURRENT_SHOP_ID } from '@/config';
 import { useCartStore } from '@/stores/cart';
 import { back, push, toast } from '@/utils/nav';
+import { isOnSaleNow, nextOpenText } from '@/utils/sale-time';
+import { specUnitPrice } from '@/models';
 import type { Goods, SpecOption } from '@/models';
 
 /** 02 · 商品详情：规格 / 加料选择 → 加入购物车 */
@@ -45,7 +47,14 @@ const groups = computed(() =>
     options: g.options.map((o) => ({
       ...o,
       selected: (selection[g.id] || []).indexOf(o.id) >= 0,
-      label: o.priceDelta > 0 ? `${o.name} +¥${o.priceDelta / 100}` : o.name,
+      // 定价档显示整价（份量 ¥45），加料显示加价（+¥3）
+      label:
+        o.price !== undefined
+          ? `${o.name} ¥${o.price / 100}`
+          : o.priceDelta > 0
+            ? `${o.name} +¥${o.priceDelta / 100}`
+            : o.name,
+      disabled: o.soldOut || o.stock === 0,
     })),
   }))
 );
@@ -65,8 +74,12 @@ const picked = computed<SpecOption[]>(() => {
 const selectedText = computed(() => picked.value.map((o) => o.name).join(' / '));
 
 const unitPrice = computed(() =>
-  goods.value ? goods.value.price + picked.value.reduce((n, o) => n + o.priceDelta, 0) : 0
+  goods.value ? specUnitPrice(goods.value.price, picked.value) : 0
 );
+
+/** 售卖时段：不在时段内不能加购（交付文档 102） */
+const onSale = computed(() => isOnSaleNow(goods.value?.saleTime));
+const openText = computed(() => nextOpenText(goods.value?.saleTime));
 
 /** 只有存在加价选项才显示「起」 */
 const priceFrom = computed(() =>
@@ -86,6 +99,10 @@ function onTapOption(gid: string, oid: string, multiple: boolean): void {
 }
 
 function onAddToCart(): void {
+  if (!onSale.value) {
+    toast(openText.value ? `该商品 ${openText.value}` : '该商品当前不在售卖时段');
+    return;
+  }
   if (!goods.value) return;
   const missing = goods.value.specGroups.find(
     (g) => g.required && !(selection[g.id] || []).length
@@ -161,7 +178,12 @@ function onAddToCart(): void {
         @plus="qty += 1"
         @minus="qty > 1 && (qty -= 1)"
       />
-      <view class="gd__add tap" @tap="onAddToCart">加入购物车</view>
+      <view
+        class="gd__add tap"
+        :class="{ 'gd__add--off': !onSale }"
+        @tap="onAddToCart"
+        >{{ onSale ? '加入购物车' : openText || '当前不可售' }}</view
+      >
     </view>
   </view>
 </template>
@@ -323,6 +345,12 @@ page {
 .gd__selected {
   font-size: 20rpx;
   color: var(--c-text-weaker);
+}
+
+.gd__add--off {
+  background: var(--c-fill-3);
+  color: var(--c-text-placeholder);
+  box-shadow: none;
 }
 
 .gd__add {

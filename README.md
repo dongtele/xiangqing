@@ -4,9 +4,9 @@
 重新实现设计稿。HTML 设计稿只作为视觉与交互参考，DOM 结构没有照搬——交付文档里那套 375×812 固定画框、
 `dc-import` 手机状态栏、内联样式都是展示脚手架，不是产品结构。
 
-**全稿 98 屏已全部实现。** 落地为 92 个页面路由 + 4 个半屏浮层组件，
-另有 2 屏并入已有页面（空状态 42 并入 05、卡券 39 与 17 合并）；共 16 个通用组件。
-`shots/` 下有 99 张逐屏截图（98 屏 + 补的期望送达时间浮层），与设计稿一一对应。
+**全稿 98 屏 + 增量 4 屏（99–102）已全部实现。** 落地为 96 个页面路由 + 5 个半屏浮层组件，
+另有 2 屏并入已有页面（空状态 42 并入 05、卡券 39 与 17 合并）；共 18 个通用组件。
+`shots/` 下有 106 张逐屏截图，与设计稿一一对应。
 
 | 步骤 | 内容 | 屏号 | 状态 |
 |---|---|---|---|
@@ -21,9 +21,11 @@
 | 6d | 商家端接单扩展 + 营销评价 | 21 45 91 92 96 97 / 23 65 66 94 95 47 90 | ✅ |
 | 6e | 商家端数据结算 + 店铺团队 | 46 87 89 34 67 88 68 / 50 33 70 71 35 69 72 98 | ✅ |
 | 6f | 商家入驻全流程 | 26 → 14 → 27 → 24 →（驳回）28 → 29 | ✅ |
+| 增量 | 商家端商品发布 / 审核 / 售卖时段 | 99 → 100 →（驳回）101；102 | ✅ |
 
 > 设计稿的 98 屏分散在两份文件里：`screens.js` 只含 72 屏，**73–98 只存在于
 > `美味坊全页面原型.dc.html` 的 `id="sNN"` 锚点**。取设计稿时别只看 `screens.js`。
+> 99–102 在后来的增量包 `handoff_incremental/`（`screens-99-102.html` + 自带 README）里。
 
 ## 快速开始
 
@@ -74,6 +76,7 @@ src/
 ├── config.ts                         # 店铺 id、支付超时等常量
 ├── models/index.ts                   # 领域模型（金额统一「分」）
 ├── stores/                           # Pinia：user（角色持久化）+ cart（本地持久化）+ checkout + aftersale
+├── utils/sale-time.ts                # 售卖时段判定（102 与顾客端 01/02、下单校验共用）
 ├── services/
 │   ├── request.ts                    # 统一请求层：登录态注入、401 重授权、loading/错误收口
 │   ├── api.ts                        # 按域分组的接口函数（页面访问数据的唯一出口）
@@ -84,6 +87,7 @@ src/
 │                                     # wf-uploader（14/27/71/72 的资质图上传位）
 │                                     # 半屏浮层：wf-cart-sheet(30) wf-address-sheet(15)
 │                                     #           wf-remark-sheet(31) wf-coupon-rule-sheet(59)
+│                                     #           wf-time-sheet(03) wf-picker-sheet(11/36/99)
 └── pages/
     ├── login/                        # 13 授权登录与角色分流
     ├── customer/                     # 主包。下单链路 menu(01) goods(02) checkout(03) pay-method(85)
@@ -102,8 +106,10 @@ src/
                                       # 履约 order-detail(62) print(51) devices(97) refund-review(48)
                                       #      verify(21) verify-log(96) order-history(91) order-exception(92)
                                       #      messages(45)
-                                      # 商品 goods-edit(11) spec-edit(36) option-lib(64) image-crop(63)
-                                      #      categories(22) stock(49) goods-bulk(93)
+                                      # 商品 goods-publish(99) goods-edit(11) spec-edit(36)
+                                      #      goods-audit(100) goods-reject(101) sale-time(102)
+                                      #      option-lib(64) image-crop(63) categories(22)
+                                      #      stock(49) goods-bulk(93)
                                       # 营销评价 marketing(94) promotions(23) promotion-edit(65)
                                       #          promotion-goods(66) coupon-edit(95)
                                       #          reviews(47) review-reply(90)
@@ -170,7 +176,7 @@ div.uni-scroll-view-content`），类名挂在最外层，所以 `.x__body > .ca
 `preloadRule` 在 `pages/login/index` 上预下载商家分包，商家登录后进工作台不会有加载空窗；
 入驻分包不预下载——只有未入驻用户点「成为商家」才会用到。
 
-量到的体积：**主包 1.5M / 商家分包 844K / 入驻分包 124K**，三者都在 2MB 上限内。
+量到的体积：**主包 1.5M / 商家分包 944K / 入驻分包 124K**，三者都在 2MB 上限内。
 
 **轮询按需起、离开就停。** `utils/poll.ts` 收口了轮询：`05 我的订单`、`06 订单详情`
 只在**还有进行中的单**时才起 15 秒轮询，终态立刻停；`53 配送追踪` 8 秒；
@@ -182,8 +188,10 @@ div.uni-scroll-view-content`），类名挂在最外层，所以 `.x__body > .ca
 降级为震动 + toast，不会因为缺 mp3 就静默失败让商家漏单。
 
 **商品审核：审核字段与非审核字段分开。** 商家改动分两类——
-`name / categoryId / price / images / specGroups` 是**审核字段**，改了要重新过审；
-`stock / onSale` 立即生效，改库存不该惊动审核。审核期间**线上版本原样保留**，
+名称 / 描述 / 主图 / **规格价格**是**审核字段**，改了要重新过审；
+库存、售卖时段、上下架、分类归属立即生效。
+规格里既有价格又有库存，所以不能整体 JSON 比对，用 `specPriceFingerprint()`（`models/index.ts`）
+只取每档的 `price` / `priceDelta` 做指纹——改一档库存不会误触审核。审核期间**线上版本原样保留**，
 顾客端 01/02 看到的还是上一个通过审核的版本；新品在通过前压根不进 `goodsList`，顾客端看不到。
 未过审的商品服务端会拒绝上架（`POST /merchant/goods/onsale` 返回 `ok:false`），前端也禁用开关。
 
@@ -191,6 +199,16 @@ div.uni-scroll-view-content`），类名挂在最外层，所以 `.x__body > .ca
 **结果是「读接口时按时间戳惰性结算」而不是起定时器**——mock 的处理器都是同步的，
 起 `setTimeout` 会让测例真等 10 秒，也会在小程序后台空跑。10 商品管理在有商品审核中时
 用 `utils/poll.ts` 起 5 秒轮询等结果，全部出结果就停。
+
+**规格档位价是绝对价，展示价是算出来的。** 交付文档 99 要求「商家在这里填写每个规格的价格和库存」，
+所以定价档存 `option.price`（绝对价）而不是相对基础价的差值，另带 `option.stock` 每档独立库存。
+顾客端展示价 `displayPrice()` = 所有必选定价组里最低的一档，多于一档才显示「起」；
+实付单价 `specUnitPrice()` = 选中定价档的价 + 勾选加料的 `priceDelta`。
+三个函数都在 `models/index.ts`，菜单、商品详情、购物车、商家端四处共用，避免各算各的。
+
+**售卖时段收口在一个纯函数模块。** `utils/sale-time.ts` 提供 `isOnSaleNow` / `nextOpenText` /
+`saleTimeText` / `mergeSlots`，不碰 `uni.*`。「现在能不能买」这条判断菜单(01)、商品详情(02)、
+下单校验三处都在用，写三遍迟早不一致；重叠时段自动合并、跨零点的夜宵档也在这里处理。
 
 **mock 后端可一键切换。** `services/mock/config.ts` 里 `USE_MOCK = true` 时，`request()` 走本地路由表；
 接真实后端只需把它置 false 并填 `BASE_URL`，`api.ts` 与页面代码不用改。
@@ -238,7 +256,16 @@ div.uni-scroll-view-content`），类名挂在最外层，所以 `.x__body > .ca
 13. **所属分类从手输改成选择器。** 设计稿 11 的「所属分类 招牌热菜 ›」带 `›` 就是要进选择器，
     原实现用 `uni.showModal({ editable: true })` 让商家打字，能打出 22 分类管理里根本没有的分类。
     现在只能从已有分类里选，浮层底部带「去分类管理 ›」。
-14. **订单列表都列出菜品。** 设计稿只画了 09 的「待接单」tab（会展开菜品明细），
+14. **规格组类型仍用 `kind` 一个字段。** 增量交付文档的 `SpecGroup` 用
+    `required + multiple + affectsPrice` 三个布尔表达组类型，这里保留已有的
+    `kind: 'price' | 'plain' | 'addon'` 作单一真相，三个布尔由 `SPEC_KIND_FLAGS` 派生并照样存在
+    （字段名与文档一致）。理由是 `kind` 已经贯穿 36 / 99 与 mock、测例，三个布尔分散写容易写歪。
+15. **接口路径沿用 `/merchant/goods/*`。** 增量文档建议 `/merchant/products/:id/...` 这套 RESTful 路径，
+    但同一份文档也要求「按你现有 request 封装写、沿用现有命名规范」。改路径要动已有页面，
+    所以新增接口按现有风格命名：`submit` / `audits` / `audit-detail` / `sale-time`。
+16. **审核时长：文案 2 小时，mock 10 秒出结果。** 文档口径是「约 2 小时 + 微信服务通知推送」，
+    界面文案照此写；假后端为了当场能演示闭环把倒计时压到 10 秒，接真实后端时换成轮询审核接口即可。
+17. **订单列表都列出菜品。** 设计稿只画了 09 的「待接单」tab（会展开菜品明细），
     其余 tab 与 91 / 92 / 05 都只给了一行摘要。实际用起来看不到点了什么，所以统一列出菜品名 × 份数；
     05 顾客端缩略图最多两张、菜名最多三行，多的用「等 N 种商品」收口。
 
@@ -275,7 +302,7 @@ div.uni-scroll-view-content`），类名挂在最外层，所以 `.x__body > .ca
 未使用变量交给 `tsconfig` 的 `noUnusedLocals`，避免两处重复告警。
 
 **单元测试（vitest）。** `vitest.config.ts` 与 `vite.config.ts` 分开——后者挂着 `uni()` 插件会去
-编译所有页面，单测跑不动也不需要。62 个测例分三层：
+编译所有页面，单测跑不动也不需要。89 个测例分三层：
 
 | 文件 | 覆盖 |
 |---|---|
@@ -284,7 +311,8 @@ div.uni-scroll-view-content`），类名挂在最外层，所以 `.x__body > .ca
 | `test/checkout-trial.spec.ts` | **结算与退款的金额规则**：满减命中/未命中、自提免运费、部分退款按比例摊优惠；并锁死主链路实付 **6400 分** |
 | `test/mock-rules.spec.ts` | 提现下限与余额上限、券面额须小于门槛、核销码校验、入驻必传项、异常单处理、兑换码 |
 | `test/styles.spec.ts` | 扫描全仓，禁止跨 `scroll-view` / `swiper` 这类会插包裹层的内置组件写 `>` 子选择器（见「关键实现决策」里的块间距一条） |
-| `test/goods-audit.spec.ts` | **商品审核规则**：新建必审、只改库存不触发审核、改价重审期间顾客端仍是旧价、通过后才写回菜单、违禁词驳回、未过审不能上架 |
+| `test/goods-audit.spec.ts` | **商品审核规则**：新建必审、只改库存/某档库存/分类/时段都不触发审核、改档位价重审期间顾客端仍是旧价、通过后才写回菜单、违禁词逐项驳回、未过审不能上架、草稿不进审核列表 |
+| `test/sale-time.spec.ts` | **售卖时段**：区间内外与边界、跨零点夜宵档、重复日期、关闭的时段、重叠自动合并、「11:00 开售」角标、商家端副标题文案 |
 
 `checkout-trial` / `mock-rules` / `goods-audit` 测的是 `services/mock` 里的业务规则，**当接口契约用**——接真实后端后返回对不上，
 说明两边对优惠或校验的理解不一致。`mock` 的 state 是模块级可变对象，所以每个测例前
